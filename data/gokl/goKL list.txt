@@ -1,0 +1,343 @@
+GoKL list
+
+Green Line (20 stops, 19 mins)
+1. KLCC North | lat: 3.1579 | lon: 101.7123
+2. Wisma Selangor Dredging | lat: 3.1574 | lon: 101.7120
+3. Menara BSN | lat: 3.1570 | lon: 101.7097
+4. Malaysia Tourism Centre | lat: 3.1583 | lon: 101.7092
+5. Renaissance Hotel | lat: 3.1593 | lon: 101.7059
+6. Menara IMC | lat: 3.1539 | lon: 101.7076
+7. Life Centre | lat: 3.1535 | lon: 101.7080
+8. Wisma Cosway / Pavillion KL | lat: 3.1479 | lon: 101.7134
+9. Bintang Walk | lat: 3.1479 | lon: 101.7134
+10. Bukit Bintang Monorail station | lat: 3.1473 | lon: 101.7107
+11. Raja Chulan Monorail station | lat: 3.1506 | lon: 101.7094
+12. KL City Walk | lat: 3.1528 | lon: 101.7099
+13. KL Convention Centre (West) | lat: 3.1530 | lon: 101.7120
+14. Residence Kia Peng | lat: 3.1503 | lon: 101.7142
+15. KL Convention Centre (East) | lat: 3.1530 | lon: 101.7120
+16. The Binjai | lat: 3.1550 | lon: 101.7170
+17. Menara PNB | lat: 3.1556 | lon: 101.7163
+18. Ampang Park LRT station | lat: 3.1590 | lon: 101.7176
+19. Kum Yam Thong | lat: 3.1582 | lon: 101.7155
+20. KLCC North | lat: 3.1579 | lon: 101.7123
+
+Purple Line (20 stops, 16 mins)
+1. HAB Pasar Seni | lat: 3.1412 | lon: 101.6958
+2. Central Market (East) | lat: 3.1440 | lon: 101.6958
+3. Bangunan Maybank | lat: 3.1418 | lon: 101.6982
+4. HAB Medan Pasar | lat: 3.1470 | lon: 101.6967
+5. Muzium Telekon | lat: 3.1490 | lon: 101.6990
+6. Menara Olympia | lat: 3.1478 | lon: 101.6992
+7. KL Tower (South) | lat: 3.1526 | lon: 101.7037
+8. The Weld | lat: 3.1512 | lon: 101.7070
+9. Wisma Boustead | lat: 3.1500 | lon: 101.7100
+10. Wisma Cosway / Pavillion KL (North) | lat: 3.1479 | lon: 101.7134
+11. Bintang Walk | lat: 3.1479 | lon: 101.7134
+12. Bukit Bintang Monorail station | lat: 3.1473 | lon: 101.7107
+13. Wisma Boustead | lat: 3.1500 | lon: 101.7100
+14. The Weld | lat: 3.1512 | lon: 101.7070
+15. KL Tower (South) | lat: 3.1526 | lon: 101.7037
+16. Bukit Nanas Reserve Forest | lat: 3.1535 | lon: 101.7030
+17. Menara Olympia | lat: 3.1478 | lon: 101.6992
+18. Muzium Telekom | lat: 3.1490 | lon: 101.6990
+19. Kota Raya | lat: 3.1425 | lon: 101.6985
+20. HAB Pasar Seni | lat: 3.1412 | lon: 101.6958
+
+Red Line (28 stops, 29 mins)
+1. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+2. Damai Service Hospital | lat: 3.1790 | lon: 101.6939
+3. Chow Kit Monorail station | lat: 3.1659 | lon: 101.6983
+4. Batu Road | lat: 3.1655 | lon: 101.6980
+5. Sri Amar | lat: 3.1652 | lon: 101.6978
+6. Restoran Moh Yaseem | lat: 3.1649 | lon: 101.6976
+7. Maju Junction | lat: 3.1645 | lon: 101.6973
+8. Menara MARA | lat: 3.1642 | lon: 101.6971
+9. Globe KL | lat: 3.1639 | lon: 101.6968
+10. Laman Tunku Abdul Rahman | lat: 3.1636 | lon: 101.6965
+11. Bangunan Sultan Abdul Samad | lat: 3.1466 | lon: 101.6942
+12. Dayabumi | lat: 3.1448 | lon: 101.6945
+13. Kuala Lumpur KTM station | lat: 3.1399 | lon: 101.6865
+14. National Museum (Muzium Negara) | lat: 3.1357 | lon: 101.6868
+15. KL Sentral (North) | lat: 3.1350 | lon: 101.6860
+16. 1 Sentral | lat: 3.1345 | lon: 101.6855
+17. Muzium Negara (West) | lat: 3.1357 | lon: 101.6868
+18. Muzium Negara (East) | lat: 3.1357 | lon: 101.6868
+19. Masjid Negara | lat: 3.1390 | lon: 101.6890
+20. Dayabumi | lat: 3.1448 | lon: 101.6945
+21. Menara DBKL 2 | lat: 3.1512 | lon: 101.6959
+22. Medan MARA | lat: 3.1530 | lon: 101.6965
+23. Wisma Sime Darby | lat: 3.1535 | lon: 101.6968
+24. Tiong Nam | lat: 3.1540 | lon: 101.6971
+25. Chow Kit (North) | lat: 3.1665 | lon: 101.6987
+26. Hospital Kuala Lumpur (South) | lat: 3.1700 | lon: 101.7000
+27. Hospital Kuala Lumpur (West) | lat: 3.1710 | lon: 101.6995
+28. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+
+Blue Line (27 stops, 29 mins)
+1. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+2. Hospital Kuala Lumpur (West) | lat: 3.1710 | lon: 101.6995
+3. Hospital Kuala Lumpur (South) | lat: 3.1700 | lon: 101.7000
+4. Institut Penyelidkan Perubatan (IPP) | lat: 3.1692 | lon: 101.7006
+5. Wisma RAH | lat: 3.1685 | lon: 101.7010
+6. Masjid Kampung Baru | lat: 3.1625 | lon: 101.7035
+7. Sekolah Kebangsaan Pendidikan Khas Kuala Lumpur | lat: 3.1615 | lon: 101.7042
+8. Menara IMC | lat: 3.1539 | lon: 101.7076
+9. Life Centre | lat: 3.1535 | lon: 101.7080
+10. Wisma Cosway / Pavillion KL (North) | lat: 3.1479 | lon: 101.7134
+11. Bintang Walk | lat: 3.1479 | lon: 101.7134
+12. Bukit Bintang (Nearby Monorail) | lat: 3.1473 | lon: 101.7107
+13. Wisma Boustead | lat: 3.1500 | lon: 101.7100
+14. Menara Hap Seng / KL Tower (East) | lat: 3.1528 | lon: 101.7070
+15. Menara IMC | lat: 3.1539 | lon: 101.7076
+16. Dang Wangi LRT Station | lat: 3.1570 | lon: 101.7030
+17. Sekolah Menengah Kebangsaan Convent Bukit Nanas (Kl26) | lat: 3.1555 | lon: 101.7035
+18. Menara AIA | lat: 3.1530 | lon: 101.7015
+19. Cap Square | lat: 3.1550 | lon: 101.6995
+20. Sogo KL | lat: 3.1575 | lon: 101.6965
+21. Medan MARA | lat: 3.1530 | lon: 101.6965
+22. Wisma Sime Darby | lat: 3.1535 | lon: 101.6968
+23. Tiong Nam | lat: 3.1540 | lon: 101.6971
+24. Chow Kit (North) | lat: 3.1665 | lon: 101.6987
+25. Hospital Kuala Lumpur (South) | lat: 3.1700 | lon: 101.7000
+26. Hospital Kuala Lumpur (West) | lat: 3.1710 | lon: 101.6995
+27. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+
+Orange Line (31 stops, 25 mins)
+1. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+2. Hospital Kuala Lumpur (West) | lat: 3.1710 | lon: 101.6995
+3. Hospital Kuala Lumpur (North) | lat: 3.1720 | lon: 101.7002
+4. Istana Budaya | lat: 3.1715 | lon: 101.7030
+5. Klinik Kesihatan Kuala Lumpur | lat: 3.1728 | lon: 101.7045
+6. Institute Jantung Negara (IJN) (East) | lat: 3.1735 | lon: 101.7052
+7. Menara TH Selborn | lat: 3.1652 | lon: 101.7058
+8. Menara Celcom | lat: 3.1645 | lon: 101.7063
+9. Wisma Jupem | lat: 3.1638 | lon: 101.7067
+10. Universiti Teknologi Malaysia (South) | lat: 3.1625 | lon: 101.7072
+11. Universiti Teknologi Malaysia (Utara) | lat: 3.1618 | lon: 101.7075
+12. Jabatan Pertahanan Awam Malaysia | lat: 3.1610 | lon: 101.7079
+13. MINDEF Square | lat: 3.1602 | lon: 101.7083
+14. Markas Logistik Tentera Darat | lat: 3.1595 | lon: 101.7087
+15. Gurney Heights Condominium Blok A & B | lat: 3.1588 | lon: 101.7090
+16. Gurney Heights Condominium Blok C & D | lat: 3.1581 | lon: 101.7093
+17. Residensi Chymes Gurney | lat: 3.1574 | lon: 101.7096
+18. Pangsa Murni Titiwangsa Keramat Jaya 2 | lat: 3.1567 | lon: 101.7099
+19. UniKL Business School | lat: 3.1560 | lon: 101.7102
+20. Capital Kindergarden | lat: 3.1553 | lon: 101.7105
+21. Kuala Lumpur Vertical City | lat: 3.1546 | lon: 101.7108
+22. Wisma Jupem | lat: 3.1638 | lon: 101.7067
+23. Menara Celcom | lat: 3.1645 | lon: 101.7063
+24. Setia Sky Residences | lat: 3.1650 | lon: 101.7050
+25. Yayasan Selangor | lat: 3.1653 | lon: 101.7047
+26. Sekolah Kebangsaan Jalan Raja Muda | lat: 3.1656 | lon: 101.7044
+27. Kampung Baru (North) | lat: 3.1659 | lon: 101.7041
+28. Bangunan IMR | lat: 3.1662 | lon: 101.7038
+29. Hospital Kuala Lumpur (South) | lat: 3.1700 | lon: 101.7000
+30. Hospital Kuala Lumpur (West) | lat: 3.1710 | lon: 101.6995
+31. Terminal Pekeliling | lat: 3.1743 | lon: 101.6986
+
+Pink Line (15 stops, 16 mins)
+1. PPR Pantai Ria | lat: 3.1085 | lon: 101.6632
+2. Flat Sri Pantai | lat: 3.1078 | lon: 101.6640
+3. Taman Bukit Angkasa (East) | lat: 3.1070 | lon: 101.6650
+4. Bangsar South | lat: 3.1120 | lon: 101.6655
+5. Nexus @ Bangsar South | lat: 3.1125 | lon: 101.6660
+6. Flat PKNS Kerinchi | lat: 3.1150 | lon: 101.6665
+7. Universiti LRT station (East) | lat: 3.1175 | lon: 101.6668
+8. Masjid Ar-Rahman, Universiti Malaya | lat: 3.1190 | lon: 101.6672
+9. Stadium Hoki Kuala Lumpur | lat: 3.1205 | lon: 101.6675
+10. Ibu Pejabat Polis Daerah (IPD) Pantai | lat: 3.1218 | lon: 101.6678
+11. Sekolah Kebangsaan Bangsar | lat: 3.1230 | lon: 101.6682
+12. Angkasapuri KTM station | lat: 3.1245 | lon: 101.6685
+13. Kampung Dato Tatah | lat: 3.1258 | lon: 101.6689
+14. PPR Sri Cempaka | lat: 3.1270 | lon: 101.6692
+15. PPR Pantai Ria | lat: 3.1085 | lon: 101.6632
+
+Turquoise Line (33 stops, 23 mins)
+1. 1. Dato’ Keramat LRT station | 3.1654 | 101.7315
+2. Kuarters Kakitangan Jupem | 3.1668 | 101.7303
+3. Taman Datuk Keramat (North) | 3.1675 | 101.7282
+4. Taman Tasik Datuk Keramat | 3.1652 | 101.7258
+5. Kampung Warisan | 3.1648 | 101.7235
+6. Masjid Muadz Jabal | 3.1704 | 101.7348
+7. Stadium Mini Setiawangsa | 3.1725 | 101.7365
+8. SK Taman Setiawangsa (West) | 3.1741 | 101.7378
+9. Surau An-Nur Taman Setiawangsa | 3.1755 | 101.7385
+10. SK Taman Setiawangsa (North) | 3.1768 | 101.7392
+11. Mahsuri Apartment | 3.1782 | 101.7405
+12. Setiawangsa Business Suite | 3.1772 | 101.7388
+13. Apartment Sri Ayu | 3.1795 | 101.7412
+14. Kalumpuk Pinang | 3.1812 | 101.7435
+15. Surau Al Syakirin | 3.1825 | 101.7452
+16. Kelumpuk Bambu | 3.1838 | 101.7468
+17. Kelumpuk Chempaka | 3.1821 | 101.7485
+18. Kelumpuk Kenanga | 3.1805 | 101.7492
+19. Kelumpuk Sunding Malam | 3.1788 | 101.7505
+20. Kelumpuk Bunga Raya | 3.1765 | 101.7498
+21. Kelumpuk Jerijit | 3.1742 | 101.7482
+22. Kelumpuk Dahlia | 3.1725 | 101.7465
+23. Menara Seri Kenanga | 3.1738 | 101.7442
+24. Kelumpuk Cemperling | 3.1745 | 101.7428
+25. AEON AU2 Setiawangsa (North) | 3.1754 | 101.7455
+26. Masjid MSN Setiawangsa (North) | 3.1762 | 101.7432
+27. Flat ATM Setiawangsa | 3.1785 | 101.7415
+28. Setiawangsa Business Park | 3.1792 | 101.7385
+29. Masjid Mu’Adz Bin Jabal | 3.1704 | 101.7348
+30. Setiawangsa LRT station | 3.1757 | 101.7358
+31. Kawasan Perumahan AU 1a/2 | 3.1725 | 101.7332
+32. Taman Datuk Keramat (South) | 3.1645 | 101.7305
+33. Dato’ Keramat LRT station | 3.1654 | 101.7315
+
+Maroon Line (42 stops, 40 mins)
+1. Kampung Batu MRT / KTM station | 3.2045 | 101.6744
+2. Taman Mastiara (South) | 3.2012 | 101.6785
+3. Taman Kok Lian | 3.1985 | 101.6812
+4. PPR Batu Muda (South) | 3.2025 | 101.6845
+5. PPR Batu Muda (North) | 3.2052 | 101.6868
+6. Klinik Kesihatan Taman Batu Muda | 3.2038 | 101.6852
+7. SMK Batu Muda | 3.2015 | 101.6875
+8. Citylights @ Sentul | 3.1955 | 101.6892
+9. Kompleks Darul Hidayah | 3.1928 | 101.6905
+10. 1 Sentul | 3.1905 | 101.6912
+11. SJK (C) Sentul Pasar Peng Ming | 3.1882 | 101.6925
+12. Sentul Pasar | 3.1873 | 101.6917
+13. Masjid Al-Hidayah Sentul | 3.1852 | 101.6945
+14. Pangsapuri Sentul Utara | 3.1845 | 101.6958
+15. St Joseph Church | 3.1822 | 101.6952
+16. Sentul Boulevard (North) | 3.1815 | 101.6938
+17. Sentul Boulevard (East) | 3.1824 | 101.6935
+18. The Fennel Sentul East | 3.1795 | 101.6948
+19. The Capers Sentul East | 3.1778 | 101.6955
+20. D6 Sentul | 3.1765 | 101.6942
+21. SJK (T) Sentul | 3.1752 | 101.6935
+22. Union Flat Sentul | 3.1735 | 101.6948
+23. Sentul LRT station | 3.1787 | 101.6953
+24. Menara Orkid | 3.1768 | 101.6965
+25. Masjid Amru Ibni Al’As | 3.1712 | 101.6975
+26. Institut Latihan MKPM | 3.1685 | 101.6982
+27. Union Flat Sentul | 3.1735 | 101.6948
+28. SJK (T) Sentul | 3.1752 | 101.6935
+29. D7 Sentul | 3.1768 | 101.6932
+30. Sentul Boulevard (West) | 3.1832 | 101.6918
+31. St Joseph Church | 3.1822 | 101.6952
+32. Pangsapuri Sentul Utara | 3.1845 | 101.6958
+33. Sentul Pasar | 3.1873 | 101.6917
+34. SJK (C) Sentul Pasar Peng Ming | 3.1882 | 101.6925
+35. 1 Sentul | 3.1905 | 101.6912
+36. Kompleks Darul Hidayah | 3.1928 | 101.6905
+37. Citylights @ Sentul | 3.1955 | 101.6892
+38. Dewas Kemas | 3.1978 | 101.6885
+39. Klinik Kesihatan Taman Batu Muda | 3.2038 | 101.6852
+40. PPR Batu Muda (North) | 3.2052 | 101.6868
+41. PPR Batu Muda (South) | 3.2025 | 101.6845
+42. Kampung Batu MRT / KTM station | 3.2045 | 101.6744
+
+Chocolate Line (30 stops, 25 mins)
+1. Sri Rampai LRT station | 3.1973 | 101.7369
+2. Wangsa Walk Mall (North) | 3.1991 | 101.7412
+3. Flat Seksyen 4 Wangsa Maju (West) | 3.2015 | 101.7385
+4. SK Wangsa Jaya (West) | 3.2042 | 101.7352
+5. Seksyen 2 Wangsa Maju | 3.2065 | 101.7323
+6. SK Wangsa Jaya (East) | 3.2058 | 101.7375
+7. Flat Seksyen 4 Wangsa Maju (East) | 3.2035 | 101.7402
+8. Flat Seksyen 4 Wangsa Maju (South) | 3.2008 | 101.7395
+9. Wangsa Walk Mall (East) | 3.1985 | 101.7425
+10. AEON Big Wangsa Maju (North) | 3.1982 | 101.7415
+11. Wangsa Delima | 3.1965 | 101.7408
+12. Wangsa Walk Mall (North) | 3.1991 | 101.7412
+13. Infiniti 3 Residences | 3.1958 | 101.7382
+14. Rampai Court (South) | 3.1935 | 101.7365
+15. Taman Megan Setapak | 3.1912 | 101.7348
+16. Taman Setapak Jaya (North) | 3.1895 | 101.7325
+17. Taman Sri Rampai (West) | 3.1922 | 101.7338
+18. Wisma Felcra / SMK Taman Sri Rampai | 3.1942 | 101.7312
+19. ITBM Wangsa Maju | 3.1925 | 101.7295
+20. Sri Ledang Apartment | 3.1948 | 101.7272
+21. Surau Darul Huda, Seksyen 10 Wangsa Maju | 3.1922 | 101.7265
+22. Seasons Garden Residence | 3.1908 | 101.7305
+23. ITBM Wangsa Maju (West) | 3.1925 | 101.7295
+24. Wisma Felcra / SMK Taman Sri Rampai | 3.1942 | 101.7312
+25. Taman Sri Rampai (West) | 3.1922 | 101.7338
+26. Taman Setapak Jaya (North) | 3.1895 | 101.7325
+27. Masjid Abu Ubaidah Al-Jarrah | 3.1932 | 101.7355
+28. Rampai Court (South) | 3.1935 | 101.7365
+29. Villa Wangsamas | 3.1952 | 101.7395
+30. Sri Rampai LRT station | 3.1973 | 101.7369
+
+Parrot-Green Line (38 stops, 35 mins)
+1. Terminal Maluri | 3.1278 | 101.7291
+2. Flat Sri Sabah | 3.1242 | 101.7275
+3. Flat Sri Pulau Pinang Blok 13 | 3.1225 | 101.7258
+4. Indah Mas Apartment | 3.1208 | 101.7235
+5. Flat Sri Pulau Pinang Blok 1 | 3.1192 | 101.7218
+6. Masjid Azzubair Ibnul Awwam | 3.1175 | 101.7232
+7. Pasar Besar Cheras | 3.1165 | 101.7248
+8. Flat Sri Melaka (East) | 3.1148 | 101.7265
+9. IPG Kampus Ilmu Khas | 3.1125 | 101.7282
+10. Flat Sri Melaka (West) | 3.1108 | 101.7265
+11. Flat Sri Melaka Blok 12 | 3.1085 | 101.7242
+12. Flat Sri Melaka Blok 6 | 3.1062 | 101.7215
+13. Flat Sri Melaka Blok 4 | 3.1045 | 101.7198
+14. Seri Mas Condominium | 3.1132 | 101.7205
+15. Masjid Azzubair Ibnul Awwam | 3.1175 | 101.7232
+16. SMK Sri Permaisuri | 3.1042 | 101.7132
+17. BTPN Wilayah Persekutuan | 3.1025 | 101.7155
+18. Queensville | 3.1018 | 101.7172
+19. Dataran Dwitasik | 3.1032 | 101.7165
+20. SMK Seri Tasik | 3.1008 | 101.7145
+21. Dataran Dwitasik | 3.1032 | 101.7165
+22. Queensville | 3.1018 | 101.7172
+23. Laman Tasik Condominium | 3.0985 | 101.7135
+24. Vista Tasik | 3.0995 | 101.7118
+25. Balai Polis Sri Permaisuri | 3.1035 | 101.7118
+26. Flat Sri Johor 4c | 3.1082 | 101.7135
+27. Cheras LRT station | 3.1128 | 101.7142
+28. Bintang Mas Condominium | 3.1145 | 101.7158
+29. PPR Sri Johor Blok 29 | 3.1102 | 101.7175
+30. PPR Sri Johor Blok 21 | 3.1115 | 101.7192
+31. PPR Sri Johor Blok 3 | 3.1138 | 101.7208
+32. Indah Mas Apartment | 3.1208 | 101.7235
+33. Flat Sri Pulau Pinang Blok 13 | 3.1225 | 101.7258
+34. Flat Sri Sabah | 3.1242 | 101.7275
+35. M Vertica KL City Residences | 3.1258 | 101.7285
+36. Maluri LRT station | 3.1272 | 101.7295
+37. Maluri MRT station, Pintu B | 3.1285 | 101.7302
+38. Terminal Maluri | 3.1278 | 101.7291
+
+Grey Line (36 stops, 43 mins)
+1. Terminal Maluri | 3.1278 | 101.7291
+2. M Vertica KL City Residences | 3.1258 | 101.7285
+3. Kompleks Darul Puteri | 3.1235 | 101.7268
+4. Lido Residency | 3.1202 | 101.7252
+5. Klinik Kesihatan Cheras | 3.1118 | 101.7198
+6. SM Teknik Kuala Lumpur | 3.1085 | 101.7215
+7. UKM Medical Centre (HUKM) | 3.1028 | 101.7235
+8. Kelab Renang Cheras | 3.1042 | 101.7258
+9. International Youth Centre (IYC) | 3.1015 | 101.7272
+10. Institut Latihan DBKL (IDB) | 3.0975 | 101.7255
+11. Flat Sri Labuan / Balai Bomba BTR | 3.0991 | 101.7171
+12. Vista Amani Condominium | 3.1012 | 101.7155
+13. Cendana Apartment | 3.1028 | 101.7142
+14. SMK Seri Tasik | 3.1008 | 101.7145
+15. Cendana Apartment | 3.1028 | 101.7142
+16. Vista Amani Condominium | 3.1012 | 101.7155
+17. Masjid Saidina Othman Ibnu Affan | 3.1005 | 101.7162
+18. Apartment Desa Bangsawan | 3.0982 | 101.7185
+19. Flat Sri Labuan | 3.0991 | 101.7171
+20. Institut Latihan DBKL (IDB) | 3.0975 | 101.7255
+21. International Youth Centre (IYC) | 3.1015 | 101.7272
+22. Sekolah Bolasepak Kuala Lumpur | 3.1035 | 101.7245
+23. SM Teknik Kuala Lumpur | 3.1085 | 101.7215
+24. Klinik Kesihatan Cheras | 3.1118 | 101.7198
+25. Lido Residency | 3.1202 | 101.7252
+26. Flat Sri Sabah | 3.1242 | 101.7275
+27. M Vertica KL City Residences | 3.1258 | 101.7285
+28. Maluri LRT station | 3.1272 | 101.7295
+29. Maluri MRT station, Pintu B | 3.1285 | 101.7302
+30. Sunway Velocity | 3.1305 | 101.7255
+31. Queen’s Avenue (East) | 3.1312 | 101.7242
+32. Cochrane MRT station, Pintu B | 3.1328 | 101.7235
+33. Wisma Indah | 3.1335 | 101.7212
+34. Warisan Cityview | 3.1315 | 101.7195
+35. Sunway Velocity Residences | 3.1302 | 101.7225
+36. Terminal Maluri | 3.1278 | 101.7291

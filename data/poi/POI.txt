@@ -1,0 +1,211 @@
+POI
+
+SHOPPING MALLS
+Name: IOI City Mall
+Category: Mall
+Longitude: 101.7144
+Latitude: 2.9700
+Nearest Train Station: MRT UPM (PY34)
+Name: Mid Valley Megamall
+Category: Mall
+Longitude: 101.6781
+Latitude: 3.1176
+Nearest Train Station: KTM Mid Valley (KB01)
+Name: Sunway Pyramid
+Category: Mall
+Longitude: 101.6067
+Latitude: 3.0733
+Nearest Train Station: BRT Sunway Pyramid (SB3)
+Name: Pavilion Kuala Lumpur
+Category: Mall
+Longitude: 101.7130
+Latitude: 3.1481
+Nearest Train Station: MRT Bukit Bintang (KG18)
+Name: 1 Utama Shopping Centre
+Category: Mall
+Longitude: 101.6150
+Latitude: 3.1469
+Nearest Train Station: MRT Bandar Utama (KG09)
+Name: Paradigm Mall
+Category: Mall
+Longitude: 101.5959
+Latitude: 3.1049
+Nearest Train Station: LRT Kelana Jaya (KJ24)
+Name: The Exchange TRX
+Category: Mall
+Longitude: 101.7200
+Latitude: 3.1390
+Nearest Train Station: MRT Tun Razak Exchange (KG20)
+Name: Setia City Mall
+Category: Mall
+Longitude: 101.4610
+Latitude: 3.1095
+Nearest Train Station: KTM Padang Jawa (KD12)
+Name: Suria KLCC
+Category: Mall
+Longitude: 101.7115
+Latitude: 3.1579
+Nearest Train Station: LRT KLCC (KJ10)
+Name: Mitsui Outlet Park KLIA
+Category: Mall
+Longitude: 101.7120
+Latitude: 2.7800
+Nearest Train Station: ERL KLIA (Free Shuttle Bus)
+HOTELS
+Name: Wyndham Acmar Klang
+Category: Hotel
+Longitude: 101.4612
+Latitude: 3.0565
+Nearest Train Station: KTM Bukit Badak (KD13)
+Name: DoubleTree by Hilton Shah Alam i-City
+Category: Hotel
+Longitude: 101.4851
+Latitude: 3.0649
+Nearest Train Station: KTM Padang Jawa (KD12)
+Name: Sunway Resort Hotel
+Category: Hotel
+Longitude: 101.6060
+Latitude: 3.0720
+Nearest Train Station: BRT Sunway Pyramid (SB3)
+Name: KSL Esplanade Hotel Klang
+Category: Hotel
+Longitude: 101.4423
+Latitude: 2.9645
+Nearest Train Station: KTM Johan Setia (LRT3 Upcoming)
+Name: Dash Box Hotel Cyberjaya
+Category: Hotel
+Longitude: 101.6502
+Latitude: 2.9141
+Nearest Train Station: MRT Putrajaya Sentral (PY41)
+Name: PARKROYAL COLLECTION Kuala Lumpur
+Category: Hotel
+Longitude: 101.7090
+Latitude: 3.1444
+Nearest Train Station: MRT Bukit Bintang (KG18)
+Name: Tune Hotel KLIA2
+Category: Hotel
+Longitude: 101.7126
+Latitude: 2.7441
+Nearest Train Station: ERL KLIA Terminal 2
+Name: WOLO Kuala Lumpur
+Category: Hotel
+Longitude: 101.7110
+Latitude: 3.1475
+Nearest Train Station: MRT Bukit Bintang (KG18)
+LANDMARKS & CULTURAL SITES
+Name: Petronas Twin Towers
+Category: Landmark
+Longitude: 101.7117
+Latitude: 3.1579
+Nearest Train Station: LRT KLCC (KJ10)
+Name: Menara Kuala Lumpur (KL Tower)
+Category: Landmark
+Longitude: 101.7037
+Latitude: 3.1528
+Nearest Train Station: Monorail Bukit Nanas (MR8)
+Name: Istana Alam Shah
+Category: Landmark
+Longitude: 101.4502
+Latitude: 3.0366
+Nearest Train Station: KTM Klang (KD14)
+Name: Tugu Keris Klang
+Category: Landmark
+Longitude: 101.4444
+Latitude: 3.0364
+Nearest Train Station: KTM Klang (KD14)
+Name: Sultan Abdul Samad Building
+Category: Landmark
+Longitude: 101.6944
+Latitude: 3.1486
+Nearest Train Station: LRT Masjid Jamek (KJ13)
+Name: Merdeka 118
+Category: Landmark
+Longitude: 101.7005
+Latitude: 3.1411
+Nearest Train Station: MRT Merdeka (KG17)
+Name: Batu Caves
+Category: Religious Landmark
+Longitude: 101.6840
+Latitude: 3.2374
+Nearest Train Station: KTM Batu Caves (KC05)
+Name: Thean Hou Temple
+Category: Religious Landmark
+Longitude: 101.6874
+Latitude: 3.1214
+Nearest Train Station: LRT Bangsar (KJ16)
+Name: Church of Our Lady of Lourdes
+Category: Religious Site
+Longitude: 101.4444
+Latitude: 3.0416
+Nearest Train Station: KTM Klang (KD14)
+Name: Sri Nagara Thandayuthapani Temple
+Category: Religious Site
+Longitude: 101.4452
+Latitude: 3.0423
+Nearest Train Station: KTM Klang (KD14)
+Name: Sultan Salahuddin Abdul Aziz Mosque (Blue Mosque)
+Category: Religious Landmark
+Longitude: 101.5206
+Latitude: 3.0784
+Nearest Train Station: LRT Shah Alam (LRT3 Upcoming)
+TOURIST ATTRACTIONS & PARKS
+Name: KL Bird Park
+Category: Tourist Attraction
+Longitude: 101.6885
+Latitude: 3.1432
+Nearest Train Station: KTM Kuala Lumpur (KA02)
+Name: Perdana Botanical Garden
+Category: Tourist Attraction
+Longitude: 101.6841
+Latitude: 3.1394
+Nearest Train Station: KTM Kuala Lumpur (KA02)
+Name: Aquaria KLCC
+Category: Tourist Attraction
+Longitude: 101.7123
+Latitude: 3.1552
+Nearest Train Station: LRT KLCC (KJ10)
+Name: Farm In The City
+Category: Tourist Attraction
+Longitude: 101.6642
+Latitude: 3.0206
+Nearest Train Station: MRT Putra Permai (PY37)
+Name: Sunway Lagoon Theme Park
+Category: Tourist Attraction
+Longitude: 101.6053
+Latitude: 3.0714
+Nearest Train Station: BRT Sunway Lagoon (SB2)
+Name: Genting SkyWorlds Theme Park
+Category: Tourist Attraction
+Longitude: 101.7958
+Latitude: 3.4225
+Nearest Train Station: Awana SkyWay (Genting)
+Name: National Museum (Muzium Negara)
+Category: Museum
+Longitude: 101.6881
+Latitude: 3.1378
+Nearest Train Station: MRT Muzium Negara (KG15)
+Name: Islamic Arts Museum Malaysia
+Category: Museum
+Longitude: 101.6917
+Latitude: 3.1419
+Nearest Train Station: KTM Kuala Lumpur (KA02)
+Name: Wet World Water Park Shah Alam
+Category: Tourist Attraction
+Longitude: 101.5265
+Latitude: 3.0722
+Nearest Train Station: KTM Padang Jawa (KD12)
+Name: i-City Shah Alam
+Category: Tourist Attraction
+Longitude: 101.4851
+Latitude: 3.0649
+Nearest Train Station: KTM Padang Jawa (KD12)
+Name: Putrajaya Pink Mosque (Masjid Putra)
+Category: Landmark
+Longitude: 101.6894
+Latitude: 2.9361
+Nearest Train Station: MRT Putrajaya Sentral (PY41)
+Name: National Science Centre
+Category: Museum
+Longitude: 101.6445
+Latitude: 3.1495
+Nearest Train Station: MRT Phileo Damansara (KG12)
