@@ -38,29 +38,35 @@ export function getRouteColor(route_id, isTransfer = false) {
     case "ERL2": color = "#8C238F"; break; // KLIA Ekspres
 
     // ===== HOHO =====
-    case "HOHO_C":    color = "#EE1823"; break; // City
-    case "HOHO_G":    color = "#016C39"; break; // Garden
-    case "HOHO_S_SAT":color = "#DA251D"; break; // Selangor Saturday
-    case "HOHO_S_SUN":color = "#FCD116"; break; // Selangor Sunday
+    case "hohoC":    color = "#EE1823"; break; // City
+    case "hohoG":    color = "#016C39"; break; // Garden
+    case "hohoS-sat":color = "#DA251D"; break; // Selangor Saturday
+    case "hohoS-sun":color = "#FCD116"; break; // Selangor Sunday
 
     // ===== GOKL =====
-    case "GOKL_GREEN":        color = "#1A974B"; break;
-    case "GOKL_PURPLE":       color = "#5C3E86"; break;
-    case "GOKL_RED":          color = "#D92639"; break;
-    case "GOKL_BLUE":         color = "#1C77AE"; break;
-    case "GOKL_ORANGE":       color = "#E67730"; break;
-    case "GOKL_PINK":         color = "#CD6298"; break;
-    case "GOKL_TURQUOISE":    color = "#3EB7A8"; break;
-    case "GOKL_MAROON":       color = "#8B2348"; break;
-    case "GOKL_CHOCOLATE":    color = "#85482B"; break;
-    case "GOKL_PARROT_GREEN": color = "#A2C93C"; break;
-    case "GOKL_GREY":         color = "#6F8996"; break;
-    case "GOKL_CREAM":        color = "#D4C17C"; break;
-    case "GOKL_MAGENTA":      color = "#A7227D"; break;
+    case "goKL-grey":        color = "#1A974B"; break;
+    case "goKL-purple":       color = "#5C3E86"; break;
+    case "goKL-red":          color = "#D92639"; break;
+    case "goKL-blue":         color = "#1C77AE"; break;
+    case "goKL-orange":       color = "#E67730"; break;
+    case "goKL-pink":         color = "#CD6298"; break;
+    case "goKL-turquoise":    color = "#3EB7A8"; break;
+    case "goKL-maroon":       color = "#8B2348"; break;
+    case "goKL-chocolate":    color = "#85482B"; break;
+    case "goKL-parrot-green": color = "#A2C93C"; break;
+    case "goKL-grey":         color = "#6F8996"; break;
+    // Appears on map, not found in source data
+    case "goKL-cream":        color = "#D4C17C"; break;
+    case "goKL-magenta":      color = "#A7227D"; break;
+    
+    case "goKL-black_1":      color = "#1D1E20"; break;
+    case "goKL-black_2":      color = "#1E1F21"; break;
 
-    // Appears on map, not official site
-    case "GOKL_BLACK_1":      color = "#1D1E20"; break;
-    case "GOKL_BLACK_2":      color = "#1E1F21"; break;
+    // ===== rapidBus & feeder =====
+    case "dummy1":      color = "#006CFF"; break; // rapidBus placeholder normal
+    case "dummy2":      color = "#008716"; break; // rapidBus placeholder mix use
+    case "dummy3":      color = "#21618C"; break; // rapidBus placeholder special occasions
+    case "dummy4":      color = "#00ffb3ff"; break; // feeder placeholder
 
     default:
       color = "#888888";
