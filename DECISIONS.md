@@ -31,3 +31,9 @@
 2025-12-27 — GoKL route metadata
 - GoKL routes are fully manual and canonical.
 - Official route colors are used where available; undocumented variants are explicitly flagged.
+
+2026-01-09 — Bus data freeze
+- Current bus data is derived from partial GTFS (routes + stops only).
+- These files are placeholders and must not be extended.
+- Accurate bus routing requires full GTFS ingestion via a build pipeline.
+- Existing bus files remain frozen until replaced by normalized outputs.

@@ -44,23 +44,21 @@ export function getRouteColor(route_id, isTransfer = false) {
     case "hohoS-sun":color = "#FCD116"; break; // Selangor Sunday
 
     // ===== GOKL =====
-    case "goKL-grey":        color = "#1A974B"; break;
-    case "goKL-purple":       color = "#5C3E86"; break;
-    case "goKL-red":          color = "#D92639"; break;
-    case "goKL-blue":         color = "#1C77AE"; break;
-    case "goKL-orange":       color = "#E67730"; break;
-    case "goKL-pink":         color = "#CD6298"; break;
-    case "goKL-turquoise":    color = "#3EB7A8"; break;
-    case "goKL-maroon":       color = "#8B2348"; break;
-    case "goKL-chocolate":    color = "#85482B"; break;
-    case "goKL-parrot-green": color = "#A2C93C"; break;
-    case "goKL-grey":         color = "#6F8996"; break;
-    // Appears on map, not found in source data
-    case "goKL-cream":        color = "#D4C17C"; break;
-    case "goKL-magenta":      color = "#A7227D"; break;
-    
-    case "goKL-black_1":      color = "#1D1E20"; break;
-    case "goKL-black_2":      color = "#1E1F21"; break;
+    case "GOKL01": color = "#1A974B"; break;
+    case "GOKL02": color = "#5C3E86"; break;
+    case "GOKL03": color = "#D92639"; break;
+    case "GOKL04": color = "#1C77AE"; break;
+    case "GOKL05": color = "#E67730"; break;
+    case "GOKL06": color = "#CD6298"; break;
+    case "GOKL07": color = "#3EB7A8"; break;
+    case "GOKL08": color = "#8B2348"; break;
+    case "GOKL09": color = "#85482B"; break;
+    case "GOKL10": color = "#A2C93C"; break;
+    case "GOKL11": color = "#6F8996"; break;
+    case "GOKL12": color = "#D4C17C"; break;
+    case "GOKL13": color = "#A7227D"; break;
+    case "GOKL14": color = "#49534A"; break;
+    case "GOKL15": color = "#1F497D"; break;
 
     // ===== rapidBus & feeder =====
     case "dummy1":      color = "#006CFF"; break; // rapidBus placeholder normal
