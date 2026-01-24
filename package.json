@@ -1,0 +1,25 @@
+{
+  "name": "jronda",
+  "version": "1.0.0",
+  "description": "Klang Valley Transit – Offline Static Model",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jss4m/JRonda.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jss4m/JRonda/issues"
+  },
+  "homepage": "https://github.com/jss4m/JRonda#readme",
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "csv-parse": "^6.1.0"
+  }
+}

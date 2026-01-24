@@ -37,3 +37,18 @@
 - These files are placeholders and must not be extended.
 - Accurate bus routing requires full GTFS ingestion via a build pipeline.
 - Existing bus files remain frozen until replaced by normalized outputs.
+
+2026-01-24 - Data Normalization – Bus (GTFS)
+
+- GTFS ZIP files are treated as volatile inputs and are never consumed directly by the renderer.
+- A Node.js normalization step converts GTFS `stops.txt` into a canonical JSON format.
+- CSV parsing uses a standards-compliant parser to handle quoted fields.
+- Output: `data-build/normalized/bus_stops.json`
+- Schema (bus):
+  - stop_id
+  - stop_name
+  - stop_lat
+  - stop_lon
+  - mode
+  - operator
+- Derived flags (interchange, connecting, loop) are intentionally excluded at this stage.
