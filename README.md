@@ -9,3 +9,11 @@ Out of scope (for now):
 - APIs
 - App UI
 # JRonda
+
+## Data Build Pipeline
+
+GTFS data is normalized via Node.js scripts under `data-build/scripts`.
+The renderer consumes only files under `data-build/normalized`.
+
+Example:
+- normalize-bus.js → bus_stops.json

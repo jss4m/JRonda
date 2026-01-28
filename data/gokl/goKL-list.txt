@@ -1,0 +1,415 @@
+stop_id,stop_name,stop_lat,stop_lon,category,route_id,isOKU,status,search,isConnecting,isLoop
+GOKL0101,KLCC,3.1593,101.7138,GOKL,GOKL01,true,valid,GOKL KLCC,true,false
+GOKL0102,Wisma BSN,3.1585,101.7108,GOKL,GOKL01,true,valid,GOKL Wisma BSN,false,false
+GOKL0103,MATIC,3.1574,101.7051,GOKL,GOKL01,true,valid,GOKL MATIC,false,false
+GOKL0104,Hotel Renaissance,3.1573,101.7042,GOKL,GOKL01,true,valid,GOKL Hotel Renaissance,false,false
+GOKL0105,Hotel Concorde,3.1554,101.7039,GOKL,GOKL01,true,valid,GOKL Hotel Concorde,true,false
+GOKL0106,Life Centre,3.1534,101.7073,GOKL,GOKL01,true,valid,GOKL Life Centre,true,false
+GOKL0107,Wisma Cosway,3.1507,101.7121,GOKL,GOKL01,true,valid,GOKL Wisma Cosway,true,false
+GOKL0108,Pavilion,3.1488,101.7133,GOKL,GOKL01,true,valid,GOKL Pavilion,true,false
+GOKL0109,Bukit Bintang,3.1471,101.7105,GOKL,GOKL01,true,valid,GOKL Bukit Bintang,true,false
+GOKL0110,Raja Chulan Monorail Station,3.1508,101.7099,GOKL,GOKL01,true,valid,GOKL Raja Chulan Monorail Station,false,false
+GOKL0111,Wisma Rohas Perkasa,3.1551,101.7101,GOKL,GOKL01,true,valid,GOKL Wisma Rohas Perkasa,false,false
+GOKL0112,Hotel Grand Hyatt,3.1542,101.7123,GOKL,GOKL01,true,valid,GOKL Hotel Grand Hyatt,false,false
+GOKL0113,Exxon Mobil,3.1565,101.7153,GOKL,GOKL01,true,valid,GOKL Exxon Mobil,false,false
+GOKL0114,Citibank,3.1591,101.7171,GOKL,GOKL01,true,valid,GOKL Citibank,false,false
+GOKL0115,Wisma Atlan,3.1601,101.7161,GOKL,GOKL01,true,valid,GOKL Wisma Atlan,false,true
+GOKL0201,Pasar Seni Hub,3.1425,101.6965,GOKL,GOKL02,true,valid,GOKL Pasar Seni Hub,true,false
+GOKL0202,Bangkok Bank,3.1478,101.6971,GOKL,GOKL02,true,valid,GOKL Bangkok Bank,false,false
+GOKL0203,Telekom Museum,3.1486,101.6997,GOKL,GOKL02,true,valid,GOKL Telekom Museum,false,false
+GOKL0204,Olympia Tower,3.1495,101.7018,GOKL,GOKL02,true,valid,GOKL Olympia Tower,false,false
+GOKL0205,Kuala Lumpur Tower,3.1524,101.7035,GOKL,GOKL02,true,valid,GOKL Kuala Lumpur Tower,false,false
+GOKL0206,The Weld,3.1505,101.7061,GOKL,GOKL02,true,valid,GOKL The Weld,false,false
+GOKL0207,Wisma Foo Yong,3.1501,101.7094,GOKL,GOKL02,true,valid,GOKL Wisma Foo Yong,false,false
+GOKL0208,Wisma Cosway,3.1507,101.7121,GOKL,GOKL02,true,valid,GOKL Wisma Cosway,true,false
+GOKL0209,Pavilion,3.1488,101.7133,GOKL,GOKL02,true,valid,GOKL Pavilion,true,false
+GOKL0210,Bukit Bintang,3.1471,101.7105,GOKL,GOKL02,true,valid,GOKL Bukit Bintang,true,false
+GOKL0211,Wisma Boustead,3.1503,101.7058,GOKL,GOKL02,true,valid,GOKL Wisma Boustead,true,false
+GOKL0212,Wisma MPL,3.1499,101.7046,GOKL,GOKL02,true,valid,GOKL Wisma MPL,false,false
+GOKL0213,Wisma Budiman,3.1492,101.7019,GOKL,GOKL02,true,valid,GOKL Wisma Budiman,false,false
+GOKL0214,Kota Raya,3.1449,101.6983,GOKL,GOKL02,true,valid,GOKL Kota Raya,false,true
+GOKL0301,Titiwangsa Hub,3.1737,101.6952,GOKL,GOKL03,true,valid,GOKL Titiwangsa Hub,true,false
+GOKL0302,Hospital Damai,3.1678,101.6963,GOKL,GOKL03,true,valid,GOKL Hospital Damai,true,false
+GOKL0303,Chow Kit Monorail Station,3.1666,101.6983,GOKL,GOKL03,true,valid,GOKL Chow Kit Monorail Station,true,false
+GOKL0304,Chow Kit Market,3.1643,101.6989,GOKL,GOKL03,true,valid,GOKL Chow Kit Market,true,false
+GOKL0305,Sri Amar,3.1598,101.6977,GOKL,GOKL03,true,valid,GOKL Sri Amar,false,false
+GOKL0306,Pertama Complex,3.1568,101.6963,GOKL,GOKL03,true,valid,GOKL Pertama Complex,false,false
+GOKL0307,Globe,3.1543,101.6964,GOKL,GOKL03,true,valid,GOKL Globe,false,false
+GOKL0308,Coliseum,3.1531,101.6962,GOKL,GOKL03,true,valid,GOKL Coliseum,false,false
+GOKL0309,Independence Square,3.1485,101.6938,GOKL,GOKL03,true,valid,GOKL Independence Square,false,false
+GOKL0310,Dayabumi,3.1454,101.6942,GOKL,GOKL03,true,valid,GOKL Dayabumi,false,false
+GOKL0311,KTM Kuala Lumpur,3.1396,101.6936,GOKL,GOKL03,true,valid,GOKL KTM Kuala Lumpur,false,false
+GOKL0312,KL Sentral,3.1342,101.6865,GOKL,GOKL03,true,valid,GOKL KL Sentral,false,false
+GOKL0313,Plaza 1Sentral,3.1328,101.6853,GOKL,GOKL03,true,valid,GOKL Plaza 1Sentral,false,false
+GOKL0314,National Museum,3.1378,101.6882,GOKL,GOKL03,true,valid,GOKL National Museum,false,false
+GOKL0315,National Mosque,3.1420,101.6917,GOKL,GOKL03,true,valid,GOKL National Mosque,false,false
+GOKL0316,DBKL Tower,3.1529,101.6943,GOKL,GOKL03,true,valid,GOKL DBKL Tower,false,false
+GOKL0317,Medan MARA,3.1591,101.6953,GOKL,GOKL03,true,valid,GOKL Medan MARA,true,false
+GOKL0318,Wisma Sime Darby,3.1620,101.6946,GOKL,GOKL03,true,valid,GOKL Wisma Sime Darby,true,false
+GOKL0319,Tiong Nam,3.1641,101.6938,GOKL,GOKL03,true,valid,GOKL Tiong Nam,true,false
+GOKL0320,Chow Kit (Jalan Ipoh),3.1674,101.6934,GOKL,GOKL03,true,valid,GOKL Chow Kit (Jalan Ipoh),true,false
+GOKL0321,Grand Season Hotel,3.1699,101.6973,GOKL,GOKL03,true,valid,GOKL Grand Season Hotel,true,false
+GOKL0322,Hospital Kuala Lumpur (West),3.1718,101.6994,GOKL,GOKL03,true,valid,GOKL Hospital Kuala Lumpur (West),true,true
+GOKL0401,Titiwangsa Hub,3.1737,101.6952,GOKL,GOKL04,true,valid,GOKL Titiwangsa Hub,true,false
+GOKL0402,Hospital Kuala Lumpur (North),3.1729,101.7025,GOKL,GOKL04,true,valid,GOKL Hospital Kuala Lumpur (North),true,false
+GOKL0403,Medical Research Institute,3.1706,101.7031,GOKL,GOKL04,true,valid,GOKL Medical Research Institute,false,false
+GOKL0404,Jamek Mosque Kg. Bharu,3.1615,101.7068,GOKL,GOKL04,true,valid,GOKL Jamek Mosque Kg. Bharu,false,false
+GOKL0405,Sekolah Khas Kg. Bharu,3.1633,101.7056,GOKL,GOKL04,true,valid,GOKL Sekolah Khas Kg. Bharu,false,false
+GOKL0406,DBKL Tower 3,3.1576,101.6997,GOKL,GOKL04,true,valid,GOKL DBKL Tower 3,false,false
+GOKL0407,Hotel Concorde,3.1554,101.7039,GOKL,GOKL04,true,valid,GOKL Hotel Concorde,true,false
+GOKL0408,Life Centre,3.1534,101.7073,GOKL,GOKL04,true,valid,GOKL Life Centre,true,false
+GOKL0409,Wisma Cosway,3.1507,101.7121,GOKL,GOKL04,true,valid,GOKL Wisma Cosway,true,false
+GOKL0410,Pavilion,3.1488,101.7133,GOKL,GOKL04,true,valid,GOKL Pavilion,true,false
+GOKL0411,Bukit Bintang,3.1471,101.7105,GOKL,GOKL04,true,valid,GOKL Bukit Bintang,true,false
+GOKL0412,Wisma Boustead,3.1503,101.7058,GOKL,GOKL04,true,valid,GOKL Wisma Boustead,true,false
+GOKL0413,Hap Seng Tower,3.1528,101.7053,GOKL,GOKL04,true,valid,GOKL Hap Seng Tower,false,false
+GOKL0414,Bukit Nanas Monorail Station,3.1544,101.7052,GOKL,GOKL04,true,valid,GOKL Bukit Nanas Monorail Station,false,false
+GOKL0415,Dang Wangi LRT Station,3.1565,101.7024,GOKL,GOKL04,true,valid,GOKL Dang Wangi LRT Station,false,false
+GOKL0416,Munshi Abdullah,3.1554,101.6991,GOKL,GOKL04,true,valid,GOKL Munshi Abdullah,false,false
+GOKL0417,SOGO,3.1553,101.6957,GOKL,GOKL04,true,valid,GOKL SOGO,false,false
+GOKL0418,Medan MARA,3.1591,101.6953,GOKL,GOKL04,true,valid,GOKL Medan MARA,true,false
+GOKL0419,Wisma Sime Darby,3.1620,101.6946,GOKL,GOKL04,true,valid,GOKL Wisma Sime Darby,true,false
+GOKL0420,Tiong Nam,3.1641,101.6938,GOKL,GOKL04,true,valid,GOKL Tiong Nam,true,false
+GOKL0421,Chow Kit (Jalan Ipoh),3.1674,101.6934,GOKL,GOKL04,true,valid,GOKL Chow Kit (Jalan Ipoh),true,false
+GOKL0422,Grand Season Hotel,3.1699,101.6973,GOKL,GOKL04,true,valid,GOKL Grand Season Hotel,true,false
+GOKL0423,Hospital Kuala Lumpur (West),3.1718,101.6994,GOKL,GOKL04,true,valid,GOKL Hospital Kuala Lumpur (West),true,true
+GOKL0501,Titiwangsa Hub,3.1737,101.6952,GOKL,GOKL05,true,valid,GOKL Titiwangsa Hub,true,false
+GOKL0502,Istana Budaya,3.1724,101.7025,GOKL,GOKL05,true,valid,GOKL Istana Budaya,false,false
+GOKL0503,National Blood Centre,3.1725,101.7071,GOKL,GOKL05,true,valid,GOKL National Blood Centre,false,false
+GOKL0504,KL Clinic,3.1726,101.7109,GOKL,GOKL05,true,valid,GOKL KL Clinic,false,false
+GOKL0505,Hospital Pusrawi,3.1718,101.7058,GOKL,GOKL05,true,valid,GOKL Hospital Pusrawi,false,false
+GOKL0506,SK Jln. Gurney (opp),3.1695,101.7139,GOKL,GOKL05,true,valid,GOKL SK Jln. Gurney (opp),false,false
+GOKL0507,Telekom Training Centre,3.1715,101.7155,GOKL,GOKL05,true,valid,GOKL Telekom Training Centre,false,false
+GOKL0508,PULAPOL,3.1729,101.7197,GOKL,GOKL05,true,valid,GOKL PULAPOL,false,false
+GOKL0509,APM,3.1714,101.7215,GOKL,GOKL05,true,valid,GOKL APM,false,false
+GOKL0510,MINDEF,3.1691,101.7225,GOKL,GOKL05,true,valid,GOKL MINDEF,false,false
+GOKL0511,Army Logistics Headquarters,3.1654,101.7221,GOKL,GOKL05,true,valid,GOKL Army Logistics Headquarters,false,false
+GOKL0512,Gurney Heights,3.1645,101.7245,GOKL,GOKL05,true,valid,GOKL Gurney Heights,false,false
+GOKL0513,Chymes,3.1663,101.7289,GOKL,GOKL05,true,valid,GOKL Chymes,false,false
+GOKL0514,Pangsa Murni,3.1668,101.7275,GOKL,GOKL05,true,valid,GOKL Pangsa Murni,false,false
+GOKL0515,UNIKL,3.1642,101.7214,GOKL,GOKL05,true,valid,GOKL UNIKL,false,false
+GOKL0516,FELDA,3.1614,101.7185,GOKL,GOKL05,true,valid,GOKL FELDA,false,false
+GOKL0517,JUPEM,3.1652,101.7182,GOKL,GOKL05,true,valid,GOKL JUPEM,true,false
+GOKL0518,SK Jln. Gurney,3.1685,101.7137,GOKL,GOKL05,true,valid,GOKL SK Jln. Gurney,false,false
+GOKL0519,Yayasan Selangor,3.1668,101.7142,GOKL,GOKL05,true,valid,GOKL Yayasan Selangor,false,false
+GOKL0520,SK Jalan Raja Muda,3.1658,101.7119,GOKL,GOKL05,true,valid,GOKL SK Jalan Raja Muda,false,false
+GOKL0521,Kampong Bharu,3.1651,101.7081,GOKL,GOKL05,true,valid,GOKL Kampong Bharu,false,false
+GOKL0522,Hotel Putra Muda,3.1664,101.7018,GOKL,GOKL05,true,valid,GOKL Hotel Putra Muda,false,false
+GOKL0523,Hospital Kuala Lumpur (South),3.1705,101.7013,GOKL,GOKL05,true,valid,GOKL Hospital Kuala Lumpur (South),true,false
+GOKL0524,Hospital Kuala Lumpur (opp),3.1725,101.7005,GOKL,GOKL05,true,valid,GOKL Hospital Kuala Lumpur (opp),true,true
+GOKL0601,PPR Pantai Ria,3.1026,101.6669,GOKL,GOKL06,true,valid,GOKL PPR Pantai Ria,false,false
+GOKL0602,PPR Seri Pantai,3.1051,101.6661,GOKL,GOKL06,true,valid,GOKL PPR Seri Pantai,false,false
+GOKL0603,Taman Bukit Angkasa (East),3.1075,101.6665,GOKL,GOKL06,true,valid,GOKL Taman Bukit Angkasa (East),false,false
+GOKL0604,Kerinchi Community Clinic,3.1118,101.6665,GOKL,GOKL06,true,valid,GOKL Kerinchi Community Clinic,false,false
+GOKL0605,Bangsar South,3.1105,101.6645,GOKL,GOKL06,true,valid,GOKL Bangsar South,false,false
+GOKL0606,Nexus Bangsar South,3.1114,101.6644,GOKL,GOKL06,true,valid,GOKL Nexus Bangsar South,false,false
+GOKL0607,LRT Station University,3.1147,101.6621,GOKL,GOKL06,true,valid,GOKL LRT Station University,false,false
+GOKL0608,Ar Rahman Mosque UM,3.1197,101.6631,GOKL,GOKL06,true,valid,GOKL Ar Rahman Mosque UM,false,false
+GOKL0609,KL Hockey Stadium,3.1192,101.6695,GOKL,GOKL06,true,valid,GOKL KL Hockey Stadium,false,false
+GOKL0610,IPD Pantai,3.1171,101.6748,GOKL,GOKL06,true,valid,GOKL IPD Pantai,false,false
+GOKL0611,SK Bangsar (opp),3.1158,101.6751,GOKL,GOKL06,true,valid,GOKL SK Bangsar (opp),false,false
+GOKL0612,KTM Angkasapuri,3.1132,101.6745,GOKL,GOKL06,true,valid,GOKL KTM Angkasapuri,false,false
+GOKL0613,PPR Seri Cempaka,3.1075,101.6678,GOKL,GOKL06,true,valid,GOKL PPR Seri Cempaka,false,true
+GOKL0701,LRT Station Dato Keramat,3.1648,101.7314,GOKL,GOKL07,true,valid,GOKL LRT Station Dato Keramat,false,false
+GOKL0702,JUPEM Quarters,3.1685,101.7271,GOKL,GOKL07,true,valid,GOKL JUPEM Quarters,false,false
+GOKL0703,Taman Tasik Datuk Keramat,3.1715,101.7315,GOKL,GOKL07,true,valid,GOKL Taman Tasik Datuk Keramat,false,false
+GOKL0704,Kampung Warisan,3.1748,101.7345,GOKL,GOKL07,true,valid,GOKL Kampung Warisan,false,false
+GOKL0705,SK Setiawangsa,3.1776,101.7391,GOKL,GOKL07,true,valid,GOKL SK Setiawangsa,false,false
+GOKL0706,Mahsuri Apartments,3.1788,101.7405,GOKL,GOKL07,true,valid,GOKL Mahsuri Apartments,false,false
+GOKL0707,Sri Ayu Apartments,3.1815,101.7431,GOKL,GOKL07,true,valid,GOKL Sri Ayu Apartments,false,false
+GOKL0708,Kelumpuk Kemunting,3.1842,101.7468,GOKL,GOKL07,true,valid,GOKL Kelumpuk Kemunting,false,false
+GOKL0709,As-Syakirin Mosque,3.1865,101.7481,GOKL,GOKL07,true,valid,GOKL As-Syakirin Mosque,false,false
+GOKL0710,Kelumpuk Bambu,3.1852,101.7514,GOKL,GOKL07,true,valid,GOKL Kelumpuk Bambu,false,false
+GOKL0711,Kelumpuk Cempaka,3.1831,101.7511,GOKL,GOKL07,true,valid,GOKL Kelumpuk Cempaka,false,false
+GOKL0712,Kelumpuk Bunga Raya,3.1818,101.7538,GOKL,GOKL07,true,valid,GOKL Kelumpuk Bunga Raya,false,false
+GOKL0713,Kelumpuk Dahlia,3.1802,101.7521,GOKL,GOKL07,true,valid,GOKL Kelumpuk Dahlia,false,false
+GOKL0714,Kelumpuk Cemperling,3.1785,101.7525,GOKL,GOKL07,true,valid,GOKL Kelumpuk Cemperling,false,false
+GOKL0715,AEON AU2,3.1758,101.7508,GOKL,GOKL07,true,valid,GOKL AEON AU2,false,false
+GOKL0716,Pangsapuri ATM,3.1765,101.7462,GOKL,GOKL07,true,valid,GOKL Pangsapuri ATM,false,false
+GOKL0717,Setiawangsa Trade Centre,3.1771,101.7435,GOKL,GOKL07,true,valid,GOKL Setiawangsa Trade Centre,false,false
+GOKL0718,Muadz bin Jabal Mosque (opp),3.1768,101.7412,GOKL,GOKL07,true,valid,GOKL Muadz bin Jabal Mosque (opp),false,false
+GOKL0719,LRT Station Setiawangsa,3.1757,101.7451,GOKL,GOKL07,true,valid,GOKL LRT Station Setiawangsa,false,true
+GOKL0801,MRT KTM Station Kampung Batu,3.2045,101.6775,GOKL,GOKL08,true,valid,GOKL MRT KTM Station Kampung Batu,true,false
+GOKL0802,SMK Tiara Permai,3.2078,101.6812,GOKL,GOKL08,true,valid,GOKL SMK Tiara Permai,false,false
+GOKL0803,PPR Pekan Batu,3.2105,101.6821,GOKL,GOKL08,true,valid,GOKL PPR Pekan Batu,false,false
+GOKL0804,PPR Kg Batu Muda (opp),3.2118,101.6855,GOKL,GOKL08,true,valid,GOKL PPR Kg Batu Muda (opp),false,false
+GOKL0805,Taman Batu Muda Health Clinic,3.2132,101.6891,GOKL,GOKL08,true,valid,GOKL Taman Batu Muda Health Clinic,false,false
+GOKL0806,SMK Batu Muda,3.2115,101.6912,GOKL,GOKL08,true,valid,GOKL SMK Batu Muda,false,false
+GOKL0807,Maxim Citylights,3.2023,101.6897,GOKL,GOKL08,true,valid,GOKL Maxim Citylights,false,false
+GOKL0808,One Maxim,3.2005,101.6908,GOKL,GOKL08,true,valid,GOKL One Maxim,false,false
+GOKL0809,SJKC Peng Ming,3.1932,101.6945,GOKL,GOKL08,true,valid,GOKL SJKC Peng Ming,false,false
+GOKL0810,Simpang Dato Senu,3.1908,101.6931,GOKL,GOKL08,true,valid,GOKL Simpang Dato Senu,false,false
+GOKL0811,Al-Hidayah Mosque,3.1878,101.6925,GOKL,GOKL08,true,valid,GOKL Al-Hidayah Mosque,false,false
+GOKL0812,Pangsapuri Sentul Utara,3.1888,101.6911,GOKL,GOKL08,true,valid,GOKL Pangsapuri Sentul Utara,false,false
+GOKL0813,Sentul Market (opp),3.1865,101.6918,GOKL,GOKL08,true,valid,GOKL Sentul Market (opp),false,false
+GOKL0814,Sentul Boulevard (North),3.1866,101.6924,GOKL,GOKL08,true,valid,GOKL Sentul Boulevard (North),false,false
+GOKL0815,SK Convent Sentul 1,3.1845,101.6928,GOKL,GOKL08,true,valid,GOKL SK Convent Sentul 1,false,false
+GOKL0816,Fennel,3.1825,101.6935,GOKL,GOKL08,true,valid,GOKL Fennel,false,false
+GOKL0817,D6 Sentul,3.1805,101.6942,GOKL,GOKL08,true,valid,GOKL D6 Sentul,false,false
+GOKL0818,SJKC Sentul,3.1795,101.6948,GOKL,GOKL08,true,valid,GOKL SJKC Sentul,false,false
+GOKL0819,LRT Station Sentul,3.1788,101.6955,GOKL,GOKL08,true,valid,GOKL LRT Station Sentul,false,false
+GOKL0820,Orkid Tower UTC Sentul,3.1768,101.6961,GOKL,GOKL08,true,valid,GOKL Orkid Tower UTC Sentul,false,false
+GOKL0821,Amru Ibni Al-as Mosque,3.1742,101.6965,GOKL,GOKL08,true,valid,GOKL Amru Ibni Al-as Mosque,false,false
+GOKL0822,MAKPEM,3.1725,101.6968,GOKL,GOKL08,true,valid,GOKL MAKPEM,false,false
+GOKL0823,PPR Seri Terengganu,3.1712,101.6965,GOKL,GOKL08,true,valid,GOKL PPR Seri Terengganu,false,false
+GOKL0824,IPD Sentul (opp),3.1701,101.6961,GOKL,GOKL08,true,valid,GOKL IPD Sentul (opp),false,false
+GOKL0825,PERKIM (opp),3.1678,101.6955,GOKL,GOKL08,true,valid,GOKL PERKIM (opp),true,false
+GOKL0826,Hospital Damai,3.1678,101.6963,GOKL,GOKL08,true,valid,GOKL Hospital Damai,true,false
+GOKL0827,Shell Sultan Azlan Shah,3.1685,101.6945,GOKL,GOKL08,true,valid,GOKL Shell Sultan Azlan Shah,false,false
+GOKL0828,Monorail Station Chow Kit,3.1666,101.6983,GOKL,GOKL08,true,valid,GOKL Monorail Station Chow Kit,true,false
+GOKL0829,Chow Kit Market,3.1643,101.6989,GOKL,GOKL08,true,valid,GOKL Chow Kit Market,true,false
+GOKL0830,Tiong Nam,3.1641,101.6938,GOKL,GOKL08,true,valid,GOKL Tiong Nam,true,false
+GOKL0831,Chow Kit (North),3.1675,101.6985,GOKL,GOKL08,true,valid,GOKL Chow Kit (North),true,false
+GOKL0832,Hospital Damai (opp),3.1681,101.6961,GOKL,GOKL08,true,valid,GOKL Hospital Damai (opp),true,false
+GOKL0833,PERKIM PUSRAWI,3.1685,101.6960,GOKL,GOKL08,true,valid,GOKL PERKIM PUSRAWI,true,false
+GOKL0834,Dynasty Hotel,3.1695,101.6955,GOKL,GOKL08,true,valid,GOKL Dynasty Hotel,false,false
+GOKL0835,IPD Sentul,3.1705,101.6965,GOKL,GOKL08,true,valid,GOKL IPD Sentul,false,false
+GOKL0836,PPR Seri Terengganu (opp),3.1715,101.6968,GOKL,GOKL08,true,valid,GOKL PPR Seri Terengganu (opp),false,false
+GOKL0837,Wisma Health Lane,3.1755,101.6961,GOKL,GOKL08,true,valid,GOKL Wisma Health Lane,false,false
+GOKL0838,D7 Sentul,3.1812,101.6938,GOKL,GOKL08,true,valid,GOKL D7 Sentul,false,false
+GOKL0839,Sentul Boulevard (West),3.1864,101.6918,GOKL,GOKL08,true,valid,GOKL Sentul Boulevard (West),false,false
+GOKL0840,SMK Convent Sentul,3.1852,101.6915,GOKL,GOKL08,true,valid,GOKL SMK Convent Sentul,false,false
+GOKL0841,Pasar Sentul,3.1875,101.6905,GOKL,GOKL08,true,valid,GOKL Pasar Sentul,false,false
+GOKL0842,SK Sentul 2,3.1885,101.6901,GOKL,GOKL08,true,valid,GOKL SK Sentul 2,false,false
+GOKL0843,Sentul Pasar Dalam,3.1895,101.6895,GOKL,GOKL08,true,valid,GOKL Sentul Pasar Dalam,false,false
+GOKL0844,Sentul Village,3.1952,101.6932,GOKL,GOKL08,true,valid,GOKL Sentul Village,false,false
+GOKL0845,Darul Hidayah,3.1975,101.6925,GOKL,GOKL08,true,valid,GOKL Darul Hidayah,false,false
+GOKL0846,Genius Kurnia,3.2085,101.6865,GOKL,GOKL08,true,valid,GOKL Genius Kurnia,false,false
+GOKL0847,KEMAS,3.2112,101.6852,GOKL,GOKL08,true,valid,GOKL KEMAS,false,false
+GOKL0848,Taman Batu Muda Health Clinic (opp),3.2135,101.6888,GOKL,GOKL08,true,valid,GOKL Taman Batu Muda Health Clinic (opp),false,false
+GOKL0849,PPR Kampung Batu Muda,3.2125,101.6851,GOKL,GOKL08,true,valid,GOKL PPR Kampung Batu Muda,false,true
+GOKL0901,LRT Station Sri Rampai,3.1973,101.7371,GOKL,GOKL09,true,valid,GOKL LRT Station Sri Rampai,false,false
+GOKL0902,Wangsa Walk (opp),3.1991,101.7418,GOKL,GOKL09,true,valid,GOKL Wangsa Walk (opp),false,false
+GOKL0903,KL187 Flat Wangsa Maju Sec 4 (West),3.2015,101.7455,GOKL,GOKL09,true,valid,GOKL KL187 Flat Wangsa Maju Sec 4 (West),false,false
+GOKL0904,KL188 SK Wangsa Maju Sec 4 (West),3.2031,101.7468,GOKL,GOKL09,true,valid,GOKL KL188 SK Wangsa Maju Sec 4 (West),false,false
+GOKL0905,KL189 SK Wangsa Maju Sec 4 (East),3.2028,101.7485,GOKL,GOKL09,true,valid,GOKL KL189 SK Wangsa Maju Sec 4 (East),false,false
+GOKL0906,KL190 Flat Wangsa Maju Sec 4 (East),3.2012,101.7501,GOKL,GOKL09,true,valid,GOKL KL190 Flat Wangsa Maju Sec 4 (East),false,false
+GOKL0907,KL191 Flat Wangsa Maju Sec 4 (South),3.1985,101.7512,GOKL,GOKL09,true,valid,GOKL KL191 Flat Wangsa Maju Sec 4 (South),false,false
+GOKL0908,KL747 Wangsa Walk Mall (East),3.1982,101.7435,GOKL,GOKL09,true,valid,GOKL KL747 Wangsa Walk Mall (East),false,false
+GOKL0909,KL819 AEON BIG Wangsa Maju,3.1995,101.7462,GOKL,GOKL09,true,valid,GOKL KL819 AEON BIG Wangsa Maju,false,false
+GOKL0910,KL821 AEON BIG Wangsa Maju (opp),3.1998,101.7465,GOKL,GOKL09,true,valid,GOKL KL821 AEON BIG Wangsa Maju (opp),false,false
+GOKL0911,Wangsa Walk,3.1988,101.7425,GOKL,GOKL09,true,valid,GOKL Wangsa Walk,false,false
+GOKL0912,Wangsa Mas Residency,3.2025,101.7388,GOKL,GOKL09,true,valid,GOKL Wangsa Mas Residency,false,false
+GOKL0913,Infiniti 3,3.2012,101.7355,GOKL,GOKL09,true,valid,GOKL Infiniti 3,false,false
+GOKL0914,Fera Residence,3.1985,101.7345,GOKL,GOKL09,true,valid,GOKL Fera Residence,false,false
+GOKL0915,KL725 Rampai Court (South),3.1945,101.7312,GOKL,GOKL09,true,valid,GOKL KL725 Rampai Court (South),false,false
+GOKL0916,KL726 Taman Megah Setapak,3.1925,101.7305,GOKL,GOKL09,true,valid,GOKL KL726 Taman Megah Setapak,false,false
+GOKL0917,Abu Ubaidah Al-Jarrah Mosque,3.1905,101.7295,GOKL,GOKL09,true,valid,GOKL Abu Ubaidah Al-Jarrah Mosque,false,false
+GOKL0918,KL713 Taman Setapak Jaya (North),3.1912,101.7285,GOKL,GOKL09,true,valid,GOKL KL713 Taman Setapak Jaya (North),false,false
+GOKL0919,PPR Desa Rejang (opp),3.1918,101.7238,GOKL,GOKL09,true,valid,GOKL PPR Desa Rejang (opp),false,false
+GOKL0920,SMK Taman Sri Rampai,3.1965,101.7215,GOKL,GOKL09,true,valid,GOKL SMK Taman Sri Rampai,false,false
+GOKL0921,ITBM,3.1978,101.7225,GOKL,GOKL09,true,valid,GOKL ITBM,false,false
+GOKL0922,Medan Selera Sec 10,3.1995,101.7245,GOKL,GOKL09,true,valid,GOKL Medan Selera Sec 10,false,false
+GOKL0923,KL723 Darul Huda Mosque,3.1985,101.7265,GOKL,GOKL09,true,valid,GOKL KL723 Darul Huda Mosque,false,false
+GOKL0924,Season Garden,3.1965,101.7258,GOKL,GOKL09,true,valid,GOKL Season Garden,false,false
+GOKL0925,KL724 ITBM (opp),3.1975,101.7222,GOKL,GOKL09,true,valid,GOKL KL724 ITBM (opp),false,false
+GOKL0926,KL715 Wisma FELCRA,3.1982,101.7285,GOKL,GOKL09,true,valid,GOKL KL715 Wisma FELCRA,false,false
+GOKL0927,PPR Desa Rajang,3.1915,101.7241,GOKL,GOKL09,true,valid,GOKL PPR Desa Rajang,false,false
+GOKL0928,Abu Ubaidah Al-Jarrah Mosque (opp),3.1908,101.7298,GOKL,GOKL09,true,valid,GOKL Abu Ubaidah Al-Jarrah Mosque (opp),false,false
+GOKL0929,Medan Selera D-Rejang,3.1905,101.7255,GOKL,GOKL09,true,valid,GOKL Medan Selera D-Rejang,false,false
+GOKL0930,Wisma Rampai,3.1942,101.7325,GOKL,GOKL09,true,valid,GOKL Wisma Rampai,false,false
+GOKL0931,KL745 Rampai Court (opp),3.1948,101.7315,GOKL,GOKL09,true,valid,GOKL KL745 Rampai Court (opp),false,false
+GOKL0932,Sunway Avila,3.1962,101.7342,GOKL,GOKL09,true,valid,GOKL Sunway Avila,false,false
+GOKL0933,Villa Wangsamas,3.1985,101.7365,GOKL,GOKL09,true,valid,GOKL Villa Wangsamas,false,true
+GOKL1001,Maluri Terminal,3.1275,101.7288,GOKL,GOKL10,true,valid,GOKL Maluri Terminal,true,false
+GOKL1002,Sri Sabah Flat,3.1245,101.7275,GOKL,GOKL10,true,valid,GOKL Sri Sabah Flat,false,false
+GOKL1003,Sri Pulau Pinang Flat Block 13,3.1225,101.7255,GOKL,GOKL10,true,valid,GOKL Sri Pulau Pinang Flat Block 13,false,false
+GOKL1004,Indah Mas Apartments,3.1212,101.7235,GOKL,GOKL10,true,valid,GOKL Indah Mas Apartments,false,false
+GOKL1005,Sri Pulau Pinang Flat Block 1,3.1195,101.7215,GOKL,GOKL10,true,valid,GOKL Sri Pulau Pinang Flat Block 1,false,false
+GOKL1006,Azzubair Ibnul Awwam Mosque (opp),3.1182,101.7195,GOKL,GOKL10,true,valid,GOKL Azzubair Ibnul Awwam Mosque (opp),false,false
+GOKL1007,Cheras Grand Market,3.1185,101.7198,GOKL,GOKL10,true,valid,GOKL Cheras Grand Market,false,false
+GOKL1008,PA Sri Melaka (East),3.1155,101.7175,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka (East),false,false
+GOKL1009,PA Sri Melaka Block 26,3.1145,101.7168,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka Block 26,false,false
+GOKL1010,PA Sri Melaka (West),3.1142,101.7165,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka (West),false,false
+GOKL1011,PA Sri Melaka Block 12,3.1135,101.7158,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka Block 12,false,false
+GOKL1012,PA Sri Melaka Block 6,3.1128,101.7145,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka Block 6,false,false
+GOKL1013,PA Sri Melaka Block 4,3.1115,101.7135,GOKL,GOKL10,true,valid,GOKL PA Sri Melaka Block 4,false,false
+GOKL1014,Sri Mas Condo (opp),3.1095,101.7125,GOKL,GOKL10,true,valid,GOKL Sri Mas Condo (opp),false,false
+GOKL1015,Azzubair Ibnul Awwam Mosque,3.1188,101.7202,GOKL,GOKL10,true,valid,GOKL Azzubair Ibnul Awwam Mosque,false,false
+GOKL1016,SMK Sri Permaisuri,3.1075,101.7125,GOKL,GOKL10,true,valid,GOKL SMK Sri Permaisuri,false,false
+GOKL1017,Teknologi Pen Negeri WP,3.1065,101.7120,GOKL,GOKL10,true,valid,GOKL Teknologi Pen Negeri WP,false,false
+GOKL1018,Permaisuri Q Complex (opp),3.1055,101.7118,GOKL,GOKL10,true,valid,GOKL Permaisuri Q Complex (opp),false,false
+GOKL1019,Dwi Tasik Square,3.1042,101.7115,GOKL,GOKL10,true,valid,GOKL Dwi Tasik Square,false,false
+GOKL1020,SMK Seri Tasik (Hub),3.1018,101.7108,GOKL,GOKL10,true,valid,GOKL SMK Seri Tasik (Hub),true,false
+GOKL1021,Dwi Tasik Square (opp),3.1045,101.7112,GOKL,GOKL10,true,valid,GOKL Dwi Tasik Square (opp),false,false
+GOKL1022,Permaisuri Q Complex,3.1058,101.7115,GOKL,GOKL10,true,valid,GOKL Permaisuri Q Complex,false,false
+GOKL1023,Laman Tasik Condominium,3.1042,101.7085,GOKL,GOKL10,true,valid,GOKL Laman Tasik Condominium,false,false
+GOKL1024,Vista Tasik,3.1035,101.7072,GOKL,GOKL10,true,valid,GOKL Vista Tasik,false,false
+GOKL1025,Akasia Residency,3.1015,101.7055,GOKL,GOKL10,true,valid,GOKL Akasia Residency,false,false
+GOKL1026,Sri Permaisuri Police Station,3.1085,101.7085,GOKL,GOKL10,true,valid,GOKL Sri Permaisuri Police Station,false,false
+GOKL1027,Sri Johor Flat,3.1115,101.7125,GOKL,GOKL10,true,valid,GOKL Sri Johor Flat,false,false
+GOKL1028,LRT Station Cheras,3.1133,101.7153,GOKL,GOKL10,true,valid,GOKL LRT Station Cheras,false,false
+GOKL1029,Sri Johor Flat Block 29,3.1145,101.7162,GOKL,GOKL10,true,valid,GOKL Sri Johor Flat Block 29,false,false
+GOKL1030,Sri Johor Flat Block 13,3.1155,101.7185,GOKL,GOKL10,true,valid,GOKL Sri Johor Flat Block 13,false,false
+GOKL1031,Sri Johor Flat Block 3,3.1165,101.7195,GOKL,GOKL10,true,valid,GOKL Sri Johor Flat Block 3,false,false
+GOKL1032,Indah Mas Apartments (opp),3.1215,101.7238,GOKL,GOKL10,true,valid,GOKL Indah Mas Apartments (opp),false,false
+GOKL1033,Sri Pulau Pinang Flat Block 13 (opp),3.1228,101.7258,GOKL,GOKL10,true,valid,GOKL Sri Pulau Pinang Flat Block 13 (opp),false,false
+GOKL1034,Sri Sabah Flat Block 56,3.1255,101.7278,GOKL,GOKL10,true,valid,GOKL Sri Sabah Flat Block 56,false,false
+GOKL1035,Vertica KL City,3.1265,101.7285,GOKL,GOKL10,true,valid,GOKL Vertica KL City,true,false
+GOKL1036,MRT Station Maluri Gate B,3.1274,101.7291,GOKL,GOKL10,true,valid,GOKL MRT Station Maluri Gate B,true,true
+GOKL1101,MRT Station Maluri Gate D,3.1278,101.7295,GOKL,GOKL11,true,valid,GOKL MRT Station Maluri Gate D,true,false
+GOKL1102,Illi Kuala Lumpur,3.1255,101.7265,GOKL,GOKL11,true,valid,GOKL Illi Kuala Lumpur,false,false
+GOKL1103,Darul Puteri Complex,3.1235,101.7245,GOKL,GOKL11,true,valid,GOKL Darul Puteri Complex,false,false
+GOKL1104,Velodrome KL,3.1155,101.7285,GOKL,GOKL11,true,valid,GOKL Velodrome KL,false,false
+GOKL1105,Cheras Health Clinic,3.1112,101.7255,GOKL,GOKL11,true,valid,GOKL Cheras Health Clinic,false,false
+GOKL1106,SM Teknik Kuala Lumpur (opp),3.1095,101.7245,GOKL,GOKL11,true,valid,GOKL SM Teknik Kuala Lumpur (opp),false,false
+GOKL1107,UKM Medical Centre,3.1044,101.7225,GOKL,GOKL11,true,valid,GOKL UKM Medical Centre,true,false
+GOKL1108,Renang Cheras Club (opp),3.1048,101.7242,GOKL,GOKL11,true,valid,GOKL Renang Cheras Club (opp),false,false
+GOKL1109,International Youth Centre (opp),3.1035,101.7245,GOKL,GOKL11,true,valid,GOKL International Youth Centre (opp),false,false
+GOKL1110,DBKL Training Institute (opp),3.1025,101.7248,GOKL,GOKL11,true,valid,GOKL DBKL Training Institute (opp),false,false
+GOKL1111,BTR Firestation,3.1015,101.7245,GOKL,GOKL11,true,valid,GOKL BTR Firestation,false,false
+GOKL1112,Saidina Othman Mosque (opp),3.1028,101.7185,GOKL,GOKL11,true,valid,GOKL Saidina Othman Mosque (opp),true,false
+GOKL1113,Vista Amani,3.0995,101.7155,GOKL,GOKL11,true,valid,GOKL Vista Amani,false,false
+GOKL1114,Cendana Apartments,3.1012,101.7145,GOKL,GOKL11,true,valid,GOKL Cendana Apartments,false,false
+GOKL1115,SMK Seri Tasik,3.1018,101.7108,GOKL,GOKL11,true,valid,GOKL SMK Seri Tasik,true,false
+GOKL1116,Cendana Apartments (opp),3.1015,101.7148,GOKL,GOKL11,true,valid,GOKL Cendana Apartments (opp),false,false
+GOKL1117,Pustaka KL,3.1025,101.7165,GOKL,GOKL11,true,valid,GOKL Pustaka KL,false,false
+GOKL1118,Vista Amani (opp),3.0998,101.7158,GOKL,GOKL11,true,valid,GOKL Vista Amani (opp),false,false
+GOKL1119,Saidina Othman Mosque,3.1025,101.7188,GOKL,GOKL11,true,valid,GOKL Saidina Othman Mosque,true,false
+GOKL1120,Desa Bangsawan Apartments,3.1035,101.7195,GOKL,GOKL11,true,valid,GOKL Desa Bangsawan Apartments,true,false
+GOKL1121,Sri Labuan Flat,3.1045,101.7205,GOKL,GOKL11,true,valid,GOKL Sri Labuan Flat,true,false
+GOKL1122,DBKL Training Institute,3.1022,101.7245,GOKL,GOKL11,true,valid,GOKL DBKL Training Institute,false,false
+GOKL1123,International Youth Centre,3.1032,101.7242,GOKL,GOKL11,true,valid,GOKL International Youth Centre,false,false
+GOKL1124,Football Stadium,3.1055,101.7225,GOKL,GOKL11,true,valid,GOKL Football Stadium,false,false
+GOKL1125,SM Teknik Kuala Lumpur,3.1098,101.7248,GOKL,GOKL11,true,valid,GOKL SM Teknik Kuala Lumpur,false,false
+GOKL1126,Cheras Health Clinic (opp),3.1115,101.7258,GOKL,GOKL11,true,valid,GOKL Cheras Health Clinic (opp),false,false
+GOKL1127,Velodrome KL (opp),3.1158,101.7288,GOKL,GOKL11,true,valid,GOKL Velodrome KL (opp),false,false
+GOKL1128,Sri Sabah Flat,3.1245,101.7275,GOKL,GOKL11,true,valid,GOKL Sri Sabah Flat,false,false
+GOKL1129,Vertica KL City,3.1265,101.7285,GOKL,GOKL11,true,valid,GOKL Vertica KL City,true,false
+GOKL1130,MRT Station Maluri Gate B,3.1274,101.7291,GOKL,GOKL11,true,valid,GOKL MRT Station Maluri Gate B,true,false
+GOKL1131,Sunway Velocity (opp),3.1285,101.7258,GOKL,GOKL11,true,valid,GOKL Sunway Velocity (opp),false,false
+GOKL1132,Queens Avenue Plaza 393,3.1315,101.7245,GOKL,GOKL11,true,valid,GOKL Queens Avenue Plaza 393,false,false
+GOKL1133,MRT Station Cochrane,3.1328,101.7231,GOKL,GOKL11,true,valid,GOKL MRT Station Cochrane,false,false
+GOKL1134,Wisma Indah,3.1335,101.7215,GOKL,GOKL11,true,valid,GOKL Wisma Indah,false,false
+GOKL1135,Warisan City View (opp),3.1295,101.7242,GOKL,GOKL11,true,valid,GOKL Warisan City View (opp),false,false
+GOKL1136,Sunway Velocity Residence,3.1275,101.7265,GOKL,GOKL11,true,valid,GOKL Sunway Velocity Residence,false,true
+GOKL1201,Taman Fadason Hub,3.2185,101.6558,GOKL,GOKL12,true,valid,GOKL Taman Fadason Hub,false,false
+GOKL1202,Mutiara Fadason Flat,3.2205,101.6565,GOKL,GOKL12,true,valid,GOKL Mutiara Fadason Flat,false,false
+GOKL1203,Rimbunan Melati,3.2215,101.6545,GOKL,GOKL12,true,valid,GOKL Rimbunan Melati,false,false
+GOKL1204,The Beat @ Kiara Bay,3.2235,101.6521,GOKL,GOKL12,true,valid,GOKL The Beat @ Kiara Bay,false,false
+GOKL1205,AVA Residency Kiara Bay,3.2245,101.6515,GOKL,GOKL12,true,valid,GOKL AVA Residency Kiara Bay,false,false
+GOKL1206,Jinjang Health Clinic,3.2185,101.6595,GOKL,GOKL12,true,valid,GOKL Jinjang Health Clinic,false,false
+GOKL1207,PPR Beringin,3.2212,101.6612,GOKL,GOKL12,true,valid,GOKL PPR Beringin,false,false
+GOKL1208,SK LA Salle Jinjang,3.2165,101.6635,GOKL,GOKL12,true,valid,GOKL SK LA Salle Jinjang,false,false
+GOKL1209,Kepong Health Centre,3.2145,101.6645,GOKL,GOKL12,true,valid,GOKL Kepong Health Centre,false,false
+GOKL1210,Jinjang Chinese Centre (opp),3.2085,101.6655,GOKL,GOKL12,true,valid,GOKL Jinjang Chinese Centre (opp),false,false
+GOKL1211,MRT Station Sri Delima,3.2064,101.6665,GOKL,GOKL12,true,valid,GOKL MRT Station Sri Delima,false,false
+GOKL1212,Brem Mall Kepong,3.2035,101.6655,GOKL,GOKL12,true,valid,GOKL Brem Mall Kepong,false,false
+GOKL1213,Jinjang Chinese Centre,3.2088,101.6658,GOKL,GOKL12,true,valid,GOKL Jinjang Chinese Centre,false,false
+GOKL1214,DBKL Kepong Branch Office,3.2125,101.6648,GOKL,GOKL12,true,valid,GOKL DBKL Kepong Branch Office,false,false
+GOKL1215,PMU Jinjang,3.2115,101.6615,GOKL,GOKL12,true,valid,GOKL PMU Jinjang,true,false
+GOKL1216,Kepong Commercial Centre,3.2135,101.6595,GOKL,GOKL12,true,valid,GOKL Kepong Commercial Centre,true,false
+GOKL1217,KWSP Kepong,3.2155,101.6585,GOKL,GOKL12,true,valid,GOKL KWSP Kepong,false,false
+GOKL1218,Taman Jinjang Utara (opp),3.2175,101.6575,GOKL,GOKL12,true,valid,GOKL Taman Jinjang Utara (opp),false,false
+GOKL1219,Taman Tasik Metropolitan Kepong,3.2195,101.6495,GOKL,GOKL12,true,valid,GOKL Taman Tasik Metropolitan Kepong,false,false
+GOKL1220,The Henge Kepong,3.2188,101.6482,GOKL,GOKL12,true,valid,GOKL The Henge Kepong,false,false
+GOKL1221,Taman Usahawan Kepong,3.2165,101.6455,GOKL,GOKL12,true,valid,GOKL Taman Usahawan Kepong,false,false
+GOKL1222,Laman Rimbunan Kepong,3.2155,101.6435,GOKL,GOKL12,true,valid,GOKL Laman Rimbunan Kepong,false,true
+GOKL1301,MRT Station Jinjang,3.2098,101.6588,GOKL,GOKL13,true,valid,GOKL MRT Station Jinjang,false,false
+GOKL1302,PMU Jinjang,3.2115,101.6615,GOKL,GOKL13,true,valid,GOKL PMU Jinjang,true,false
+GOKL1303,Kepong Commercial Centre,3.2135,101.6595,GOKL,GOKL13,true,valid,GOKL Kepong Commercial Centre,true,false
+GOKL1304,Madrasah Al-Islah Kepong,3.2145,101.6575,GOKL,GOKL13,true,valid,GOKL Madrasah Al-Islah Kepong,false,false
+GOKL1305,Jalan Api-Api Housing,3.2085,101.6525,GOKL,GOKL13,true,valid,GOKL Jalan Api-Api Housing,false,false
+GOKL1306,Kepong Baru,3.2045,101.6515,GOKL,GOKL13,true,valid,GOKL Kepong Baru,false,false
+GOKL1307,Taman Sri Segambut,3.1985,101.6542,GOKL,GOKL13,true,valid,GOKL Taman Sri Segambut,false,false
+GOKL1308,Sungai Udang Residency (opp),3.1925,101.6755,GOKL,GOKL13,true,valid,GOKL Sungai Udang Residency (opp),false,false
+GOKL1309,KTM Station Segambut,3.1864,101.6802,GOKL,GOKL13,true,valid,GOKL KTM Station Segambut,true,false
+GOKL1310,Segambut SPPK Flat (opp),3.1825,101.6825,GOKL,GOKL13,true,valid,GOKL Segambut SPPK Flat (opp),false,false
+GOKL1311,Jalan Duta Government Quarters,3.1785,101.6755,GOKL,GOKL13,true,valid,GOKL Jalan Duta Government Quarters,false,false
+GOKL1312,MATRADE,3.1785,101.6685,GOKL,GOKL13,true,valid,GOKL MATRADE,false,false
+GOKL1313,Medan Selera Jalan Duta,3.1775,101.6692,GOKL,GOKL13,true,valid,GOKL Medan Selera Jalan Duta,false,false
+GOKL1314,Masjid Wilayah,3.1765,101.6698,GOKL,GOKL13,true,valid,GOKL Masjid Wilayah,false,false
+GOKL1315,Syariah Court Kuala Lumpur,3.1745,101.6685,GOKL,GOKL13,true,valid,GOKL Syariah Court Kuala Lumpur,false,false
+GOKL1316,Publika (opp),3.1705,101.6657,GOKL,GOKL13,true,valid,GOKL Publika (opp),false,false
+GOKL1317,SK Kiara Mas,3.1685,101.6645,GOKL,GOKL13,true,valid,GOKL SK Kiara Mas,false,false
+GOKL1318,Duta Kensington,3.1655,101.6625,GOKL,GOKL13,true,valid,GOKL Duta Kensington,false,false
+GOKL1319,Changkat Kiara (opp),3.1715,101.6585,GOKL,GOKL13,true,valid,GOKL Changkat Kiara (opp),false,false
+GOKL1320,Segambut SPPK Flat,3.1828,101.6828,GOKL,GOKL13,true,valid,GOKL Segambut SPPK Flat,false,false
+GOKL1321,KTM Station Segambut,3.1864,101.6802,GOKL,GOKL13,true,valid,GOKL KTM Station Segambut,true,false
+GOKL1322,Taman Sejahtera (opp),3.1915,101.6745,GOKL,GOKL13,true,valid,GOKL Taman Sejahtera (opp),false,false
+GOKL1323,Sungai Udang Residency,3.1928,101.6758,GOKL,GOKL13,true,valid,GOKL Sungai Udang Residency,false,false
+GOKL1324,Temple Maramman (opp),3.1945,101.6685,GOKL,GOKL13,true,valid,GOKL Temple Maramman (opp),false,false
+GOKL1325,Green View Apartments,3.1965,101.6655,GOKL,GOKL13,true,valid,GOKL Green View Apartments,false,true
+GOKL1401,Muhibbah Complex,3.0635,101.6635,GOKL,GOKL14,true,valid,GOKL Muhibbah Complex,false,false
+GOKL1402,LRT Station Muhibbah,3.0620,101.6625,GOKL,GOKL14,true,valid,GOKL LRT Station Muhibbah,true,false
+GOKL1403,Bukit OUG Condominium,3.0612,101.6615,GOKL,GOKL14,true,valid,GOKL Bukit OUG Condominium,false,false
+GOKL1404,Green Avenue,3.0585,101.6645,GOKL,GOKL14,true,valid,GOKL Green Avenue,false,false
+GOKL1405,The Link 2 Bukit Jalil,3.0535,101.6735,GOKL,GOKL14,true,valid,GOKL The Link 2 Bukit Jalil,false,false
+GOKL1406,Pavilion Bukit Jalil (opp),3.0518,101.6708,GOKL,GOKL14,true,valid,GOKL Pavilion Bukit Jalil (opp),false,false
+GOKL1407,Bukit Jalil Police Station (opp),3.0495,101.6685,GOKL,GOKL14,true,valid,GOKL Bukit Jalil Police Station (opp),false,false
+GOKL1408,Alam Sutera,3.0478,101.6652,GOKL,GOKL14,true,valid,GOKL Alam Sutera,false,false
+GOKL1409,Taman LTAT,3.0455,101.6635,GOKL,GOKL14,true,valid,GOKL Taman LTAT,false,false
+GOKL1410,Paragon Heights (opp),3.0435,101.6625,GOKL,GOKL14,true,valid,GOKL Paragon Heights (opp),false,false
+GOKL1411,PPR Pinggiran Bukit Jalil,3.0425,101.6618,GOKL,GOKL14,true,valid,GOKL PPR Pinggiran Bukit Jalil,false,false
+GOKL1412,Seri Ceria Apartments,3.0415,101.6605,GOKL,GOKL14,true,valid,GOKL Seri Ceria Apartments,false,false
+GOKL1413,PPR Pinggiran Bukit Jalil (opp),3.0428,101.6621,GOKL,GOKL14,true,valid,GOKL PPR Pinggiran Bukit Jalil (opp),false,false
+GOKL1414,Paragon Heights,3.0438,101.6628,GOKL,GOKL14,true,valid,GOKL Paragon Heights,false,false
+GOKL1415,Impiana Sky Residence,3.0455,101.6645,GOKL,GOKL14,true,valid,GOKL Impiana Sky Residence,false,false
+GOKL1416,Pavillion Bukit Jalil (Virtual),3.0514,101.6705,GOKL,GOKL14,true,valid,GOKL Pavillion Bukit Jalil (Virtual),false,false
+GOKL1417,The Park Bukit Jalil,3.0525,101.6685,GOKL,GOKL14,true,valid,GOKL The Park Bukit Jalil,false,false
+GOKL1418,Treez Condo,3.0545,101.6655,GOKL,GOKL14,true,valid,GOKL Treez Condo,false,false
+GOKL1419,Green Avenue Condominium (opp),3.0588,101.6648,GOKL,GOKL14,true,valid,GOKL Green Avenue Condominium (opp),false,false
+GOKL1420,Waltz Residences,3.0625,101.6675,GOKL,GOKL14,true,valid,GOKL Waltz Residences,false,false
+GOKL1421,Taman Yarl Timur (opp),3.0655,101.6685,GOKL,GOKL14,true,valid,GOKL Taman Yarl Timur (opp),false,false
+GOKL1422,SK Seri Mega (opp),3.0675,101.6695,GOKL,GOKL14,true,valid,GOKL SK Seri Mega (opp),false,false
+GOKL1423,Plaza OUG (opp),3.0715,101.6725,GOKL,GOKL14,true,valid,GOKL Plaza OUG (opp),false,false
+GOKL1424,Taman Yarl Utara,3.0725,101.6685,GOKL,GOKL14,true,valid,GOKL Taman Yarl Utara,false,false
+GOKL1425,Abdul Rahman Mosque,3.0745,101.6655,GOKL,GOKL14,true,valid,GOKL Abdul Rahman Mosque,false,false
+GOKL1426,Pangsapuri Sri Jati,3.0725,101.6625,GOKL,GOKL14,true,valid,GOKL Pangsapuri Sri Jati,false,false
+GOKL1427,SMK Dharma,3.0715,101.6605,GOKL,GOKL14,true,valid,GOKL SMK Dharma,false,false
+GOKL1428,Shell Taman Kuchai,3.0695,101.6585,GOKL,GOKL14,true,valid,GOKL Shell Taman Kuchai,false,false
+GOKL1429,Az Zahra Mosque,3.0685,101.6575,GOKL,GOKL14,true,valid,GOKL Az Zahra Mosque,false,false
+GOKL1430,OUG Parklane,3.0658,101.6585,GOKL,GOKL14,true,valid,GOKL OUG Parklane,false,true
+GOKL1501,Prima Alam Damai Hub (opp),3.0785,101.7515,GOKL,GOKL15,true,valid,GOKL Prima Alam Damai Hub (opp),false,false
+GOKL1502,Pangsapuri Seri Perindu,3.0755,101.7545,GOKL,GOKL15,true,valid,GOKL Pangsapuri Seri Perindu,false,false
+GOKL1503,Taman Desa Cheras Flat Block 11,3.0735,101.7565,GOKL,GOKL15,true,valid,GOKL Taman Desa Cheras Flat Block 11,false,false
+GOKL1504,Taman Desa Cheras Flat Block 5,3.0725,101.7575,GOKL,GOKL15,true,valid,GOKL Taman Desa Cheras Flat Block 5,false,false
+GOKL1505,SMK Alam Damai,3.0765,101.7565,GOKL,GOKL15,true,valid,GOKL SMK Alam Damai,false,false
+GOKL1506,SK Alam Damai,3.0775,101.7555,GOKL,GOKL15,true,valid,GOKL SK Alam Damai,false,false
+GOKL1507,Alam Damai Event Hall,3.0795,101.7535,GOKL,GOKL15,true,valid,GOKL Alam Damai Event Hall,false,false
+GOKL1508,Jalan Damai Puspa 6,3.0785,101.7485,GOKL,GOKL15,true,valid,GOKL Jalan Damai Puspa 6,false,false
+GOKL1509,Madrasah Ehsaniah (opp),3.0765,101.7455,GOKL,GOKL15,true,valid,GOKL Madrasah Ehsaniah (opp),false,false
+GOKL1510,Taman Bukit Anggerik,3.0805,101.7435,GOKL,GOKL15,true,valid,GOKL Taman Bukit Anggerik,false,false
+GOKL1511,Petronas Alam Damai,3.0825,101.7485,GOKL,GOKL15,true,valid,GOKL Petronas Alam Damai,false,false
+GOKL1512,Jalan 4 Stop (South),3.0855,101.7445,GOKL,GOKL15,true,valid,GOKL Jalan 4 Stop (South),false,false
+GOKL1513,Taman Len Seng Commercial Centre,3.0885,101.7425,GOKL,GOKL15,true,valid,GOKL Taman Len Seng Commercial Centre,false,false
+GOKL1514,Majestic Maxim Residency (opp),3.0905,101.7415,GOKL,GOKL15,true,valid,GOKL Majestic Maxim Residency (opp),false,false
+GOKL1515,Mandarina Court,3.0915,101.7405,GOKL,GOKL15,true,valid,GOKL Mandarina Court,false,false
+GOKL1516,SMK Orkid Desa (opp),3.0935,101.7395,GOKL,GOKL15,true,valid,GOKL SMK Orkid Desa (opp),false,false
+GOKL1517,Altitude Condo,3.0945,101.7385,GOKL,GOKL15,true,valid,GOKL Altitude Condo,false,false
+GOKL1518,Le Quadri Hotel,3.0905,101.7355,GOKL,GOKL15,true,valid,GOKL Le Quadri Hotel,false,false
+GOKL1519,Puncak Bayan Condo,3.0885,101.7345,GOKL,GOKL15,true,valid,GOKL Puncak Bayan Condo,false,false
+GOKL1520,Perindustrian Desa Tun Razak,3.0855,101.7325,GOKL,GOKL15,true,valid,GOKL Perindustrian Desa Tun Razak,false,false
+GOKL1521,Persiaran Mewah (North),3.0985,101.7285,GOKL,GOKL15,true,valid,GOKL Persiaran Mewah (North),false,false
+GOKL1522,Simpang Mewah 12,3.1015,101.7275,GOKL,GOKL15,true,valid,GOKL Simpang Mewah 12,false,false
+GOKL1523,Simpang Bangsawan,3.1035,101.7265,GOKL,GOKL15,true,valid,GOKL Simpang Bangsawan,false,false
+GOKL1524,Simpang Ikhlas 5,3.1055,101.7255,GOKL,GOKL15,true,valid,GOKL Simpang Ikhlas 5,false,false
+GOKL1525,PA Seri Kota,3.1065,101.7245,GOKL,GOKL15,true,valid,GOKL PA Seri Kota,false,false
+GOKL1526,Taman Mulia Flat (1),3.1025,101.7205,GOKL,GOKL15,true,valid,GOKL Taman Mulia Flat (1),true,false
+GOKL1527,Taman Mulia Flat (2),3.1015,101.7195,GOKL,GOKL15,true,valid,GOKL Taman Mulia Flat (2),true,false
+GOKL1528,Taman Mulia,3.1012,101.7185,GOKL,GOKL15,true,valid,GOKL Taman Mulia,true,false
+GOKL1529,Saidina Othman Mosque,3.1025,101.7188,GOKL,GOKL15,true,valid,GOKL Saidina Othman Mosque,true,false
+GOKL1530,Desa Bangsawan Apartments,3.1035,101.7195,GOKL,GOKL15,true,valid,GOKL Desa Bangsawan Apartments,true,false
+GOKL1531,PA Seri Labuan,3.1045,101.7205,GOKL,GOKL15,true,valid,GOKL PA Seri Labuan,true,false
+GOKL1532,DBKL Training Institute,3.1022,101.7245,GOKL,GOKL15,true,valid,GOKL DBKL Training Institute,true,false
+GOKL1533,International Youth Centre,3.1032,101.7242,GOKL,GOKL15,true,valid,GOKL International Youth Centre,true,false
+GOKL1534,HCTM (Final Stop),3.1042,101.7230,GOKL,GOKL15,true,valid,GOKL HCTM (Final Stop),true,false
+GOKL1535,Cheras Swimming Club (opp),3.1048,101.7242,GOKL,GOKL15,true,valid,GOKL Cheras Swimming Club (opp),true,false
+GOKL1536,The Holmes 2,3.1025,101.7255,GOKL,GOKL15,true,valid,GOKL The Holmes 2,false,false
+GOKL1537,Saidina Othman Mosque (opp),3.1028,101.7185,GOKL,GOKL15,true,valid,GOKL Saidina Othman Mosque (opp),true,false
+GOKL1538,Taman Mulia (opp),3.1015,101.7182,GOKL,GOKL15,true,valid,GOKL Taman Mulia (opp),true,false
+GOKL1539,Seri Kota Flat (opp),3.1068,101.7248,GOKL,GOKL15,true,valid,GOKL Seri Kota Flat (opp),false,false
+GOKL1540,Al Amin Mosque (opp),3.1045,101.7235,GOKL,GOKL15,true,valid,GOKL Al Amin Mosque (opp),false,false
+GOKL1541,Simpang Makmur 6,3.0975,101.7285,GOKL,GOKL15,true,valid,GOKL Simpang Makmur 6,false,false
+GOKL1542,Simpang Jujur 4,3.0945,101.7305,GOKL,GOKL15,true,valid,GOKL Simpang Jujur 4,false,false
+GOKL1543,Perindustrian BTR (PUSPAKOM),3.0925,101.7315,GOKL,GOKL15,true,valid,GOKL Perindustrian BTR (PUSPAKOM),false,false
+GOKL1544,Angkasa Condo,3.0845,101.7345,GOKL,GOKL15,true,valid,GOKL Angkasa Condo,false,false
+GOKL1545,UCSI Universiti,3.0815,101.7335,GOKL,GOKL15,true,valid,GOKL UCSI Universiti,false,false
+GOKL1546,SMK Orkid Desa,3.0938,101.7398,GOKL,GOKL15,true,valid,GOKL SMK Orkid Desa,false,false
+GOKL1547,Majestic Maxim Residency,3.0908,101.7418,GOKL,GOKL15,true,valid,GOKL Majestic Maxim Residency,false,false
+GOKL1548,Taman Len Seng,3.0888,101.7428,GOKL,GOKL15,true,valid,GOKL Taman Len Seng,false,false
+GOKL1549,Petronas Alam Damai (opp),3.0828,101.7488,GOKL,GOKL15,true,valid,GOKL Petronas Alam Damai (opp),false,false
+GOKL1550,Taman Bukit Anggerik Flat,3.0802,101.7432,GOKL,GOKL15,true,valid,GOKL Taman Bukit Anggerik Flat,false,false
+GOKL1551,Taman Bukit Anggerik (North),3.0815,101.7445,GOKL,GOKL15,true,valid,GOKL Taman Bukit Anggerik (North),false,false
+GOKL1552,Taman Bukit Anggerik (South),3.0795,101.7425,GOKL,GOKL15,true,valid,GOKL Taman Bukit Anggerik (South),false,false
+GOKL1553,Alam Damai Event Hall (opp),3.0798,101.7538,GOKL,GOKL15,true,valid,GOKL Alam Damai Event Hall (opp),false,true

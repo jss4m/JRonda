@@ -1,4 +1,15 @@
-// normalize-bus.js
+/**
+ * normalize-bus.js
+ * 
+ * Reads Rapid Bus GTFS ZIP files and normalizes stops into a
+ * canonical schema for downstream rendering and routing.
+ * 
+ * Input: data-build/raw-GTFS/*.zip
+ * Output: data-build/normalized/bus_stops.json
+ * 
+ * NOTE: Renderer must never read GTFS directly.
+ */
+
 const fs = require("fs");
 const path = require("path");
 const AdmZip = require("adm-zip");
