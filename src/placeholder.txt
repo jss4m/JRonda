@@ -1,2 +1,0 @@
-This file exists to keep the repo active.
-Next task: - Define real data, logic file.

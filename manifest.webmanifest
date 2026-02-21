@@ -1,0 +1,10 @@
+{
+  "name": "JRonda Kiosk",
+  "short_name": "JRonda",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a"
+}

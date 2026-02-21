@@ -28,6 +28,9 @@ let js = "export const rapidbus = [\n";
 for (const route of routesJSON) {
   const {
     route_id,
+    route_public_name = route_id,
+    route_short_name = null,
+    route_long_name = null,
     isLoop,
     route_color = null,
     stops
@@ -49,6 +52,9 @@ for (const route of routesJSON) {
     stop_lon: ${stop.stop_lon},
     category: "rapidbus",
     route_id: "${route_id}",
+    route_public_name: ${JSON.stringify(route_public_name)},
+    route_short_name: ${route_short_name ? JSON.stringify(route_short_name) : "null"},
+    route_long_name: ${route_long_name ? JSON.stringify(route_long_name) : "null"},
     seq: ${s.seq},
     isLoop: ${isLoop},
     route_color: ${route_color ? `"${route_color}"` : "null"},

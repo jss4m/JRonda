@@ -1,0 +1,2138 @@
+[
+  {
+    "route_id": "AG",
+    "mode": "rail",
+    "category": "LRT",
+    "route_color": "e57200",
+    "route_short_name": "AGL",
+    "route_long_name": "LRT Ampang Line",
+    "route_public_name": "AGL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "AG18",
+        "seq": 1
+      },
+      {
+        "stop_id": "AG17",
+        "seq": 2
+      },
+      {
+        "stop_id": "AG16",
+        "seq": 3
+      },
+      {
+        "stop_id": "AG15",
+        "seq": 4
+      },
+      {
+        "stop_id": "AG14",
+        "seq": 5
+      },
+      {
+        "stop_id": "AG13",
+        "seq": 6
+      },
+      {
+        "stop_id": "AG12",
+        "seq": 7
+      },
+      {
+        "stop_id": "AG11",
+        "seq": 8
+      },
+      {
+        "stop_id": "AG10",
+        "seq": 9
+      },
+      {
+        "stop_id": "AG9",
+        "seq": 10
+      },
+      {
+        "stop_id": "AG8",
+        "seq": 11
+      },
+      {
+        "stop_id": "AG7",
+        "seq": 12
+      },
+      {
+        "stop_id": "AG6",
+        "seq": 13
+      },
+      {
+        "stop_id": "AG5",
+        "seq": 14
+      },
+      {
+        "stop_id": "AG4",
+        "seq": 15
+      },
+      {
+        "stop_id": "AG3",
+        "seq": 16
+      },
+      {
+        "stop_id": "AG2",
+        "seq": 17
+      },
+      {
+        "stop_id": "AG1",
+        "seq": 18
+      }
+    ]
+  },
+  {
+    "route_id": "KJ",
+    "mode": "rail",
+    "category": "LRT",
+    "route_color": "D50032",
+    "route_short_name": "KJL",
+    "route_long_name": "LRT Kelana Jaya Line",
+    "route_public_name": "KJL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "KJ37",
+        "seq": 1
+      },
+      {
+        "stop_id": "KJ36",
+        "seq": 2
+      },
+      {
+        "stop_id": "KJ35",
+        "seq": 3
+      },
+      {
+        "stop_id": "KJ34",
+        "seq": 4
+      },
+      {
+        "stop_id": "KJ33",
+        "seq": 5
+      },
+      {
+        "stop_id": "KJ32",
+        "seq": 6
+      },
+      {
+        "stop_id": "KJ31",
+        "seq": 7
+      },
+      {
+        "stop_id": "KJ30",
+        "seq": 8
+      },
+      {
+        "stop_id": "KJ29",
+        "seq": 9
+      },
+      {
+        "stop_id": "KJ28",
+        "seq": 10
+      },
+      {
+        "stop_id": "KJ27",
+        "seq": 11
+      },
+      {
+        "stop_id": "KJ26",
+        "seq": 12
+      },
+      {
+        "stop_id": "KJ25",
+        "seq": 13
+      },
+      {
+        "stop_id": "KJ24",
+        "seq": 14
+      },
+      {
+        "stop_id": "KJ23",
+        "seq": 15
+      },
+      {
+        "stop_id": "KJ22",
+        "seq": 16
+      },
+      {
+        "stop_id": "KJ21",
+        "seq": 17
+      },
+      {
+        "stop_id": "KJ20",
+        "seq": 18
+      },
+      {
+        "stop_id": "KJ19",
+        "seq": 19
+      },
+      {
+        "stop_id": "KJ18",
+        "seq": 20
+      },
+      {
+        "stop_id": "KJ17",
+        "seq": 21
+      },
+      {
+        "stop_id": "KJ16",
+        "seq": 22
+      },
+      {
+        "stop_id": "KJ15",
+        "seq": 23
+      },
+      {
+        "stop_id": "KJ14",
+        "seq": 24
+      },
+      {
+        "stop_id": "KJ13",
+        "seq": 25
+      },
+      {
+        "stop_id": "KJ12",
+        "seq": 26
+      },
+      {
+        "stop_id": "KJ11",
+        "seq": 27
+      },
+      {
+        "stop_id": "KJ10",
+        "seq": 28
+      },
+      {
+        "stop_id": "KJ9",
+        "seq": 29
+      },
+      {
+        "stop_id": "KJ8",
+        "seq": 30
+      },
+      {
+        "stop_id": "KJ7",
+        "seq": 31
+      },
+      {
+        "stop_id": "KJ6",
+        "seq": 32
+      },
+      {
+        "stop_id": "KJ5",
+        "seq": 33
+      },
+      {
+        "stop_id": "KJ4",
+        "seq": 34
+      },
+      {
+        "stop_id": "KJ3",
+        "seq": 35
+      },
+      {
+        "stop_id": "KJ2",
+        "seq": 36
+      },
+      {
+        "stop_id": "KJ1",
+        "seq": 37
+      }
+    ]
+  },
+  {
+    "route_id": "PH",
+    "mode": "rail",
+    "category": "LRT",
+    "route_color": "76232f",
+    "route_short_name": "SPL",
+    "route_long_name": "LRT Sri Petaling Line",
+    "route_public_name": "SPL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "SP31",
+        "seq": 1
+      },
+      {
+        "stop_id": "SP29",
+        "seq": 2
+      },
+      {
+        "stop_id": "SP28",
+        "seq": 3
+      },
+      {
+        "stop_id": "SP27",
+        "seq": 4
+      },
+      {
+        "stop_id": "SP26",
+        "seq": 5
+      },
+      {
+        "stop_id": "SP25",
+        "seq": 6
+      },
+      {
+        "stop_id": "SP24",
+        "seq": 7
+      },
+      {
+        "stop_id": "SP22",
+        "seq": 8
+      },
+      {
+        "stop_id": "SP21",
+        "seq": 9
+      },
+      {
+        "stop_id": "SP20",
+        "seq": 10
+      },
+      {
+        "stop_id": "SP19",
+        "seq": 11
+      },
+      {
+        "stop_id": "SP18",
+        "seq": 12
+      },
+      {
+        "stop_id": "SP17",
+        "seq": 13
+      },
+      {
+        "stop_id": "SP16",
+        "seq": 14
+      },
+      {
+        "stop_id": "SP15",
+        "seq": 15
+      },
+      {
+        "stop_id": "SP14",
+        "seq": 16
+      },
+      {
+        "stop_id": "SP13",
+        "seq": 17
+      },
+      {
+        "stop_id": "SP12",
+        "seq": 18
+      },
+      {
+        "stop_id": "SP11",
+        "seq": 19
+      },
+      {
+        "stop_id": "SP10",
+        "seq": 20
+      },
+      {
+        "stop_id": "SP9",
+        "seq": 21
+      },
+      {
+        "stop_id": "SP8",
+        "seq": 22
+      },
+      {
+        "stop_id": "SP7",
+        "seq": 23
+      },
+      {
+        "stop_id": "SP6",
+        "seq": 24
+      },
+      {
+        "stop_id": "SP5",
+        "seq": 25
+      },
+      {
+        "stop_id": "SP4",
+        "seq": 26
+      },
+      {
+        "stop_id": "SP3",
+        "seq": 27
+      },
+      {
+        "stop_id": "SP2",
+        "seq": 28
+      },
+      {
+        "stop_id": "SP1",
+        "seq": 29
+      }
+    ]
+  },
+  {
+    "route_id": "KGL",
+    "mode": "rail",
+    "category": "MRT",
+    "route_color": "047940",
+    "route_short_name": "KGL",
+    "route_long_name": "MRT Kajang Line",
+    "route_public_name": "KGL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "KG04",
+        "seq": 1
+      },
+      {
+        "stop_id": "KG05",
+        "seq": 2
+      },
+      {
+        "stop_id": "KG06",
+        "seq": 3
+      },
+      {
+        "stop_id": "KG07",
+        "seq": 4
+      },
+      {
+        "stop_id": "KG08",
+        "seq": 5
+      },
+      {
+        "stop_id": "KG09",
+        "seq": 6
+      },
+      {
+        "stop_id": "KG10",
+        "seq": 7
+      },
+      {
+        "stop_id": "KG12",
+        "seq": 8
+      },
+      {
+        "stop_id": "KG13",
+        "seq": 9
+      },
+      {
+        "stop_id": "KG14",
+        "seq": 10
+      },
+      {
+        "stop_id": "KG15",
+        "seq": 11
+      },
+      {
+        "stop_id": "KG16",
+        "seq": 12
+      },
+      {
+        "stop_id": "KG17",
+        "seq": 13
+      },
+      {
+        "stop_id": "KG18A",
+        "seq": 14
+      },
+      {
+        "stop_id": "KG20",
+        "seq": 15
+      },
+      {
+        "stop_id": "KG21",
+        "seq": 16
+      },
+      {
+        "stop_id": "KG22",
+        "seq": 17
+      },
+      {
+        "stop_id": "KG23",
+        "seq": 18
+      },
+      {
+        "stop_id": "KG24",
+        "seq": 19
+      },
+      {
+        "stop_id": "KG25",
+        "seq": 20
+      },
+      {
+        "stop_id": "KG26",
+        "seq": 21
+      },
+      {
+        "stop_id": "KG27",
+        "seq": 22
+      },
+      {
+        "stop_id": "KG28",
+        "seq": 23
+      },
+      {
+        "stop_id": "KG29",
+        "seq": 24
+      },
+      {
+        "stop_id": "KG30",
+        "seq": 25
+      },
+      {
+        "stop_id": "KG31",
+        "seq": 26
+      },
+      {
+        "stop_id": "KG33",
+        "seq": 27
+      },
+      {
+        "stop_id": "KG34",
+        "seq": 28
+      },
+      {
+        "stop_id": "KG35",
+        "seq": 29
+      }
+    ]
+  },
+  {
+    "route_id": "PYL",
+    "mode": "rail",
+    "category": "MRT",
+    "route_color": "FFCD00",
+    "route_short_name": "PYL",
+    "route_long_name": "MRT Putrajaya Line",
+    "route_public_name": "PYL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "PY01",
+        "seq": 1
+      },
+      {
+        "stop_id": "PY03",
+        "seq": 2
+      },
+      {
+        "stop_id": "PY04",
+        "seq": 3
+      },
+      {
+        "stop_id": "PY05",
+        "seq": 4
+      },
+      {
+        "stop_id": "PY06",
+        "seq": 5
+      },
+      {
+        "stop_id": "PY07",
+        "seq": 6
+      },
+      {
+        "stop_id": "PY08",
+        "seq": 7
+      },
+      {
+        "stop_id": "PY09",
+        "seq": 8
+      },
+      {
+        "stop_id": "PY10",
+        "seq": 9
+      },
+      {
+        "stop_id": "PY11",
+        "seq": 10
+      },
+      {
+        "stop_id": "PY12",
+        "seq": 11
+      },
+      {
+        "stop_id": "PY13",
+        "seq": 12
+      },
+      {
+        "stop_id": "PY14",
+        "seq": 13
+      },
+      {
+        "stop_id": "PY15",
+        "seq": 14
+      },
+      {
+        "stop_id": "PY16",
+        "seq": 15
+      },
+      {
+        "stop_id": "PY17",
+        "seq": 16
+      },
+      {
+        "stop_id": "PY18",
+        "seq": 17
+      },
+      {
+        "stop_id": "PY19",
+        "seq": 18
+      },
+      {
+        "stop_id": "PY20",
+        "seq": 19
+      },
+      {
+        "stop_id": "PY21",
+        "seq": 20
+      },
+      {
+        "stop_id": "PY22",
+        "seq": 21
+      },
+      {
+        "stop_id": "PY23",
+        "seq": 22
+      },
+      {
+        "stop_id": "PY24",
+        "seq": 23
+      },
+      {
+        "stop_id": "PY27",
+        "seq": 24
+      },
+      {
+        "stop_id": "PY28",
+        "seq": 25
+      },
+      {
+        "stop_id": "PY29",
+        "seq": 26
+      },
+      {
+        "stop_id": "PY31",
+        "seq": 27
+      },
+      {
+        "stop_id": "PY32",
+        "seq": 28
+      },
+      {
+        "stop_id": "PY33",
+        "seq": 29
+      },
+      {
+        "stop_id": "PY34",
+        "seq": 30
+      },
+      {
+        "stop_id": "PY36",
+        "seq": 31
+      },
+      {
+        "stop_id": "PY37",
+        "seq": 32
+      },
+      {
+        "stop_id": "PY38",
+        "seq": 33
+      },
+      {
+        "stop_id": "PY39",
+        "seq": 34
+      },
+      {
+        "stop_id": "PY40",
+        "seq": 35
+      },
+      {
+        "stop_id": "PY41",
+        "seq": 36
+      }
+    ]
+  },
+  {
+    "route_id": "MR",
+    "mode": "rail",
+    "category": "MRL",
+    "route_color": "84bd00",
+    "route_short_name": "MRL",
+    "route_long_name": "KL Monorail Line",
+    "route_public_name": "MRL",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "MR1",
+        "seq": 1
+      },
+      {
+        "stop_id": "MR2",
+        "seq": 2
+      },
+      {
+        "stop_id": "MR3",
+        "seq": 3
+      },
+      {
+        "stop_id": "MR4",
+        "seq": 4
+      },
+      {
+        "stop_id": "MR5",
+        "seq": 5
+      },
+      {
+        "stop_id": "MR6",
+        "seq": 6
+      },
+      {
+        "stop_id": "MR7",
+        "seq": 7
+      },
+      {
+        "stop_id": "MR8",
+        "seq": 8
+      },
+      {
+        "stop_id": "MR9",
+        "seq": 9
+      },
+      {
+        "stop_id": "MR10",
+        "seq": 10
+      },
+      {
+        "stop_id": "MR11",
+        "seq": 11
+      }
+    ]
+  },
+  {
+    "route_id": "BRT",
+    "mode": "rail",
+    "category": "BRT",
+    "route_color": "115740",
+    "route_short_name": "BRT",
+    "route_long_name": "BRT Sunway Line",
+    "route_public_name": "BRT",
+    "operator": "rapidrail",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "BRT1",
+        "seq": 1
+      },
+      {
+        "stop_id": "BRT2",
+        "seq": 2
+      },
+      {
+        "stop_id": "BRT3",
+        "seq": 3
+      },
+      {
+        "stop_id": "BRT4",
+        "seq": 4
+      },
+      {
+        "stop_id": "BRT5",
+        "seq": 5
+      },
+      {
+        "stop_id": "BRT6",
+        "seq": 6
+      },
+      {
+        "stop_id": "BRT7",
+        "seq": 7
+      }
+    ]
+  },
+  {
+    "route_id": "KA15_KD19",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": "DC2420",
+    "route_short_name": "Port Klang Line",
+    "route_long_name": "KTM Tanjung Malim - Pelabuhan Klang",
+    "route_public_name": "Port Klang Line",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "15200",
+        "seq": 1
+      },
+      {
+        "stop_id": "15400",
+        "seq": 2
+      },
+      {
+        "stop_id": "16100",
+        "seq": 3
+      },
+      {
+        "stop_id": "16300",
+        "seq": 4
+      },
+      {
+        "stop_id": "16500",
+        "seq": 5
+      },
+      {
+        "stop_id": "17300",
+        "seq": 6
+      },
+      {
+        "stop_id": "17800",
+        "seq": 7
+      },
+      {
+        "stop_id": "18100",
+        "seq": 8
+      },
+      {
+        "stop_id": "18500",
+        "seq": 9
+      },
+      {
+        "stop_id": "18400",
+        "seq": 10
+      },
+      {
+        "stop_id": "18600",
+        "seq": 11
+      },
+      {
+        "stop_id": "18700",
+        "seq": 12
+      },
+      {
+        "stop_id": "18800",
+        "seq": 13
+      },
+      {
+        "stop_id": "18900",
+        "seq": 14
+      },
+      {
+        "stop_id": "19000",
+        "seq": 15
+      },
+      {
+        "stop_id": "19100",
+        "seq": 16
+      },
+      {
+        "stop_id": "52700",
+        "seq": 17
+      },
+      {
+        "stop_id": "52800",
+        "seq": 18
+      },
+      {
+        "stop_id": "52900",
+        "seq": 19
+      },
+      {
+        "stop_id": "53000",
+        "seq": 20
+      },
+      {
+        "stop_id": "53100",
+        "seq": 21
+      },
+      {
+        "stop_id": "53400",
+        "seq": 22
+      },
+      {
+        "stop_id": "53500",
+        "seq": 23
+      },
+      {
+        "stop_id": "53600",
+        "seq": 24
+      },
+      {
+        "stop_id": "53700",
+        "seq": 25
+      },
+      {
+        "stop_id": "53800",
+        "seq": 26
+      },
+      {
+        "stop_id": "54200",
+        "seq": 27
+      },
+      {
+        "stop_id": "54400",
+        "seq": 28
+      },
+      {
+        "stop_id": "54500",
+        "seq": 29
+      },
+      {
+        "stop_id": "54700",
+        "seq": 30
+      },
+      {
+        "stop_id": "54800",
+        "seq": 31
+      },
+      {
+        "stop_id": "54900",
+        "seq": 32
+      },
+      {
+        "stop_id": "55000",
+        "seq": 33
+      },
+      {
+        "stop_id": "55100",
+        "seq": 34
+      },
+      {
+        "stop_id": "55200",
+        "seq": 35
+      }
+    ]
+  },
+  {
+    "route_id": "KC05_KB18",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": "3C5A9F",
+    "route_short_name": "Seremban Line",
+    "route_long_name": "KTM Batu Caves - Pulau Sebang/Tampin",
+    "route_public_name": "Seremban Line",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "50600",
+        "seq": 1
+      },
+      {
+        "stop_id": "50500",
+        "seq": 2
+      },
+      {
+        "stop_id": "50400",
+        "seq": 3
+      },
+      {
+        "stop_id": "50300",
+        "seq": 4
+      },
+      {
+        "stop_id": "50000",
+        "seq": 5
+      },
+      {
+        "stop_id": "18800",
+        "seq": 6
+      },
+      {
+        "stop_id": "18900",
+        "seq": 7
+      },
+      {
+        "stop_id": "19000",
+        "seq": 8
+      },
+      {
+        "stop_id": "19100",
+        "seq": 9
+      },
+      {
+        "stop_id": "19205",
+        "seq": 10
+      },
+      {
+        "stop_id": "19300",
+        "seq": 11
+      },
+      {
+        "stop_id": "19400",
+        "seq": 12
+      },
+      {
+        "stop_id": "19600",
+        "seq": 13
+      },
+      {
+        "stop_id": "19900",
+        "seq": 14
+      },
+      {
+        "stop_id": "20400",
+        "seq": 15
+      },
+      {
+        "stop_id": "20402",
+        "seq": 16
+      },
+      {
+        "stop_id": "20500",
+        "seq": 17
+      },
+      {
+        "stop_id": "20900",
+        "seq": 18
+      },
+      {
+        "stop_id": "21300",
+        "seq": 19
+      },
+      {
+        "stop_id": "21500",
+        "seq": 20
+      },
+      {
+        "stop_id": "22000",
+        "seq": 21
+      },
+      {
+        "stop_id": "22400",
+        "seq": 22
+      },
+      {
+        "stop_id": "22700",
+        "seq": 23
+      },
+      {
+        "stop_id": "22900",
+        "seq": 24
+      },
+      {
+        "stop_id": "23100",
+        "seq": 25
+      },
+      {
+        "stop_id": "23900",
+        "seq": 26
+      },
+      {
+        "stop_id": "25100",
+        "seq": 27
+      }
+    ]
+  },
+  {
+    "route_id": "100_47300",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": "018000",
+    "route_short_name": "Padang Besar Line",
+    "route_long_name": "KTM Butterworth - Padang Besar",
+    "route_public_name": "Padang Besar Line",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "100",
+        "seq": 1
+      },
+      {
+        "stop_id": "400",
+        "seq": 2
+      },
+      {
+        "stop_id": "600",
+        "seq": 3
+      },
+      {
+        "stop_id": "40500",
+        "seq": 4
+      },
+      {
+        "stop_id": "41400",
+        "seq": 5
+      },
+      {
+        "stop_id": "42400",
+        "seq": 6
+      },
+      {
+        "stop_id": "43100",
+        "seq": 7
+      },
+      {
+        "stop_id": "43500",
+        "seq": 8
+      },
+      {
+        "stop_id": "44000",
+        "seq": 9
+      },
+      {
+        "stop_id": "44400",
+        "seq": 10
+      },
+      {
+        "stop_id": "45600",
+        "seq": 11
+      },
+      {
+        "stop_id": "45800",
+        "seq": 12
+      },
+      {
+        "stop_id": "46300",
+        "seq": 13
+      },
+      {
+        "stop_id": "47300",
+        "seq": 14
+      }
+    ]
+  },
+  {
+    "route_id": "100_9000",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": "1964B7",
+    "route_short_name": "Ipoh Line",
+    "route_long_name": "KTM Butterworth - Ipoh",
+    "route_public_name": "Ipoh Line",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "100",
+        "seq": 1
+      },
+      {
+        "stop_id": "400",
+        "seq": 2
+      },
+      {
+        "stop_id": "600",
+        "seq": 3
+      },
+      {
+        "stop_id": "1000",
+        "seq": 4
+      },
+      {
+        "stop_id": "1700",
+        "seq": 5
+      },
+      {
+        "stop_id": "1900",
+        "seq": 6
+      },
+      {
+        "stop_id": "2600",
+        "seq": 7
+      },
+      {
+        "stop_id": "4500",
+        "seq": 8
+      },
+      {
+        "stop_id": "4700",
+        "seq": 9
+      },
+      {
+        "stop_id": "5700",
+        "seq": 10
+      },
+      {
+        "stop_id": "6300",
+        "seq": 11
+      },
+      {
+        "stop_id": "7300",
+        "seq": 12
+      },
+      {
+        "stop_id": "8000",
+        "seq": 13
+      },
+      {
+        "stop_id": "8600",
+        "seq": 14
+      },
+      {
+        "stop_id": "9000",
+        "seq": 15
+      }
+    ]
+  },
+  {
+    "route_id": "SH",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": null,
+    "route_short_name": "SH",
+    "route_long_name": "Intercity Shuttle Tumpat - Gemas",
+    "route_public_name": "SH",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "86300",
+        "seq": 1
+      },
+      {
+        "stop_id": "86000",
+        "seq": 2
+      },
+      {
+        "stop_id": "85700",
+        "seq": 3
+      },
+      {
+        "stop_id": "85500",
+        "seq": 4
+      },
+      {
+        "stop_id": "85100",
+        "seq": 5
+      },
+      {
+        "stop_id": "84800",
+        "seq": 6
+      },
+      {
+        "stop_id": "84600",
+        "seq": 7
+      },
+      {
+        "stop_id": "84400",
+        "seq": 8
+      },
+      {
+        "stop_id": "84200",
+        "seq": 9
+      },
+      {
+        "stop_id": "83700",
+        "seq": 10
+      },
+      {
+        "stop_id": "83100",
+        "seq": 11
+      },
+      {
+        "stop_id": "82400",
+        "seq": 12
+      },
+      {
+        "stop_id": "82100",
+        "seq": 13
+      },
+      {
+        "stop_id": "81700",
+        "seq": 14
+      },
+      {
+        "stop_id": "81200",
+        "seq": 15
+      },
+      {
+        "stop_id": "80700",
+        "seq": 16
+      },
+      {
+        "stop_id": "80500",
+        "seq": 17
+      },
+      {
+        "stop_id": "80300",
+        "seq": 18
+      },
+      {
+        "stop_id": "80000",
+        "seq": 19
+      },
+      {
+        "stop_id": "79800",
+        "seq": 20
+      },
+      {
+        "stop_id": "79300",
+        "seq": 21
+      },
+      {
+        "stop_id": "78900",
+        "seq": 22
+      },
+      {
+        "stop_id": "78700",
+        "seq": 23
+      },
+      {
+        "stop_id": "78500",
+        "seq": 24
+      },
+      {
+        "stop_id": "78400",
+        "seq": 25
+      },
+      {
+        "stop_id": "78300",
+        "seq": 26
+      },
+      {
+        "stop_id": "78100",
+        "seq": 27
+      },
+      {
+        "stop_id": "77900",
+        "seq": 28
+      },
+      {
+        "stop_id": "77800",
+        "seq": 29
+      },
+      {
+        "stop_id": "77400",
+        "seq": 30
+      },
+      {
+        "stop_id": "77200",
+        "seq": 31
+      },
+      {
+        "stop_id": "77000",
+        "seq": 32
+      },
+      {
+        "stop_id": "76800",
+        "seq": 33
+      },
+      {
+        "stop_id": "76600",
+        "seq": 34
+      },
+      {
+        "stop_id": "76000",
+        "seq": 35
+      },
+      {
+        "stop_id": "75300",
+        "seq": 36
+      },
+      {
+        "stop_id": "75000",
+        "seq": 37
+      },
+      {
+        "stop_id": "74800",
+        "seq": 38
+      },
+      {
+        "stop_id": "74500",
+        "seq": 39
+      },
+      {
+        "stop_id": "74000",
+        "seq": 40
+      },
+      {
+        "stop_id": "73500",
+        "seq": 41
+      },
+      {
+        "stop_id": "73100",
+        "seq": 42
+      },
+      {
+        "stop_id": "72700",
+        "seq": 43
+      },
+      {
+        "stop_id": "72600",
+        "seq": 44
+      },
+      {
+        "stop_id": "72400",
+        "seq": 45
+      },
+      {
+        "stop_id": "72200",
+        "seq": 46
+      },
+      {
+        "stop_id": "72000",
+        "seq": 47
+      },
+      {
+        "stop_id": "71800",
+        "seq": 48
+      },
+      {
+        "stop_id": "71300",
+        "seq": 49
+      }
+    ]
+  },
+  {
+    "route_id": "ERT",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": null,
+    "route_short_name": "ERT",
+    "route_long_name": "Intercity Ekspres Rakyat Timuran Tumpat - JB Sentral",
+    "route_public_name": "ERT",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "86300",
+        "seq": 1
+      },
+      {
+        "stop_id": "86000",
+        "seq": 2
+      },
+      {
+        "stop_id": "85700",
+        "seq": 3
+      },
+      {
+        "stop_id": "85500",
+        "seq": 4
+      },
+      {
+        "stop_id": "85100",
+        "seq": 5
+      },
+      {
+        "stop_id": "84800",
+        "seq": 6
+      },
+      {
+        "stop_id": "84600",
+        "seq": 7
+      },
+      {
+        "stop_id": "84400",
+        "seq": 8
+      },
+      {
+        "stop_id": "84200",
+        "seq": 9
+      },
+      {
+        "stop_id": "83700",
+        "seq": 10
+      },
+      {
+        "stop_id": "83100",
+        "seq": 11
+      },
+      {
+        "stop_id": "82400",
+        "seq": 12
+      },
+      {
+        "stop_id": "82100",
+        "seq": 13
+      },
+      {
+        "stop_id": "81700",
+        "seq": 14
+      },
+      {
+        "stop_id": "81200",
+        "seq": 15
+      },
+      {
+        "stop_id": "80700",
+        "seq": 16
+      },
+      {
+        "stop_id": "80500",
+        "seq": 17
+      },
+      {
+        "stop_id": "80300",
+        "seq": 18
+      },
+      {
+        "stop_id": "80000",
+        "seq": 19
+      },
+      {
+        "stop_id": "79800",
+        "seq": 20
+      },
+      {
+        "stop_id": "79300",
+        "seq": 21
+      },
+      {
+        "stop_id": "78900",
+        "seq": 22
+      },
+      {
+        "stop_id": "78700",
+        "seq": 23
+      },
+      {
+        "stop_id": "78500",
+        "seq": 24
+      },
+      {
+        "stop_id": "78400",
+        "seq": 25
+      },
+      {
+        "stop_id": "78300",
+        "seq": 26
+      },
+      {
+        "stop_id": "78100",
+        "seq": 27
+      },
+      {
+        "stop_id": "77900",
+        "seq": 28
+      },
+      {
+        "stop_id": "77800",
+        "seq": 29
+      },
+      {
+        "stop_id": "77400",
+        "seq": 30
+      },
+      {
+        "stop_id": "77200",
+        "seq": 31
+      },
+      {
+        "stop_id": "77000",
+        "seq": 32
+      },
+      {
+        "stop_id": "76800",
+        "seq": 33
+      },
+      {
+        "stop_id": "76600",
+        "seq": 34
+      },
+      {
+        "stop_id": "76000",
+        "seq": 35
+      },
+      {
+        "stop_id": "75300",
+        "seq": 36
+      },
+      {
+        "stop_id": "75000",
+        "seq": 37
+      },
+      {
+        "stop_id": "74800",
+        "seq": 38
+      },
+      {
+        "stop_id": "74500",
+        "seq": 39
+      },
+      {
+        "stop_id": "74000",
+        "seq": 40
+      },
+      {
+        "stop_id": "73500",
+        "seq": 41
+      },
+      {
+        "stop_id": "73100",
+        "seq": 42
+      },
+      {
+        "stop_id": "72700",
+        "seq": 43
+      },
+      {
+        "stop_id": "72600",
+        "seq": 44
+      },
+      {
+        "stop_id": "72400",
+        "seq": 45
+      },
+      {
+        "stop_id": "72200",
+        "seq": 46
+      },
+      {
+        "stop_id": "72000",
+        "seq": 47
+      },
+      {
+        "stop_id": "71800",
+        "seq": 48
+      },
+      {
+        "stop_id": "71300",
+        "seq": 49
+      },
+      {
+        "stop_id": "70200",
+        "seq": 50
+      },
+      {
+        "stop_id": "70000",
+        "seq": 51
+      },
+      {
+        "stop_id": "69600",
+        "seq": 52
+      },
+      {
+        "stop_id": "69400",
+        "seq": 53
+      },
+      {
+        "stop_id": "69100",
+        "seq": 54
+      },
+      {
+        "stop_id": "68700",
+        "seq": 55
+      },
+      {
+        "stop_id": "68200",
+        "seq": 56
+      },
+      {
+        "stop_id": "67900",
+        "seq": 57
+      },
+      {
+        "stop_id": "67400",
+        "seq": 58
+      },
+      {
+        "stop_id": "67100",
+        "seq": 59
+      },
+      {
+        "stop_id": "66600",
+        "seq": 60
+      },
+      {
+        "stop_id": "66100",
+        "seq": 61
+      },
+      {
+        "stop_id": "64900",
+        "seq": 62
+      },
+      {
+        "stop_id": "64700",
+        "seq": 63
+      },
+      {
+        "stop_id": "64400",
+        "seq": 64
+      },
+      {
+        "stop_id": "64100",
+        "seq": 65
+      },
+      {
+        "stop_id": "63700",
+        "seq": 66
+      },
+      {
+        "stop_id": "62500",
+        "seq": 67
+      },
+      {
+        "stop_id": "61800",
+        "seq": 68
+      },
+      {
+        "stop_id": "61000",
+        "seq": 69
+      },
+      {
+        "stop_id": "60800",
+        "seq": 70
+      },
+      {
+        "stop_id": "27800",
+        "seq": 71
+      },
+      {
+        "stop_id": "28300",
+        "seq": 72
+      },
+      {
+        "stop_id": "29100",
+        "seq": 73
+      },
+      {
+        "stop_id": "29500",
+        "seq": 74
+      },
+      {
+        "stop_id": "29900",
+        "seq": 75
+      },
+      {
+        "stop_id": "30500",
+        "seq": 76
+      },
+      {
+        "stop_id": "31300",
+        "seq": 77
+      },
+      {
+        "stop_id": "32100",
+        "seq": 78
+      },
+      {
+        "stop_id": "32400",
+        "seq": 79
+      },
+      {
+        "stop_id": "33200",
+        "seq": 80
+      },
+      {
+        "stop_id": "33600",
+        "seq": 81
+      },
+      {
+        "stop_id": "34200",
+        "seq": 82
+      },
+      {
+        "stop_id": "34800",
+        "seq": 83
+      },
+      {
+        "stop_id": "35500",
+        "seq": 84
+      },
+      {
+        "stop_id": "36000",
+        "seq": 85
+      },
+      {
+        "stop_id": "36600",
+        "seq": 86
+      },
+      {
+        "stop_id": "36900",
+        "seq": 87
+      },
+      {
+        "stop_id": "37200",
+        "seq": 88
+      },
+      {
+        "stop_id": "37400",
+        "seq": 89
+      },
+      {
+        "stop_id": "37405",
+        "seq": 90
+      },
+      {
+        "stop_id": "37500",
+        "seq": 91
+      }
+    ]
+  },
+  {
+    "route_id": "ES",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": null,
+    "route_short_name": "ES",
+    "route_long_name": "Intercity Ekspres Selatan Gemas - JB Sentral",
+    "route_public_name": "ES",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "27800",
+        "seq": 1
+      },
+      {
+        "stop_id": "28300",
+        "seq": 2
+      },
+      {
+        "stop_id": "29100",
+        "seq": 3
+      },
+      {
+        "stop_id": "29500",
+        "seq": 4
+      },
+      {
+        "stop_id": "29900",
+        "seq": 5
+      },
+      {
+        "stop_id": "30500",
+        "seq": 6
+      },
+      {
+        "stop_id": "31300",
+        "seq": 7
+      },
+      {
+        "stop_id": "32100",
+        "seq": 8
+      },
+      {
+        "stop_id": "32400",
+        "seq": 9
+      },
+      {
+        "stop_id": "33200",
+        "seq": 10
+      },
+      {
+        "stop_id": "33600",
+        "seq": 11
+      },
+      {
+        "stop_id": "34200",
+        "seq": 12
+      },
+      {
+        "stop_id": "34800",
+        "seq": 13
+      },
+      {
+        "stop_id": "35500",
+        "seq": 14
+      },
+      {
+        "stop_id": "36000",
+        "seq": 15
+      },
+      {
+        "stop_id": "36600",
+        "seq": 16
+      },
+      {
+        "stop_id": "36900",
+        "seq": 17
+      },
+      {
+        "stop_id": "37200",
+        "seq": 18
+      },
+      {
+        "stop_id": "37400",
+        "seq": 19
+      },
+      {
+        "stop_id": "37405",
+        "seq": 20
+      },
+      {
+        "stop_id": "37500",
+        "seq": 21
+      }
+    ]
+  },
+  {
+    "route_id": "ST",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": null,
+    "route_short_name": "ST",
+    "route_long_name": "Intercity Shuttle Tebrau JB Sentral - Woodlands",
+    "route_public_name": "ST",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "37500",
+        "seq": 1
+      },
+      {
+        "stop_id": "37600",
+        "seq": 2
+      }
+    ]
+  },
+  {
+    "route_id": "ETS",
+    "mode": "rail",
+    "category": "KTM",
+    "route_color": null,
+    "route_short_name": "ETS",
+    "route_long_name": "Electric Train Service Padang Besar - Gemas",
+    "route_public_name": "ETS",
+    "operator": "ktmb",
+    "isLoop": false,
+    "stops": [
+      {
+        "stop_id": "100",
+        "seq": 1
+      },
+      {
+        "stop_id": "400",
+        "seq": 2
+      },
+      {
+        "stop_id": "600",
+        "seq": 3
+      },
+      {
+        "stop_id": "1000",
+        "seq": 4
+      },
+      {
+        "stop_id": "1700",
+        "seq": 5
+      },
+      {
+        "stop_id": "1900",
+        "seq": 6
+      },
+      {
+        "stop_id": "2600",
+        "seq": 7
+      },
+      {
+        "stop_id": "4500",
+        "seq": 8
+      },
+      {
+        "stop_id": "4700",
+        "seq": 9
+      },
+      {
+        "stop_id": "5700",
+        "seq": 10
+      },
+      {
+        "stop_id": "6300",
+        "seq": 11
+      },
+      {
+        "stop_id": "7300",
+        "seq": 12
+      },
+      {
+        "stop_id": "8000",
+        "seq": 13
+      },
+      {
+        "stop_id": "8600",
+        "seq": 14
+      },
+      {
+        "stop_id": "9000",
+        "seq": 15
+      },
+      {
+        "stop_id": "9400",
+        "seq": 16
+      },
+      {
+        "stop_id": "9700",
+        "seq": 17
+      },
+      {
+        "stop_id": "10200",
+        "seq": 18
+      },
+      {
+        "stop_id": "10900",
+        "seq": 19
+      },
+      {
+        "stop_id": "11600",
+        "seq": 20
+      },
+      {
+        "stop_id": "12900",
+        "seq": 21
+      },
+      {
+        "stop_id": "14100",
+        "seq": 22
+      },
+      {
+        "stop_id": "14600",
+        "seq": 23
+      },
+      {
+        "stop_id": "15200",
+        "seq": 24
+      },
+      {
+        "stop_id": "15400",
+        "seq": 25
+      },
+      {
+        "stop_id": "16100",
+        "seq": 26
+      },
+      {
+        "stop_id": "16300",
+        "seq": 27
+      },
+      {
+        "stop_id": "16500",
+        "seq": 28
+      },
+      {
+        "stop_id": "17300",
+        "seq": 29
+      },
+      {
+        "stop_id": "17800",
+        "seq": 30
+      },
+      {
+        "stop_id": "18100",
+        "seq": 31
+      },
+      {
+        "stop_id": "18500",
+        "seq": 32
+      },
+      {
+        "stop_id": "18400",
+        "seq": 33
+      },
+      {
+        "stop_id": "18600",
+        "seq": 34
+      },
+      {
+        "stop_id": "18700",
+        "seq": 35
+      },
+      {
+        "stop_id": "18800",
+        "seq": 36
+      },
+      {
+        "stop_id": "18900",
+        "seq": 37
+      },
+      {
+        "stop_id": "19000",
+        "seq": 38
+      },
+      {
+        "stop_id": "19100",
+        "seq": 39
+      },
+      {
+        "stop_id": "19205",
+        "seq": 40
+      },
+      {
+        "stop_id": "19300",
+        "seq": 41
+      },
+      {
+        "stop_id": "19400",
+        "seq": 42
+      },
+      {
+        "stop_id": "19600",
+        "seq": 43
+      },
+      {
+        "stop_id": "19900",
+        "seq": 44
+      },
+      {
+        "stop_id": "20400",
+        "seq": 45
+      },
+      {
+        "stop_id": "20402",
+        "seq": 46
+      },
+      {
+        "stop_id": "20500",
+        "seq": 47
+      },
+      {
+        "stop_id": "20900",
+        "seq": 48
+      },
+      {
+        "stop_id": "21300",
+        "seq": 49
+      },
+      {
+        "stop_id": "21500",
+        "seq": 50
+      },
+      {
+        "stop_id": "22000",
+        "seq": 51
+      },
+      {
+        "stop_id": "22400",
+        "seq": 52
+      },
+      {
+        "stop_id": "22700",
+        "seq": 53
+      },
+      {
+        "stop_id": "22900",
+        "seq": 54
+      },
+      {
+        "stop_id": "23100",
+        "seq": 55
+      },
+      {
+        "stop_id": "23900",
+        "seq": 56
+      },
+      {
+        "stop_id": "25100",
+        "seq": 57
+      },
+      {
+        "stop_id": "26400",
+        "seq": 58
+      },
+      {
+        "stop_id": "27800",
+        "seq": 59
+      },
+      {
+        "stop_id": "28300",
+        "seq": 60
+      },
+      {
+        "stop_id": "29100",
+        "seq": 61
+      }
+    ]
+  }
+]

@@ -4,7 +4,13 @@
   "description": "Klang Valley Transit – Offline Static Model",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:bus": "node data-build/scripts/normalize-bus.js && node data-build/scripts/normalize-bus-routes.js && node data-build/scripts/bus_json-to-js.js",
+    "build:rail": "node data-build/scripts/normalize-rail.js && node data-build/scripts/rail_json-to-js.js",
+    "build:poi": "node data-build/scripts/poi_txt-to-js.js",
+    "build:data": "npm run build:bus && npm run build:rail && npm run build:poi",
+    "update:gtfs": "node data-build/scripts/update-gtfs.js",
+    "update:gtfs:watch": "node data-build/scripts/update-gtfs.js --watch --interval-min=60"
   },
   "repository": {
     "type": "git",

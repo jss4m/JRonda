@@ -143,8 +143,112 @@ export function getRouteColor(
 
     // Default fallback
     default:
-      color = "#888888";
+      color = stableFallbackRouteColor(normalized);
   }
 
   return { color, dashed: false };
+}
+
+function stableFallbackRouteColor(seed) {
+  const text = String(seed || "route");
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  const sat = 62;
+  const light = 44;
+  return hslToHex(hue, sat, light);
+}
+
+function hslToHex(h, s, l) {
+  const sat = s / 100;
+  const lig = l / 100;
+  const c = (1 - Math.abs(2 * lig - 1)) * sat;
+  const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+  const m = lig - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const toHex = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+
+export const routes = [
+    { id: "KTM1", name: "KTM Komuter Batu Caves - P. Sebang" },
+    { id: "KTM2", name: "KTM Komuter Tanjung Malim - Pel. Klang" },
+    { id: "KTM3", name: "KTM SKYPARK LINK" },
+    { id: "AG", name: "Ampang Line" },
+    { id: "PH", name: "Sri Petaling Line" },
+    { id: "KJ", name: "Kelana Jaya Line" },
+    { id: "ERL1", name: "KLIA Transit" },
+    { id: "ERL2", name: "KLIA Ekspres" },
+    { id: "MR", name: "KL Monorail" },
+    { id: "MRT", name: "MRT Kajang Line" },
+    { id: "SA", name: "Shah Alam Line" },
+    { id: "PYL", name: "MRT Putrajaya Line" },
+    { id: "CC", name: "MRT Circle Line" },
+    { id: "BRT", name: "BRT Sunway Line" }
+];
+
+export function getModeLabel(id) {
+  const route = routes.find(r => r.id === id);
+  return route ? route.name : id;
+}
+
+function inferModeFromData(data) {
+  const category = String(data?.category || "").toUpperCase();
+  if (["MRT", "LRT", "KTM", "ERL", "MRL", "RAIL"].includes(category)) return "RAIL";
+  const routeId = String(data?.route_id || "").toUpperCase();
+  if (routes.some((r) => r.id === routeId)) return "RAIL";
+  return "BUS";
+}
+
+export function getServiceLabel(data, modeHint = null) {
+  const source = typeof data === "object" && data ? data : { route_id: data };
+  const routeId = String(source.route_id || "");
+  const mode = modeHint || inferModeFromData(source);
+
+  if (mode === "RAIL") {
+    return (
+      source.route_long_name ||
+      source.route_short_name ||
+      getModeLabel(routeId) ||
+      routeId
+    );
+  }
+
+  return (
+    source.route_public_name ||
+    source.route_short_name ||
+    source.route_long_name ||
+    routeId
+  );
+}
+
+export function getPoiCategoryStyle(category) {
+  const c = String(category || "").toLowerCase();
+  if (c.includes("mall") || c.includes("shopping")) {
+    return { color: "#1D4ED8", shape: "square" };
+  }
+  if (c.includes("hotel")) {
+    return { color: "#7C3AED", shape: "diamond" };
+  }
+  if (c.includes("museum")) {
+    return { color: "#B45309", shape: "triangle" };
+  }
+  if (c.includes("landmark") || c.includes("religious")) {
+    return { color: "#DC2626", shape: "diamond" };
+  }
+  if (c.includes("tourist") || c.includes("park")) {
+    return { color: "#059669", shape: "circle" };
+  }
+  return { color: "#475569", shape: "circle" };
 }

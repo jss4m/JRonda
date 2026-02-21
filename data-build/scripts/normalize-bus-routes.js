@@ -30,6 +30,14 @@ function parseCSV(text) {
   });
 }
 
+function pickPublicRouteName(route) {
+  const shortName = String(route.route_short_name || "").trim();
+  const longName = String(route.route_long_name || "").trim();
+  if (shortName) return shortName;
+  if (longName) return longName;
+  return String(route.route_id || "").trim();
+}
+
 let routesMap = {};
 
 BUS_ZIPS.forEach((zipName) => {
@@ -48,6 +56,9 @@ BUS_ZIPS.forEach((zipName) => {
     routeMeta[r.route_id] = {
       route_color: r.route_color || null,
       agency_id: r.agency_id || null,
+      route_short_name: r.route_short_name || null,
+      route_long_name: r.route_long_name || null,
+      route_public_name: pickPublicRouteName(r),
     };
   });
 
@@ -106,6 +117,9 @@ BUS_ZIPS.forEach((zipName) => {
       route_id,
       operator: meta.agency_id || "rapid_bus",
       mode: "bus",
+      route_short_name: meta.route_short_name || null,
+      route_long_name: meta.route_long_name || null,
+      route_public_name: meta.route_public_name || route_id,
       isLoop,
       route_color: meta.route_color,
       isFeeder: !meta.route_color,
