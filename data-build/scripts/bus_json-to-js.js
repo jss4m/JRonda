@@ -7,8 +7,10 @@ const outputDir = path.join(__dirname, "../../data/bus");
 
 const busStopsFile = path.join(normalizedDir, "bus_stops.json");
 const busRoutesFile = path.join(normalizedDir, "bus_routes.json");
+const busTimetablesFile = path.join(normalizedDir, "bus_timetables.json");
 
 const outputFile = path.join(outputDir, "rapidbus.js");
+const timetableOutputFile = path.join(outputDir, "timetables.js");
 
 if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -70,3 +72,11 @@ fs.writeFileSync(outputFile, js, "utf-8");
 console.log("STOPS INDEX SIZE:", Object.keys(stopsIndex).length);
 console.log("ROUTES:", routesJSON.length);
 console.log(`Generated ${outputFile}`);
+
+let timetableMap = {};
+if (fs.existsSync(busTimetablesFile)) {
+  timetableMap = JSON.parse(fs.readFileSync(busTimetablesFile, "utf-8"));
+}
+const timetableJs = `export const busTimetables = ${JSON.stringify(timetableMap, null, 2)};\n`;
+fs.writeFileSync(timetableOutputFile, timetableJs, "utf-8");
+console.log(`Generated ${timetableOutputFile}`);

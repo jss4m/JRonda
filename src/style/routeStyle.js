@@ -236,19 +236,49 @@ export function getServiceLabel(data, modeHint = null) {
 export function getPoiCategoryStyle(category) {
   const c = String(category || "").toLowerCase();
   if (c.includes("mall") || c.includes("shopping")) {
-    return { color: "#1D4ED8", shape: "square" };
+    return {
+      color: "#1D4ED8",
+      iconPath: "M3 7h18v12H3z M6 10h3v3H6z M10.5 10h3v3h-3z M15 10h3v3h-3z",
+    };
   }
   if (c.includes("hotel")) {
-    return { color: "#7C3AED", shape: "diamond" };
+    return {
+      color: "#7C3AED",
+      iconPath: "M3 10h4v3H3z M8 12h13v6H8z M3 12h3v6H3z M2 18h20v2H2z",
+    };
   }
   if (c.includes("museum")) {
-    return { color: "#B45309", shape: "triangle" };
+    return {
+      color: "#B45309",
+      iconPath: "M3 9h18l-9-4z M4 10h16v10H4z M7 10v10 M12 10v10 M17 10v10",
+    };
   }
-  if (c.includes("landmark") || c.includes("religious")) {
-    return { color: "#DC2626", shape: "diamond" };
+  if (c.includes("religious")) {
+    return {
+      color: "#9A3412",
+      iconPath: "M4 20h16v-2H4z M6 10h12v8H6z M12 4l6 4H6z M11 8h2v6h-2z",
+    };
   }
-  if (c.includes("tourist") || c.includes("park")) {
-    return { color: "#059669", shape: "circle" };
+  if (c.includes("landmark")) {
+    return {
+      color: "#DC2626",
+      iconPath: "M12 3a5 5 0 0 0-5 5c0 4 5 10 5 10s5-6 5-10a5 5 0 0 0-5-5z M12 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4z",
+    };
   }
-  return { color: "#475569", shape: "circle" };
+  if (c.includes("tourist") || c.includes("attraction")) {
+    return {
+      color: "#16A34A",
+      iconPath: "M12 2l2.7 5.5 6.1.9-4.4 4.2 1 6.1L12 16l-5.4 2.7 1-6.1L3.3 8.4l6.1-.9z",
+    };
+  }
+  if (c.includes("park")) {
+    return {
+      color: "#059669",
+      iconPath: "M12 3l4 6h-3l3 5h-8l3-5H8z M11 14h2v5h-2z M7 19h10v2H7z",
+    };
+  }
+  return {
+    color: "#475569",
+    iconPath: "M12 6a6 6 0 1 0 0 12a6 6 0 0 0 0-12z M12 10a2 2 0 1 1 0 4a2 2 0 0 1 0-4z",
+  };
 }

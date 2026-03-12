@@ -19,6 +19,7 @@ const RAW_GTFS_DIR = path.join(__dirname, "../raw-GTFS");
 const OUTPUT_DIR = path.join(__dirname, "../normalized");
 const STOPS_OUTPUT = path.join(OUTPUT_DIR, "rail_stops.json");
 const ROUTES_OUTPUT = path.join(OUTPUT_DIR, "rail_routes.json");
+const TIMETABLE_OUTPUT = path.join(OUTPUT_DIR, "rail_timetables.json");
 
 if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
@@ -56,6 +57,37 @@ function pickPublicRouteName(route) {
 
 const normalizedRoutes = {};
 const normalizedStops = {};
+const timetableSets = {};
+
+function gtfsTimeToMinutes(value) {
+  const raw = String(value || "").trim();
+  const m = raw.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+function toHHMM(value) {
+  const mins = gtfsTimeToMinutes(value);
+  if (mins == null) return null;
+  const hh = Math.floor(mins / 60);
+  const mm = mins % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+function ensureTimetableBucket(routeId, stopId) {
+  if (!timetableSets[routeId]) timetableSets[routeId] = {};
+  if (!timetableSets[routeId][stopId]) {
+    timetableSets[routeId][stopId] = {
+      weekday: new Set(),
+      saturday: new Set(),
+      sunday: new Set(),
+    };
+  }
+  return timetableSets[routeId][stopId];
+}
 
 for (const zipName of RAIL_ZIPS) {
   const zipPath = path.join(RAW_GTFS_DIR, zipName);
@@ -67,6 +99,7 @@ for (const zipName of RAIL_ZIPS) {
     trips: zip.getEntry("trips.txt"),
     stopTimes: zip.getEntry("stop_times.txt"),
     stops: zip.getEntry("stops.txt"),
+    calendar: zip.getEntry("calendar.txt"),
   };
   if (!entries.routes || !entries.trips || !entries.stopTimes || !entries.stops) continue;
 
@@ -74,6 +107,31 @@ for (const zipName of RAIL_ZIPS) {
   const trips = parseCSV(entries.trips.getData().toString("utf8"));
   const stopTimes = parseCSV(entries.stopTimes.getData().toString("utf8"));
   const stops = parseCSV(entries.stops.getData().toString("utf8"));
+  const calendar = entries.calendar
+    ? parseCSV(entries.calendar.getData().toString("utf8"))
+    : [];
+
+  const serviceDays = {};
+  for (const c of calendar) {
+    const sid = String(c.service_id || "");
+    if (!sid) continue;
+    const days = new Set();
+    const hasWeekday =
+      String(c.monday) === "1" ||
+      String(c.tuesday) === "1" ||
+      String(c.wednesday) === "1" ||
+      String(c.thursday) === "1" ||
+      String(c.friday) === "1";
+    if (hasWeekday) days.add("weekday");
+    if (String(c.saturday) === "1") days.add("saturday");
+    if (String(c.sunday) === "1") days.add("sunday");
+    if (!days.size) {
+      days.add("weekday");
+      days.add("saturday");
+      days.add("sunday");
+    }
+    serviceDays[sid] = days;
+  }
 
   const routeMeta = {};
   for (const r of routes) {
@@ -94,18 +152,38 @@ for (const zipName of RAIL_ZIPS) {
   }
 
   const routeTrips = {};
+  const tripMeta = {};
   for (const t of trips) {
     if (!routeTrips[t.route_id]) routeTrips[t.route_id] = [];
-    routeTrips[t.route_id].push(String(t.trip_id));
+    const tripId = String(t.trip_id);
+    routeTrips[t.route_id].push(tripId);
+    const sid = String(t.service_id || "");
+    const days = serviceDays[sid] || new Set(["weekday", "saturday", "sunday"]);
+    tripMeta[tripId] = {
+      route_id: String(t.route_id),
+      service_days: days,
+    };
   }
 
   const tripStops = {};
   for (const st of stopTimes) {
-    if (!tripStops[st.trip_id]) tripStops[st.trip_id] = [];
-    tripStops[st.trip_id].push({
+    const tripId = String(st.trip_id);
+    if (!tripStops[tripId]) tripStops[tripId] = [];
+    tripStops[tripId].push({
       stop_id: String(st.stop_id),
       seq: Number(st.stop_sequence),
     });
+
+    const meta = tripMeta[tripId];
+    if (!meta) continue;
+    const hhmm = toHHMM(st.departure_time || st.arrival_time);
+    if (!hhmm) continue;
+    const bucket = ensureTimetableBucket(meta.route_id, String(st.stop_id));
+    for (const d of meta.service_days) {
+      if (d === "weekday" || d === "saturday" || d === "sunday") {
+        bucket[d].add(hhmm);
+      }
+    }
   }
 
   for (const [routeId, tripIds] of Object.entries(routeTrips)) {
@@ -185,5 +263,22 @@ const stopsArray = Object.values(normalizedStops)
 fs.writeFileSync(ROUTES_OUTPUT, JSON.stringify(routesArray, null, 2));
 fs.writeFileSync(STOPS_OUTPUT, JSON.stringify(stopsArray, null, 2));
 
+const normalizedTimetables = {};
+for (const [routeId, stops] of Object.entries(timetableSets)) {
+  normalizedTimetables[routeId] = {};
+  for (const [stopId, table] of Object.entries(stops)) {
+    const toSorted = (set) =>
+      Array.from(set || [])
+        .sort((a, b) => (gtfsTimeToMinutes(a) ?? 0) - (gtfsTimeToMinutes(b) ?? 0));
+    normalizedTimetables[routeId][stopId] = {
+      weekday: toSorted(table.weekday),
+      saturday: toSorted(table.saturday),
+      sunday: toSorted(table.sunday),
+    };
+  }
+}
+fs.writeFileSync(TIMETABLE_OUTPUT, JSON.stringify(normalizedTimetables, null, 2));
+
 console.log(`Normalized ${routesArray.length} rail routes -> ${ROUTES_OUTPUT}`);
 console.log(`Normalized ${stopsArray.length} rail stops -> ${STOPS_OUTPUT}`);
+console.log(`Normalized rail timetable map -> ${TIMETABLE_OUTPUT}`);

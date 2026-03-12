@@ -7,9 +7,11 @@ import { getRouteColor, getServiceLabel } from "../style/routeStyle.js";
 
 import { stations } from "/data/rail/stations.js";
 import { rail } from "/data/rail/rail.js";
+import { railTimetables } from "/data/rail/timetables.js";
 import { goKL } from "/data/gokl/goKL.js";
 import { hohoAll } from "/data/hoho/hoho.js";
 import { rapidbus } from "/data/bus/rapidbus.js";
+import { busTimetables } from "/data/bus/timetables.js";
 
 function mergeRailStops(primary, fallback) {
   const out = [];
@@ -42,6 +44,7 @@ const allStations = [
 
 const { graph, stationMap } = buildGraph(allStations);
 const { graph: railGraph, stationMap: railStationMap } = buildRailOnlyNetwork(graph, stationMap);
+const routeHeadwayMinutes = buildRouteHeadwayMinutes(railTimetables, busTimetables);
 
 const routeCache = new Map();
 const ROUTE_CACHE_LIMIT = 240;
@@ -64,7 +67,7 @@ export const RoutingService = {
       return routeCache.get(cacheKey);
     }
 
-    const costModel = createCostModel(preset);
+    const costModel = createCostModel(preset, { routeHeadwayMinutes });
     const activeGraph = includeBus ? graph : railGraph;
     const activeStationMap = includeBus ? stationMap : railStationMap;
 
@@ -76,7 +79,7 @@ export const RoutingService = {
       k,
       costModel
     );
-    const routes = rawRoutes.map((route) => enrichRoute(route, activeStationMap));
+    const routes = rawRoutes.map((route) => enrichRoute(route, activeStationMap, activeGraph));
 
     if (routeCache.size >= ROUTE_CACHE_LIMIT) {
       const firstKey = routeCache.keys().next().value;
@@ -87,6 +90,54 @@ export const RoutingService = {
     return routes;
   }
 };
+
+function parseHHMMToMinutes(v) {
+  const m = String(v || "").match(/^(\d{1,3}):(\d{2})$/);
+  if (!m) return null;
+  const hh = Number(m[1]);
+  const mm = Number(m[2]);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm) || mm < 0 || mm > 59) return null;
+  return hh * 60 + mm;
+}
+
+function median(values) {
+  if (!values.length) return null;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2) return sorted[mid];
+  return (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+function extractHeadwayFromTimetableMap(mapByStop) {
+  if (!mapByStop || typeof mapByStop !== "object") return null;
+  const allDiffs = [];
+  for (const table of Object.values(mapByStop)) {
+    const weekday = Array.isArray(table?.weekday) ? table.weekday : [];
+    if (weekday.length < 2) continue;
+    const mins = weekday
+      .map(parseHHMMToMinutes)
+      .filter((x) => Number.isFinite(x))
+      .sort((a, b) => a - b);
+    for (let i = 1; i < mins.length; i++) {
+      const d = mins[i] - mins[i - 1];
+      if (d > 0 && d <= 180) allDiffs.push(d);
+    }
+  }
+  return median(allDiffs);
+}
+
+function buildRouteHeadwayMinutes(railMap, busMap) {
+  const out = new Map();
+  for (const [routeId, byStop] of Object.entries(railMap || {})) {
+    const h = extractHeadwayFromTimetableMap(byStop);
+    if (Number.isFinite(h) && h > 0) out.set(String(routeId), h);
+  }
+  for (const [routeId, byStop] of Object.entries(busMap || {})) {
+    const h = extractHeadwayFromTimetableMap(byStop);
+    if (Number.isFinite(h) && h > 0) out.set(String(routeId), h);
+  }
+  return out;
+}
 
 function buildRailOnlyNetwork(sourceGraph, sourceStationMap) {
   const filteredStationMap = new Map();
@@ -108,10 +159,11 @@ function buildRailOnlyNetwork(sourceGraph, sourceStationMap) {
   return { graph: filteredGraph, stationMap: filteredStationMap };
 }
 
-function enrichRoute(route, stationMapRef) {
-  const stationsOnPath = (route.path || [])
+function enrichRoute(route, stationMapRef, graphRef) {
+  const rawStationsOnPath = (route.path || [])
     .map((id) => stationMapRef.get(String(id)))
     .filter(Boolean);
+  const stationsOnPath = rawStationsOnPath.filter((stop) => !stop.passThrough);
 
   const services = [];
   const seen = new Set();
@@ -145,6 +197,34 @@ function enrichRoute(route, stationMapRef) {
     }
   }
 
+  const alternativesByRoute = new Map();
+  const path = Array.isArray(route.path) ? route.path : [];
+  for (let i = 0; i < path.length - 1; i++) {
+    const fromId = String(path[i]);
+    const toId = String(path[i + 1]);
+    const edges = graphRef?.get(fromId) || [];
+    const edge = edges.find((candidateEdge) => String(candidateEdge.target) === toId);
+    if (!edge || !Array.isArray(edge.sharedRouteIds) || edge.sharedRouteIds.length < 2) continue;
+    const toStation = stationMapRef.get(toId);
+    if (!toStation) continue;
+    const activeRouteId = String(toStation.route_id || "");
+    for (const sharedRouteIdRaw of edge.sharedRouteIds) {
+      const sharedRouteId = String(sharedRouteIdRaw || "");
+      if (!sharedRouteId || sharedRouteId === activeRouteId) continue;
+      if (!alternativesByRoute.has(activeRouteId)) alternativesByRoute.set(activeRouteId, new Set());
+      alternativesByRoute.get(activeRouteId).add(sharedRouteId);
+    }
+  }
+
+  let routeAlternativeCount = 0;
+  for (const alternativeSet of alternativesByRoute.values()) {
+    routeAlternativeCount += alternativeSet.size;
+  }
+  for (const segment of segments) {
+    const alternatives = alternativesByRoute.get(String(segment.routeId || ""));
+    segment.alternativeRouteIds = alternatives ? Array.from(alternatives).sort() : [];
+  }
+
   return {
     ...route,
     totalDistance: route.distance,
@@ -152,7 +232,14 @@ function enrichRoute(route, stationMapRef) {
     stations: stationsOnPath,
     services,
     segments,
-    modeSummary: compressModes(segments).join(" -> ")
+    modeSummary: compressModes(segments).join(" -> "),
+    alternativesByRoute: Object.fromEntries(
+      Array.from(alternativesByRoute.entries()).map(([routeId, routeAlternatives]) => [
+        routeId,
+        Array.from(routeAlternatives).sort(),
+      ])
+    ),
+    alternativeCount: routeAlternativeCount,
   };
 }
 

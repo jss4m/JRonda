@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:bus": "node data-build/scripts/normalize-bus.js && node data-build/scripts/normalize-bus-routes.js && node data-build/scripts/bus_json-to-js.js",
     "build:rail": "node data-build/scripts/normalize-rail.js && node data-build/scripts/rail_json-to-js.js",
+    "check:rail:duplicants": "node data-build/scripts/check-rail-duplicants.js",
     "build:poi": "node data-build/scripts/poi_txt-to-js.js",
     "build:data": "npm run build:bus && npm run build:rail && npm run build:poi",
     "update:gtfs": "node data-build/scripts/update-gtfs.js",

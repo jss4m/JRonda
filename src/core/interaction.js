@@ -2,15 +2,192 @@
 import { createUI } from "./ui.js";
 import { RoutingService } from "./bootstrap.js";
 import { getServiceLabel } from "../style/routeStyle.js";
+import { getRouteColor } from "../style/routeStyle.js";
 import {
   consumeInitToasts,
   drawRoute as renderDrawRoute,
+  getContinuationPanelData,
+  getRenderPointerInteractionBindings,
   resetRenderState,
   setRailRouteFilter,
-  setRailCategoryFilter,
   setRouteEndpoints,
   setBusVisibility,
 } from "./render.js";
+
+const t = (key, fallback = "") => {
+  if (typeof window !== "undefined" && window.jrondaI18n?.t) {
+    return window.jrondaI18n.t(key, fallback);
+  }
+  return fallback || key;
+};
+
+const tf = (key, fallback, params = {}) => {
+  let out = t(key, fallback);
+  for (const [pKey, pValue] of Object.entries(params)) {
+    out = out.replace(new RegExp(`\\{${pKey}\\}`, "g"), String(pValue));
+  }
+  return out;
+};
+
+const sourceLabel = (source) => {
+  if (source === "tap") return t("source_tap", "tap");
+  if (source === "search") return t("source_search", "search");
+  return String(source || "");
+};
+
+function wireRenderPointerInteractions(config) {
+  const {
+    svg,
+    toSvgPoint,
+    findNearestStopWithin,
+    findNearestPoiWithin,
+    getUserDotPoint,
+    startTraceLine,
+    appendTracePoint,
+    finishTraceLine,
+    showStationTooltip,
+    showPoiTooltip,
+    showGpsTooltip,
+    showGpsSetupPanel,
+    hideStationTooltip,
+    dispatchStationInfo,
+  } = config || {};
+
+  if (!svg) return;
+
+  let traceSession = null;
+  let lastGpsTapAt = 0;
+  let gpsHoldTimerId = null;
+  let gpsSetupTriggered = false;
+  let pendingGpsDoubleTapHold = false;
+
+  function clearGpsHoldTimer() {
+    if (gpsHoldTimerId) {
+      clearTimeout(gpsHoldTimerId);
+      gpsHoldTimerId = null;
+    }
+  }
+
+  const onPointerDown = (evt) => {
+    const p = toSvgPoint(evt);
+    const startStop = findNearestStopWithin(p.x, p.y);
+    const userDotPoint = getUserDotPoint();
+    const gpsNear =
+      userDotPoint &&
+      Number.isFinite(userDotPoint.x) &&
+      Number.isFinite(userDotPoint.y) &&
+      Math.hypot(userDotPoint.x - p.x, userDotPoint.y - p.y) <= 16;
+    const now = Date.now();
+    const isSecondTapNearGps = gpsNear && now - lastGpsTapAt < 700;
+    pendingGpsDoubleTapHold = Boolean(isSecondTapNearGps);
+    gpsSetupTriggered = false;
+    clearGpsHoldTimer();
+    if (pendingGpsDoubleTapHold && typeof showGpsSetupPanel === "function") {
+      const clientX = evt.clientX;
+      const clientY = evt.clientY;
+      gpsHoldTimerId = setTimeout(() => {
+        gpsSetupTriggered = true;
+        showGpsSetupPanel(clientX, clientY);
+      }, 550);
+    }
+    traceSession = {
+      pointerId: evt.pointerId,
+      startX: p.x,
+      startY: p.y,
+      moved: false,
+      startStop,
+    };
+    if (startStop) {
+      startTraceLine(startStop.xschema, startStop.yschema);
+    }
+    svg.setPointerCapture(evt.pointerId);
+  };
+
+  const onPointerMove = (evt) => {
+    if (!traceSession || evt.pointerId !== traceSession.pointerId) return;
+    const p = toSvgPoint(evt);
+    const moveDist = Math.hypot(p.x - traceSession.startX, p.y - traceSession.startY);
+    if (moveDist > 8) {
+      traceSession.moved = true;
+      clearGpsHoldTimer();
+    }
+    if (traceSession.startStop) appendTracePoint(p.x, p.y);
+  };
+
+  const completeTrace = (evt) => {
+    if (!traceSession || evt.pointerId !== traceSession.pointerId) return;
+    clearGpsHoldTimer();
+    const p = toSvgPoint(evt);
+    const endStop = findNearestStopWithin(p.x, p.y);
+    const endPoi = endStop ? null : findNearestPoiWithin(p.x, p.y);
+    const userDotPoint = getUserDotPoint();
+    const gpsNear =
+      userDotPoint &&
+      Number.isFinite(userDotPoint.x) &&
+      Number.isFinite(userDotPoint.y) &&
+      Math.hypot(userDotPoint.x - p.x, userDotPoint.y - p.y) <= 16;
+
+    if (gpsSetupTriggered) {
+      finishTraceLine();
+      traceSession = null;
+      return;
+    }
+
+    if (traceSession.startStop && traceSession.moved && endStop) {
+      const startId = String(traceSession.startStop.stop_id);
+      const endId = String(endStop.stop_id);
+      if (startId !== endId) {
+        window.dispatchEvent(new CustomEvent("jronda:trace-route", {
+          detail: { startId, endId },
+        }));
+        showStationTooltip(endStop, evt.clientX, evt.clientY);
+      } else {
+        showStationTooltip(endStop, evt.clientX, evt.clientY);
+        dispatchStationInfo(endStop, "tap");
+      }
+    } else if (endStop) {
+      showStationTooltip(endStop, evt.clientX, evt.clientY);
+      dispatchStationInfo(endStop, "tap");
+    } else if (endPoi) {
+      showPoiTooltip(endPoi, evt.clientX, evt.clientY);
+    } else if (gpsNear) {
+      const now = Date.now();
+      if (pendingGpsDoubleTapHold) {
+        pendingGpsDoubleTapHold = false;
+        lastGpsTapAt = now;
+        finishTraceLine();
+        traceSession = null;
+        return;
+      }
+      const advanced = now - lastGpsTapAt < 700;
+      lastGpsTapAt = now;
+      showGpsTooltip(evt.clientX, evt.clientY, advanced);
+    } else if (!traceSession.moved) {
+      hideStationTooltip();
+    }
+
+    finishTraceLine();
+    traceSession = null;
+    pendingGpsDoubleTapHold = false;
+  };
+
+  const onPointerCancel = () => {
+    clearGpsHoldTimer();
+    finishTraceLine();
+    traceSession = null;
+    pendingGpsDoubleTapHold = false;
+  };
+
+  const onHidePanels = () => {
+    hideStationTooltip();
+  };
+
+  svg.addEventListener("pointerdown", onPointerDown);
+  svg.addEventListener("pointermove", onPointerMove);
+  svg.addEventListener("pointerup", completeTrace);
+  svg.addEventListener("pointercancel", onPointerCancel);
+  window.addEventListener("jronda:hide-floating-panels", onHidePanels);
+}
 
 // ================= INITIAL CONFIG =================
 let currentPreset = "SMART";
@@ -19,74 +196,104 @@ let endId = null;
 let currentRoutes = [];
 let selectedIndex = 0;
 let includeBus = true;
-let currentCategory = null;
 let resetTimerId = null;
+let legendResetTimer = null;
 const AUTO_RESET_MS = 2 * 60 * 1000;
 const PANEL_IDLE_MS = 15 * 1000;
+const LEGEND_RESET_MS = 15 * 1000;
 let panelIdleTimer = null;
 
-const railCategoryOptions = Array.from(
-  new Set(
+const allRailRouteOptions = Array.from(
+  new Map(
     Array.from(RoutingService.stationMap.values())
-      .filter((s) => s.mode === "RAIL" && s.category)
-      .map((s) => String(s.category))
-  )
-).sort();
+      .filter((station) => station.mode === "RAIL" && !station.passThrough)
+      .map((station) => {
+        const routeId = String(station.route_id || "");
+        return [
+          routeId,
+          {
+            routeId,
+            label: getServiceLabel(station, "RAIL"),
+          },
+        ];
+      })
+      .filter(([routeId]) => Boolean(routeId))
+  ).values()
+).sort((leftOption, rightOption) => leftOption.label.localeCompare(rightOption.label));
 
-const railRoutesByCategory = new Map();
-for (const s of Array.from(RoutingService.stationMap.values())) {
-  if (s.mode !== "RAIL" || !s.category) continue;
-  const category = String(s.category);
-  if (!railRoutesByCategory.has(category)) railRoutesByCategory.set(category, new Map());
-  const byRoute = railRoutesByCategory.get(category);
-  const routeId = String(s.route_id || "");
-  if (!routeId) continue;
-  if (!byRoute.has(routeId)) {
-    byRoute.set(routeId, {
-      routeId,
-      label: getServiceLabel(s, "RAIL"),
-    });
-  }
-}
+const stationOptions = Array.from(RoutingService.stationMap.values())
+  .filter((station) => !station.passThrough)
+  .map((s) => ({
+    stop_id: String(s.stop_id),
+    stop_name: String(s.stop_name || s.stop_id),
+    route_id: String(s.route_id || ""),
+  }));
 
-const stationOptions = Array.from(RoutingService.stationMap.values()).map((s) => ({
-  stop_id: String(s.stop_id),
-  stop_name: String(s.stop_name || s.stop_id),
-  route_id: String(s.route_id || ""),
-}));
+const legendItems = Array.from(
+  new Map(
+    Array.from(RoutingService.stationMap.values()).map((s) => {
+      const routeId = String(s.route_id || "");
+      const color = getRouteColor(routeId, false, s.route_color ?? null).color;
+      return [
+        routeId,
+        {
+          routeId,
+          label: getServiceLabel(s, s.mode),
+          color,
+          mode: s.mode,
+        },
+      ];
+    })
+  ).values()
+)
+  .filter((item) => item.routeId)
+  .sort((a, b) => {
+    if (a.mode !== b.mode) return a.mode === "RAIL" ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  });
 
 // ================= SETUP UI =================
-const { updatePanel, setStationInfo, setRailRouteOptions, resetUI, showToast } = createUI({
+const {
+  updatePanel,
+  setStationInfo,
+  setRailRouteOptions,
+  resetUI,
+  showToast,
+  setLegendItems,
+  setLegendActiveRoute,
+} = createUI({
   onPresetChange: (preset) => {
     currentPreset = preset;
-    showToast(`Preset changed: ${preset}`);
+    showToast(tf("preset_changed", "Preset changed: {preset}", { preset }));
     if (startId && endId) updateRoute(true);
   },
   onBusToggle: (busEnabled) => {
     includeBus = Boolean(busEnabled);
     setBusVisibility(includeBus);
-    showToast(includeBus ? "Bus routes included" : "Bus routes hidden");
+    showToast(includeBus ? t("bus_routes_included", "Bus routes included") : t("bus_routes_hidden", "Bus routes hidden"));
     if (startId && endId) updateRoute(true);
-  },
-  onCategoryChange: (category) => {
-    currentCategory = category ? String(category) : null;
-    setRailCategoryFilter(currentCategory);
-    setRailRouteFilter(null);
-    const options = currentCategory
-      ? Array.from((railRoutesByCategory.get(currentCategory) || new Map()).values())
-          .sort((a, b) => a.label.localeCompare(b.label))
-      : [];
-    setRailRouteOptions(options);
-    showToast(currentCategory ? `Rail category: ${currentCategory}` : "Rail category filter cleared");
   },
   onRailRouteChange: (routeId) => {
     const selected = routeId ? String(routeId) : null;
     setRailRouteFilter(selected);
+    setLegendActiveRoute(selected);
     if (selected) {
-      showToast(`Rail line focus: ${selected}`);
+      showToast(tf("rail_focus", "Rail line focus: {route}", { route: selected }));
     } else {
-      showToast("Rail line focus cleared");
+      showToast(t("rail_focus_cleared", "Rail line focus cleared"));
     }
+  },
+  onLegendRouteSelect: (routeId) => {
+    const selected = routeId ? String(routeId) : null;
+    setRailRouteFilter(selected);
+    setLegendActiveRoute(selected);
+    if (legendResetTimer) clearTimeout(legendResetTimer);
+    legendResetTimer = setTimeout(() => {
+      setRailRouteFilter(null);
+      setLegendActiveRoute(null);
+      showToast(t("legend_highlight_reset", "Legend highlight reset"));
+    }, LEGEND_RESET_MS);
+    if (selected) showToast(tf("legend_highlight", "Legend highlight: {route}", { route: selected }));
   },
   onReset: () => {
     resetAllState("manual");
@@ -94,9 +301,11 @@ const { updatePanel, setStationInfo, setRailRouteOptions, resetUI, showToast } =
   onSearchSelect: (stopId) => {
     handleStationSelection(String(stopId), "search");
   },
-  categoryOptions: railCategoryOptions,
   stationOptions,
+  summaryPanels: getContinuationPanelData(),
 });
+setRailRouteOptions(allRailRouteOptions);
+setLegendItems(legendItems);
 
 for (const t of consumeInitToasts()) {
   showToast(t.message, t.type || "info");
@@ -110,7 +319,7 @@ function armAutoResetTimer() {
 function armPanelIdleTimer() {
   if (panelIdleTimer) clearTimeout(panelIdleTimer);
   panelIdleTimer = setTimeout(() => {
-    setStationInfo("Tap a station to view details");
+    setStationInfo(t("tap_station_info", "Tap a station to view details"));
     window.dispatchEvent(new CustomEvent("jronda:hide-floating-panels"));
   }, PANEL_IDLE_MS);
 }
@@ -122,18 +331,21 @@ function resetAllState(reason = "manual") {
   currentRoutes = [];
   selectedIndex = 0;
   includeBus = true;
-  currentCategory = null;
   RoutingService.routeCache.clear();
   setRouteEndpoints(null, null);
   setBusVisibility(true);
-  setRailCategoryFilter(null);
   setRailRouteFilter(null);
-  setRailRouteOptions([]);
+  setLegendActiveRoute(null);
+  if (legendResetTimer) {
+    clearTimeout(legendResetTimer);
+    legendResetTimer = null;
+  }
+  setRailRouteOptions(allRailRouteOptions);
   resetRenderState();
   resetUI();
   updatePanel([], 0);
-  setStationInfo(reason === "auto" ? "Session auto-reset." : "Reset complete.");
-  showToast(reason === "auto" ? "Auto reset due to inactivity" : "Reset complete");
+  setStationInfo(reason === "auto" ? t("session_auto_reset", "Session auto-reset.") : t("reset_complete", "Reset complete."));
+  showToast(reason === "auto" ? t("auto_reset_due_inactivity", "Auto reset due to inactivity") : t("reset_complete", "Reset complete."));
   armAutoResetTimer();
   armPanelIdleTimer();
 }
@@ -142,14 +354,14 @@ function resetAllState(reason = "manual") {
 export function setStartStop(stopId) {
   const nextStart = String(stopId);
   if (endId && nextStart === endId) {
-    setStationInfo("Start and end cannot be the same station.");
-    showToast("Start and end cannot be the same station.", "warn");
+    setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
+    showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
   startId = nextStart;
   setRouteEndpoints(startId, endId);
   const s = RoutingService.stationMap.get(startId);
-  if (s) showToast(`Start set: ${s.stop_name}`);
+  if (s) showToast(tf("start_set", "Start set: {station}", { station: s.stop_name }));
   if (startId && endId) updateRoute();
   armAutoResetTimer();
   armPanelIdleTimer();
@@ -158,14 +370,14 @@ export function setStartStop(stopId) {
 export function setEndStop(stopId) {
   const nextEnd = String(stopId);
   if (startId && nextEnd === startId) {
-    setStationInfo("Start and end cannot be the same station.");
-    showToast("Start and end cannot be the same station.", "warn");
+    setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
+    showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
   endId = nextEnd;
   setRouteEndpoints(startId, endId);
   const e = RoutingService.stationMap.get(endId);
-  if (e) showToast(`End set: ${e.stop_name}`);
+  if (e) showToast(tf("end_set", "End set: {station}", { station: e.stop_name }));
   if (startId && endId) updateRoute();
   armAutoResetTimer();
   armPanelIdleTimer();
@@ -175,8 +387,8 @@ function setStartAndEnd(startStopId, endStopId, forceRefresh = true) {
   startId = String(startStopId);
   endId = String(endStopId);
   if (startId === endId) {
-    setStationInfo("Start and end cannot be the same station.");
-    showToast("Start and end cannot be the same station.", "warn");
+    setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
+    showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
   setRouteEndpoints(startId, endId);
@@ -191,8 +403,12 @@ function handleStationSelection(stopId, source = "tap") {
   const station = RoutingService.stationMap.get(String(stopId));
   if (station) {
     const label = getServiceLabel(station, station.mode);
-    setStationInfo(`Selected ${station.stop_name} (${label}) via ${source}.`);
-    showToast(`Selected: ${station.stop_name}`);
+    setStationInfo(tf("selected_station", "Selected {station} ({label}) via {source}.", {
+      station: station.stop_name,
+      label,
+      source: sourceLabel(source),
+    }));
+    showToast(tf("selected_station_toast", "Selected: {station}", { station: station.stop_name }));
   }
   if (!startId || (startId && endId)) {
     startId = String(stopId);
@@ -221,8 +437,8 @@ function updateRoute(forceRefresh = false) {
 
   if (!currentRoutes || !currentRoutes.length) {
     console.warn("No routes found.");
-    setStationInfo("No route found for the selected stations and filters.");
-    showToast("No route found with current filters.", "warn");
+    setStationInfo(t("no_route_found_filters", "No route found for the selected stations and filters."));
+    showToast(t("no_route_found_current_filters", "No route found with current filters."), "warn");
     updatePanel([], 0);
     return;
   }
@@ -237,7 +453,7 @@ function updateRoute(forceRefresh = false) {
     updatePanel(currentRoutes, selectedIndex, onSelect);
   };
   updatePanel(currentRoutes, selectedIndex, onSelect);
-  showToast(`Route options updated (${currentRoutes.length})`);
+  showToast(tf("route_options_updated", "Route options updated ({count})", { count: currentRoutes.length }));
   armAutoResetTimer();
   armPanelIdleTimer();
 }
@@ -257,7 +473,10 @@ if (typeof window !== "undefined") {
     const station = RoutingService.stationMap.get(String(stopId));
     if (station) {
       const label = getServiceLabel(station, station.mode);
-      setStationInfo(`${station.stop_name} (${label})`);
+      setStationInfo(tf("selected_station_short", "Selected {station} ({label})", {
+        station: station.stop_name,
+        label,
+      }));
     }
     armAutoResetTimer();
     armPanelIdleTimer();
@@ -294,7 +513,7 @@ if (typeof window !== "undefined") {
 }
 
 setBusVisibility(includeBus);
-setRailCategoryFilter(null);
 setRailRouteFilter(null);
+wireRenderPointerInteractions(getRenderPointerInteractionBindings());
 armAutoResetTimer();
 armPanelIdleTimer();

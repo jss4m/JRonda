@@ -1,0 +1,282 @@
+[
+  {
+    "stop_lat": 1.663129,
+    "stop_lon": 103.600489,
+    "stop_names": [
+      "Kulai",
+      "SENAI"
+    ],
+    "records": [
+      {
+        "stop_id": "ERT_36000",
+        "source_stop_id": "36000",
+        "stop_name": "Kulai",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_36600",
+        "source_stop_id": "36600",
+        "stop_name": "SENAI",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ES_36000",
+        "source_stop_id": "36000",
+        "stop_name": "Kulai",
+        "route_id": "ES",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ES_36600",
+        "source_stop_id": "36600",
+        "stop_name": "SENAI",
+        "route_id": "ES",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 2.810356,
+    "stop_lon": 102.404968,
+    "stop_names": [
+      "SERTING",
+      "ROMPIN",
+      "LONDAH"
+    ],
+    "records": [
+      {
+        "stop_id": "ERT_62500",
+        "source_stop_id": "62500",
+        "stop_name": "SERTING",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_61000",
+        "source_stop_id": "61000",
+        "stop_name": "ROMPIN",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_60800",
+        "source_stop_id": "60800",
+        "stop_name": "LONDAH",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 3.083373,
+    "stop_lon": 101.61143,
+    "stop_names": [
+      "Seri Setia",
+      "SETIA JAYA"
+    ],
+    "records": [
+      {
+        "stop_id": "KA15_KD19_53500",
+        "source_stop_id": "53500",
+        "stop_name": "Seri Setia",
+        "route_id": "KA15_KD19",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "KA15_KD19_53600",
+        "source_stop_id": "53600",
+        "stop_name": "SETIA JAYA",
+        "route_id": "KA15_KD19",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 3.246451,
+    "stop_lon": 102.411322,
+    "stop_names": [
+      "MENTRI",
+      "Triang"
+    ],
+    "records": [
+      {
+        "stop_id": "ERT_64700",
+        "source_stop_id": "64700",
+        "stop_name": "MENTRI",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_64400",
+        "source_stop_id": "64400",
+        "stop_name": "Triang",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 3.710453,
+    "stop_lon": 102.366258,
+    "stop_names": [
+      "Kuala Krau",
+      "SUNGAI DALAM"
+    ],
+    "records": [
+      {
+        "stop_id": "ERT_67400",
+        "source_stop_id": "67400",
+        "stop_name": "Kuala Krau",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_67100",
+        "source_stop_id": "67100",
+        "stop_name": "SUNGAI DALAM",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 3.937265,
+    "stop_lon": 102.357945,
+    "stop_names": [
+      "Jerantut",
+      "JERANSONG"
+    ],
+    "records": [
+      {
+        "stop_id": "ERT_68700",
+        "source_stop_id": "68700",
+        "stop_name": "Jerantut",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_68200",
+        "source_stop_id": "68200",
+        "stop_name": "JERANSONG",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 4.186634,
+    "stop_lon": 102.053791,
+    "stop_names": [
+      "KG TELANG",
+      "KUALA LIPIS"
+    ],
+    "records": [
+      {
+        "stop_id": "SH_72000",
+        "source_stop_id": "72000",
+        "stop_name": "KG TELANG",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "SH_71300",
+        "source_stop_id": "71300",
+        "stop_name": "KUALA LIPIS",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_72000",
+        "source_stop_id": "72000",
+        "stop_name": "KG TELANG",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_71300",
+        "source_stop_id": "71300",
+        "stop_name": "KUALA LIPIS",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 4.69314,
+    "stop_lon": 102.00328,
+    "stop_names": [
+      "Merapoh",
+      "KUBANG RUSA"
+    ],
+    "records": [
+      {
+        "stop_id": "SH_74800",
+        "source_stop_id": "74800",
+        "stop_name": "Merapoh",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "SH_74000",
+        "source_stop_id": "74000",
+        "stop_name": "KUBANG RUSA",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_74800",
+        "source_stop_id": "74800",
+        "stop_name": "Merapoh",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_74000",
+        "source_stop_id": "74000",
+        "stop_name": "KUBANG RUSA",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  },
+  {
+    "stop_lat": 4.878941,
+    "stop_lon": 101.966634,
+    "stop_names": [
+      "Gua Musang",
+      "LAPAN TUPAI"
+    ],
+    "records": [
+      {
+        "stop_id": "SH_76000",
+        "source_stop_id": "76000",
+        "stop_name": "Gua Musang",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "SH_75300",
+        "source_stop_id": "75300",
+        "stop_name": "LAPAN TUPAI",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_76000",
+        "source_stop_id": "76000",
+        "stop_name": "Gua Musang",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_75300",
+        "source_stop_id": "75300",
+        "stop_name": "LAPAN TUPAI",
+        "route_id": "ERT",
+        "category": "KTM"
+      }
+    ]
+  }
+]

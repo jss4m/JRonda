@@ -1,4 +1,4 @@
-const CACHE_NAME = "jronda-offline-v1";
+const CACHE_NAME = "jronda-offline-v4.6";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -9,6 +9,7 @@ const APP_SHELL = [
   "/src/core/bootstrap.js",
   "/src/core/render.js",
   "/src/core/routerLogic.js",
+  "/src/style/kiosk.css",
   "/src/style/routeStyle.js",
   "/src/img/bus.svg",
   "/src/img/train-noPanthograph.svg",
@@ -17,6 +18,8 @@ const APP_SHELL = [
   "/src/img/Connecting_icon.svg",
   "/data/rail/stations.js",
   "/data/rail/rail.js",
+  "/data/rail/timetables.js",
+  "/data/bus/timetables.js",
   "/data/poi/poi.js",
   "/data/gokl/goKL.js",
   "/data/bus/rapidbus.js",
