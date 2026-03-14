@@ -1,12 +1,84 @@
-body {
-  margin: 0;
-  overflow: hidden;
-  background: #111;
+/**
+ * JRonda Kiosk Styles
+ * Uses CSS custom properties for theming
+ */
+
+/* ======= CSS Custom Properties (Theming) ======= */
+:root {
+  /* Colors - Primary */
+  --color-primary: #0d6efd;
+  --color-primary-hover: #0b5ed7;
+  --color-primary-light: #eef5ff;
+  
+  /* Colors - Transit Modes */
+  --color-rail: #11753a;
+  --color-bus: #fe8e10;
+  --color-mrt: #11753a;
+  --color-lrt: #11753a;
+  --color-ktm: #3c5a9f;
+  --color-erl: #33a8b5;
+  --color-monorail: #7dba00;
+  
+  /* Colors - UI */
+  --color-bg-dark: #0a111b;
+  --color-bg-panel: #0f172a;
+  --color-bg-surface: #f8fafc;
+  --color-bg-surface-alt: #ffffff;
+  --color-border: #cfd7e3;
+  --color-border-light: #d5deea;
+  --color-text-primary: #10253a;
+  --color-text-secondary: #31475f;
+  --color-text-muted: #64748b;
+  
+  /* Colors - Status */
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-error: #b91c1c;
+  --color-info: #1d4ed8;
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --shadow-xl: 0 18px 60px rgba(0, 0, 0, 0.4);
+  
+  /* Typography */
+  --font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-size-xs: clamp(10px, 1.05vw, 12px);
+  --font-size-sm: clamp(11px, 1.15vw, 13px);
+  --font-size-md: clamp(12px, 1.25vw, 14px);
+  --font-size-lg: clamp(13px, 1.35vw, 15px);
+  --font-size-xl: clamp(15px, 1.6vw, 18px);
+  --font-size-2xl: clamp(17px, 1.8vw, 20px);
+  --font-size-3xl: clamp(22px, 2.2vw, 26px);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  
+  /* Z-Index */
+  --z-toast: 5000;
+  --z-tooltip: 3000;
+  --z-overlay: 4200;
+  --z-modal: 99999;
 }
 
 svg {
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
 }
 
 #kiosk-root {
@@ -16,6 +88,7 @@ svg {
   height: 100vh;
   overflow: hidden;
   background: #101418;
+  font-size: var(--font-size-md);
   background:
     radial-gradient(1200px 600px at 20% -10%, rgba(35, 134, 255, 0.18), transparent 60%),
     radial-gradient(900px 520px at 100% 0%, rgba(16, 185, 129, 0.14), transparent 60%),
@@ -42,19 +115,28 @@ svg {
   position: relative;
 }
 
-#kiosk-map-surface > svg {
+#kiosk-map-surface > svg#map {
+  position: absolute;
   width: 100%;
   height: 100%;
+  z-index: 1;
   display: block;
+  touch-action: none;
+  cursor: grab;
+}
+
+#kiosk-clock {
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.98);
 }
 
 #kiosk-clock {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 2500;
+  z-index: 10;
   pointer-events: none;
-  background: rgba(10, 17, 27, 0.78);
+  background: rgba(10, 17, 27, 0.98);
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 10px;
   padding: 8px 10px;
@@ -120,14 +202,14 @@ svg {
   border: 1px solid #d5deea;
   border-radius: 10px;
   background: #fff;
-  padding: 10px;
+  padding: clamp(6px, 1.2vw, 10px);
 }
 
 .sr-control {
   border: 1px solid #9fb0c6;
   border-radius: 8px;
-  padding: 6px 8px;
-  font-size: 14px;
+  padding: 5px 8px;
+  font-size: var(--font-size-sm);
   color: #11243b;
   background: #fff;
 }
@@ -143,9 +225,10 @@ svg {
   background: #fff;
   color: #152a42;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 5px 8px;
   cursor: pointer;
   font-weight: 600;
+  font-size: var(--font-size-sm);
 }
 
 .sr-btn.primary {
@@ -157,12 +240,12 @@ svg {
 #route-info-panel {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   border: 1px solid #d5deea;
   border-radius: 10px;
-  padding: 10px;
+  padding: clamp(6px, 1.2vw, 10px);
   background: #fff;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
 }
 
 .panel-title {
@@ -171,6 +254,12 @@ svg {
 
 .legend-title {
   font-weight: 700;
+  font-size: var(--font-size-sm);
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
 }
 
 .label-strong {
@@ -298,17 +387,17 @@ svg {
 }
 
 .step-list {
-  margin-top: 8px;
+  margin-top: 6px;
   border-top: 1px solid #dbe5f0;
-  padding-top: 8px;
+  padding-top: 6px;
 }
 
 .step-row {
   display: grid;
-  grid-template-columns: 22px 1fr;
-  gap: 8px;
+  grid-template-columns: 20px 1fr;
+  gap: 6px;
   align-items: start;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .step-left {
@@ -342,8 +431,9 @@ svg {
 }
 
 .step-text {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: #1f2f45;
+  line-height: 1.25;
 }
 
 .mode-icon {
@@ -353,10 +443,50 @@ svg {
   margin-right: 4px;
 }
 
+.step-list-grid {
+  display: grid;
+  gap: clamp(6px, 1.2vw, 10px);
+  align-items: start;
+}
+
+.step-list-grid.cols-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.step-list-grid.cols-2 {
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr);
+}
+
+.step-list-grid.cols-3 {
+  grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr);
+}
+
+.step-column {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.step-column-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 8px 0;
+}
+
+.step-column-divider .step-dots {
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
 #legend-panel {
   border: 1px solid #d5deea;
   border-radius: 10px;
-  padding: 6px 8px;
+  padding: 5px 6px;
   background: #fff;
   min-height: 0;
   overflow: visible;
@@ -367,11 +497,16 @@ svg {
 #legend-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   overflow: visible;
   white-space: normal;
   width: 100%;
   padding-bottom: 2px;
+}
+
+.legend-empty {
+  font-size: var(--font-size-xs);
+  color: #64748b;
 }
 
 .legend-item {
@@ -383,11 +518,11 @@ svg {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
+  padding: 4px 6px;
   margin-bottom: 0;
   cursor: pointer;
   text-align: left;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 600;
   flex: 0 0 auto;
 }
@@ -413,7 +548,7 @@ svg {
 }
 
 .summary-title {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
   margin-bottom: 6px;
 }
@@ -428,7 +563,7 @@ svg {
   grid-template-columns: 14px 1fr;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .summary-stop .dot {
@@ -545,8 +680,8 @@ svg {
   border: 1px solid #cdd8e6;
   border-radius: 10px;
   background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
-  padding: 10px;
-  margin-bottom: 8px;
+  padding: clamp(6px, 1.2vw, 9px);
+  margin-bottom: clamp(6px, 1.2vw, 8px);
 }
 
 .route-option-card.is-selected {
@@ -563,10 +698,11 @@ svg {
   font-weight: 800;
   color: #0f2944;
   margin-bottom: 4px;
+  font-size: var(--font-size-lg);
 }
 
 .route-option-meta {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: #31475f;
 }
 
@@ -590,8 +726,8 @@ svg {
 
 .route-segment-chip {
   border-radius: 999px;
-  padding: 3px 8px;
-  font-size: 12px;
+  padding: 2px 7px;
+  font-size: var(--font-size-xs);
   font-weight: 700;
 }
 
@@ -604,21 +740,23 @@ svg {
   inset: 0;
   z-index: 4200;
   display: none;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background: rgba(5, 13, 24, 0.56);
-  padding: 16px;
+  padding: clamp(8px, 2vw, 16px);
 }
 
 #route-detail-card {
-  width: min(920px, 96vw);
-  max-height: 88vh;
-  overflow: auto;
+  width: min(90vw, 820px);
+  height: min(86vh, 720px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
   border-radius: 12px;
   border: 1px solid #c8d4e6;
   background: #ffffff;
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.3);
-  padding: 12px;
+  padding: clamp(8px, 1.4vw, 12px);
 }
 
 #route-detail-head {
@@ -637,10 +775,110 @@ svg {
 #route-detail-title {
   font-weight: 800;
   color: #0f2a45;
+  font-size: var(--font-size-lg);
 }
 
 #route-detail-content {
-  padding-top: 8px;
+  padding-top: 6px;
+  overflow: hidden;
+}
+
+#legend-modal,
+#search-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 13, 24, 0.56);
+  padding: clamp(8px, 2vw, 16px);
+}
+
+#legend-modal-card,
+#search-modal-card {
+  width: min(90vw, 820px);
+  height: min(86vh, 720px);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-radius: 12px;
+  border: 1px solid #c8d4e6;
+  background: #ffffff;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.3);
+  padding: clamp(8px, 1.4vw, 12px);
+}
+
+#legend-modal-head,
+#search-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #d8e3f2;
+  z-index: 1;
+}
+
+#legend-modal-title,
+#search-modal-title {
+  font-weight: 800;
+  color: #0f2a45;
+  font-size: var(--font-size-lg);
+}
+
+#legend-modal-body,
+#search-modal-body {
+  padding-top: 6px;
+  overflow: hidden;
+}
+
+#legend-modal-table {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.legend-modal-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #cfd7e3;
+  border-radius: 8px;
+  background: #fff;
+  color: #12253b;
+  padding: 6px 8px;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+
+.legend-modal-row:focus-visible {
+  outline: 3px solid #1f6feb;
+  outline-offset: 1px;
+}
+
+.legend-modal-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.legend-modal-mode {
+  font-size: var(--font-size-xs);
+  color: #64748b;
+}
+
+#search-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 960px), (orientation: portrait) {
@@ -688,6 +926,30 @@ svg {
 
 .tooltip-section {
   margin-top: 4px;
+}
+
+.tt-table {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 2px;
+}
+
+.tt-row {
+  font-size: var(--font-size-xs);
+  color: #1f2f45;
+}
+
+.tt-row.past {
+  color: #94a3b8;
+}
+
+.tt-row.upcoming {
+  color: #0f172a;
+}
+
+.tt-row.next {
+  color: #0f172a;
+  font-weight: 700;
 }
 
 .tooltip-divider {

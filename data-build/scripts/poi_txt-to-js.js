@@ -1,8 +1,18 @@
 const fs = require("fs");
 const path = require("path");
+const { z } = require("zod");
 
 const inputFile = path.join(__dirname, "../../data/poi/POI.txt");
 const outputFile = path.join(__dirname, "../../data/poi/poi.js");
+
+const PoiSchema = z.object({
+  id: z.string().min(1),
+  section: z.string().min(1),
+  name: z.string().min(1),
+  category: z.string().min(1),
+  longitude: z.number(),
+  latitude: z.number(),
+});
 
 function toSlug(value) {
   return String(value || "")
@@ -69,16 +79,27 @@ function parsePoiText(text) {
   return items;
 }
 
-if (!fs.existsSync(inputFile)) {
-  throw new Error(`Missing ${inputFile}`);
-}
+function normalizePoiList() {
+  if (!fs.existsSync(inputFile)) {
+    throw new Error(`Missing ${inputFile}`);
+  }
 
-const raw = fs.readFileSync(inputFile, "utf8");
-const pois = parsePoiText(raw);
+  const raw = fs.readFileSync(inputFile, "utf8");
+  const pois = parsePoiText(raw);
 
-let js = "export const poi = [\n";
-for (const p of pois) {
-  js +=
+  const validatedPois = [];
+  for (const p of pois) {
+    try {
+      const cleanPoi = PoiSchema.parse(p);
+      validatedPois.push(cleanPoi);
+    } catch (err) {
+      console.warn(`Skipping invalid POI entry: ${p.id || '<unknown>'}`, err.errors || err.message);
+    }
+  }
+
+  let js = "export const poi = [\n";
+  for (const p of validatedPois) {
+    js +=
 `  {
     id: ${JSON.stringify(p.id)},
     section: ${JSON.stringify(p.section)},
@@ -87,8 +108,17 @@ for (const p of pois) {
     longitude: ${Number(p.longitude)},
     latitude: ${Number(p.latitude)}
   },\n`;
-}
-js += "];\n";
+  }
+  js += "];\n";
 
-fs.writeFileSync(outputFile, js, "utf8");
-console.log(`Generated ${outputFile} with ${pois.length} POIs`);
+  fs.writeFileSync(outputFile, js, "utf8");
+  console.log(`Generated ${outputFile} with ${validatedPois.length} POIs`);
+  return validatedPois;
+}
+
+if (require.main === module) {
+  normalizePoiList();
+}
+
+module.exports = { normalizePoiList, PoiSchema };
+

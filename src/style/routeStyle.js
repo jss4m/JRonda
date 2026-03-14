@@ -1,17 +1,17 @@
-export function getRouteColor(
-  route_id,
-  isTransfer = false,
-  route_color = null,
-) {
+export function normalizeRouteId(route_id) {
+  return String(route_id || "").trim().toUpperCase().replace(/-/g, "_");
+}
+
+export const railRouteIds = new Set([
+  "KTM1", "KTM2", "KTM3", "AG", "PH", "KJ", "ERL1", "ERL2", "MR", "MRT", "SA", "PYL", "CC", "BRT"
+]);
+
+export function getRouteColor(route_id, isTransfer = false, route_color = null) {
   if (!route_id) {
     return { color: "#888888", dashed: false };
   }
 
-  const normalized = route_id
-    .toString()
-    .trim()
-    .toUpperCase()
-    .replace(/-/g, "_");
+  const normalized = normalizeRouteId(route_id);
 
   if (isTransfer) {
     return { color: "#000000", dashed: true };
@@ -149,6 +149,13 @@ export function getRouteColor(
   return { color, dashed: false };
 }
 
+export function getRouteMode(routeId) {
+  const id = normalizeRouteId(routeId);
+  if (railRouteIds.has(id)) return 'RAIL';
+  if (id.includes('BUS') || id.startsWith('300') || id.includes('HOHO') || id.includes('GOKL')) return 'BUS';
+  return 'RAIL'; // Default
+}
+
 function stableFallbackRouteColor(seed) {
   const text = String(seed || "route");
   let hash = 0;
@@ -180,41 +187,29 @@ function hslToHex(h, s, l) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-
-export const routes = [
-    { id: "KTM1", name: "KTM Komuter Batu Caves - P. Sebang" },
-    { id: "KTM2", name: "KTM Komuter Tanjung Malim - Pel. Klang" },
-    { id: "KTM3", name: "KTM SKYPARK LINK" },
-    { id: "AG", name: "Ampang Line" },
-    { id: "PH", name: "Sri Petaling Line" },
-    { id: "KJ", name: "Kelana Jaya Line" },
-    { id: "ERL1", name: "KLIA Transit" },
-    { id: "ERL2", name: "KLIA Ekspres" },
-    { id: "MR", name: "KL Monorail" },
-    { id: "MRT", name: "MRT Kajang Line" },
-    { id: "SA", name: "Shah Alam Line" },
-    { id: "PYL", name: "MRT Putrajaya Line" },
-    { id: "CC", name: "MRT Circle Line" },
-    { id: "BRT", name: "BRT Sunway Line" }
-];
-
 export function getModeLabel(id) {
-  const route = routes.find(r => r.id === id);
+  const normalized = normalizeRouteId(id);
+  const route = routes.find((r) => normalizeRouteId(r.id) === normalized);
   return route ? route.name : id;
 }
 
 function inferModeFromData(data) {
-  const category = String(data?.category || "").toUpperCase();
+  const category = normalizeRouteId(data?.category);
   if (["MRT", "LRT", "KTM", "ERL", "MRL", "RAIL"].includes(category)) return "RAIL";
-  const routeId = String(data?.route_id || "").toUpperCase();
-  if (routes.some((r) => r.id === routeId)) return "RAIL";
-  return "BUS";
+  const routeId = normalizeRouteId(data?.route_id);
+  if (railRouteIds.has(routeId)) return "RAIL";
+  if (routeId.includes('BUS') || routeId.startsWith('300') || routeId.includes('HOHO') || routeId.includes('GOKL')) return 'BUS';
+  return "RAIL";
 }
 
 export function getServiceLabel(data, modeHint = null) {
   const source = typeof data === "object" && data ? data : { route_id: data };
-  const routeId = String(source.route_id || "");
+  const routeId = normalizeRouteId(source.route_id);
   const mode = modeHint || inferModeFromData(source);
+  const routePublicName = String(source.route_public_name || "").trim();
+
+  // Route public name is the authoritative display name when provided.
+  if (routePublicName) return routePublicName;
 
   if (mode === "RAIL") {
     return (
@@ -226,59 +221,61 @@ export function getServiceLabel(data, modeHint = null) {
   }
 
   return (
-    source.route_public_name ||
     source.route_short_name ||
     source.route_long_name ||
+    getModeLabel(routeId) ||
     routeId
   );
 }
 
 export function getPoiCategoryStyle(category) {
   const c = String(category || "").toLowerCase();
-  if (c.includes("mall") || c.includes("shopping")) {
-    return {
-      color: "#1D4ED8",
-      iconPath: "M3 7h18v12H3z M6 10h3v3H6z M10.5 10h3v3h-3z M15 10h3v3h-3z",
-    };
-  }
-  if (c.includes("hotel")) {
-    return {
-      color: "#7C3AED",
-      iconPath: "M3 10h4v3H3z M8 12h13v6H8z M3 12h3v6H3z M2 18h20v2H2z",
-    };
-  }
-  if (c.includes("museum")) {
-    return {
-      color: "#B45309",
-      iconPath: "M3 9h18l-9-4z M4 10h16v10H4z M7 10v10 M12 10v10 M17 10v10",
-    };
-  }
-  if (c.includes("religious")) {
-    return {
-      color: "#9A3412",
-      iconPath: "M4 20h16v-2H4z M6 10h12v8H6z M12 4l6 4H6z M11 8h2v6h-2z",
-    };
-  }
-  if (c.includes("landmark")) {
-    return {
-      color: "#DC2626",
-      iconPath: "M12 3a5 5 0 0 0-5 5c0 4 5 10 5 10s5-6 5-10a5 5 0 0 0-5-5z M12 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4z",
-    };
-  }
-  if (c.includes("tourist") || c.includes("attraction")) {
-    return {
-      color: "#16A34A",
-      iconPath: "M12 2l2.7 5.5 6.1.9-4.4 4.2 1 6.1L12 16l-5.4 2.7 1-6.1L3.3 8.4l6.1-.9z",
-    };
-  }
-  if (c.includes("park")) {
-    return {
-      color: "#059669",
-      iconPath: "M12 3l4 6h-3l3 5h-8l3-5H8z M11 14h2v5h-2z M7 19h10v2H7z",
-    };
-  }
+  const filenameMap = {
+    'mall': 'mall.svg',
+    'shopping': 'mall.svg',
+    'hotel': 'hotel.svg',
+    'museum': 'museum.svg',
+    'religious': 'default.svg',
+    'buddhist': 'buddhist.svg',
+    'christian': 'christian.svg',
+    'hinduist': 'hinduist.svg',
+    'muslim': 'muslim.svg',
+    'sikhism': 'sikhism.svg',
+    'landmark': 'attraction.svg',
+    'tourist': 'attraction.svg',
+    'attraction': 'attraction.svg',
+    'park': 'park.svg',
+    'atm': 'atm.svg',
+  };
+  const filename = filenameMap[c] || 'default.svg';
   return {
-    color: "#475569",
-    iconPath: "M12 6a6 6 0 1 0 0 12a6 6 0 0 0 0-12z M12 10a2 2 0 1 1 0 4a2 2 0 0 1 0-4z",
+    filename,
+    color: '#475569'
   };
 }
+
+const routeMap = new Map();
+for (const r of [
+    { id: "KTM1", name: "KTM Komuter Batu Caves - Pulau Sebang" }, //NUM 1
+    { id: "KTM2", name: "KTM Komuter Tanjung Malim - Pelabuhan Klang" }, //NUM 2
+    { id: "KTM3", name: "KTM KL Sentral -Skypark Terminal" }, //NUM 10
+    { id: "AG", name: "Ampang Line" }, //NUM 3
+    { id: "PH", name: "Sri Petaling Line" }, //NUM 4
+    { id: "KJ", name: "Kelana Jaya Line" }, //NUM 5
+    { id: "ERL1", name: "KLIA Transit" }, //NUM 7
+    { id: "ERL2", name: "KLIA Ekspres" }, //NUM 6
+    { id: "MR", name: "KL Monorail" }, //NUM 8
+    { id: "MRT", name: "MRT Kajang Line" }, //NUM 9
+    { id: "SA", name: "Shah Alam Line" }, //NUM 11
+    { id: "PYL", name: "MRT Putrajaya Line" }, // NUM 12
+    { id: "CC", name: "MRT Circle Line" }, //NUM 13
+    { id: "BRT", name: "BRT Sunway Line" } //B1
+]) {
+    const key = normalizeRouteId(r.id);
+    if (routeMap.has(key)) {
+        console.warn(`Duplicate rail route id in routeStyle routes: ${r.id}`);
+    }
+    routeMap.set(key, r);
+}
+
+export const routes = Array.from(routeMap.values());

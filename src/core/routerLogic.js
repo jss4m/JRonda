@@ -8,71 +8,7 @@ export function deriveMode(category) {
   return "BUS";
 }
 
-class MinHeap {
-  constructor() {
-    this.heap = [];
-  }
-
-  enqueue(value, priority) {
-    this.heap.push({ value, priority });
-    this.bubbleUp();
-  }
-
-  dequeue() {
-    if (!this.heap.length) return null;
-    const min = this.heap[0];
-    const end = this.heap.pop();
-    if (this.heap.length) {
-      this.heap[0] = end;
-      this.sinkDown();
-    }
-    return min;
-  }
-
-  isEmpty() {
-    return this.heap.length === 0;
-  }
-
-  bubbleUp() {
-    let idx = this.heap.length - 1;
-    const element = this.heap[idx];
-    while (idx > 0) {
-      let parentIdx = Math.floor((idx - 1) / 2);
-      let parent = this.heap[parentIdx];
-      if (element.priority >= parent.priority) break;
-      this.heap[parentIdx] = element;
-      this.heap[idx] = parent;
-      idx = parentIdx;
-    }
-  }
-
-  sinkDown() {
-    let idx = 0;
-    const length = this.heap.length;
-    const element = this.heap[0];
-
-    while (true) {
-      let leftIdx = 2 * idx + 1;
-      let rightIdx = 2 * idx + 2;
-      let swap = null;
-
-      if (leftIdx < length) {
-        if (this.heap[leftIdx].priority < element.priority) swap = leftIdx;
-      }
-
-      if (rightIdx < length) {
-        const comparePriority =
-          swap === null ? element.priority : this.heap[leftIdx].priority;
-        if (this.heap[rightIdx].priority < comparePriority) swap = rightIdx;
-      }
-
-      if (swap === null) break;
-      this.heap[idx] = this.heap[swap];
-      this.heap[swap] = element;
-      idx = swap;
-    }
-  }
-}
+import { MinHeap } from "../utils/min-heap.js";
 
 // ======= Helpers =======
 

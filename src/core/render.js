@@ -1,100 +1,242 @@
-import { stations } from "/data/rail/stations.js";
-import { rail } from "/data/rail/rail.js";
-import { railTimetables } from "/data/rail/timetables.js";
-import { busTimetables } from "/data/bus/timetables.js";
-import { poi as poiRaw } from "/data/poi/poi.js";
-import { goKL } from "/data/gokl/goKL.js";
-import { rapidbus } from "/data/bus/rapidbus.js";
+import { stations } from "../../data/rail/stations.js";
+import { rail } from "../../data/rail/rail.js";
+import { railTimetables } from "../../data/rail/timetables.js";
+import { busTimetables } from "../../data/bus/timetables.js";
+import { poi as poiRaw } from "../../data/poi/poi.js";
+import { goKL } from "../../data/gokl/goKL.js";
+import { rapidbus } from "../../data/bus/rapidbus.js";
 import { getPoiCategoryStyle, getRouteColor, getServiceLabel } from "../style/routeStyle.js";
-import { hohoKL, hohoSel } from "/data/hoho/hoho.js";
+import { hohoKL, hohoSel } from "../../data/hoho/hoho.js";
 
-const svg = document.getElementById("map");
+// Extracted modules
+import { rebuildSpatialIndexes, schemaStopIndex, geoStopIndex, poiSchemaIndex } from "./spatial-index.js";
+import { buildSchematicLayout as layoutBuildSchematic, projectGeo as layoutProjectGeo, fitVisibleNetworkToViewport as layoutFitVisibleNetwork, snapAngle45, normalizeStopName } from "./layout-engine.js";
+import { createSvgLayers, computeMapRenderProfile, drawRoutes, drawInterchanges, drawStopsAndPois } from "./map-renderer.js";
+import { polylinePathFromPoints, capsulePathFromStops, getOffsetPolyline } from "./render-utils.js";
+import { SVG_WIDTH, SVG_HEIGHT, MARGIN, NODE_SPACING, ROUTE_OFFSET, TRANSFER_RADIUS, MIN_MARGIN, TRANSFER_DISTANCE, SNAP_RADIUS, TOUCH_SELECT_RADIUS, GPS_SNAP_METERS, PRIMARY_RAIL_STROKE, SECONDARY_RAIL_STROKE, BUS_STROKE, CONNECTION_STROKE, INACTIVE_ROUTE_STROKE, ACTIVE_ROUTE_STROKE, INACTIVE_ROUTE_COLOR, CC_SEGMENT_LENGTH, CC_LANE_GAP, FLOATING_PANEL_IDLE_MS, FIXED_KIOSK_STOP_KEY } from "./render-config.js";
+import { mergeRailStops, normalizePoiList, assignPoiIds } from "./data-merger.js";
+import { emitToast, getPendingInitToasts, clearPendingInitToasts, translate, translatef } from "./toast-manager.js";
 
-// ================= CONFIG =================
-const svgWidth = 1000;
-const svgHeight = 1000;
-const margin = 40;
+let svg = null;
+let sharedTrackLayer = null;
+let routeLayer = null;
+let transferLayer = null;
+let stopLayer = null;
+let poiLayer = null;
+let labelLayer = null;
+let interactionLayer = null;
+let startBadge = null;
+let endBadge = null;
 
-const NODE_SPACING = 60;
-const ROUTE_OFFSET = 6;
-const TRANSFER_RADIUS = 10;
-const MIN_MARGIN = 40;
-const TRANSFER_DISTANCE = 28;
-const SNAP_RADIUS = 30;
-const TOUCH_SELECT_RADIUS = 44;
-const GPS_SNAP_METERS = 160;
-const PRIMARY_RAIL_STROKE = 6;
-const SECONDARY_RAIL_STROKE = 5;
-const BUS_STROKE = 3;
-const CONNECTION_STROKE = 2;
-const INACTIVE_ROUTE_STROKE = 2;
-const ACTIVE_ROUTE_STROKE = 6;
-const INACTIVE_ROUTE_COLOR = "#B0B0B0";
-const CC_SEGMENT_LENGTH = 48;
-const CC_LANE_GAP = 8;
-const FLOATING_PANEL_IDLE_MS = 15 * 1000;
-const FIXED_KIOSK_STOP_KEY = "jronda_fixed_station_stop_id";
+function __coreDebug(...args) {
+  // Disabled in production to avoid console spam.
+}
 
-// ================= DATA =================
-function mergeRailStops(primary, fallback) {
-  const merged = [];
-  const seen = new Set();
-  const keyOf = (s) => `${String(s.route_id || "")}|${String(s.source_stop_id || s.stop_id || "")}`;
-  for (const s of primary || []) {
-    const key = keyOf(s);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push(s);
+function reportInitProgress(progress = 0, message = "") {
+  if (typeof window !== "undefined" && typeof window.CustomEvent === "function") {
+    window.dispatchEvent(new CustomEvent("jronda:loading-progress", {
+      detail: { progress: Number(progress), message: String(message) },
+    }));
   }
-  for (const s of fallback || []) {
-    const key = keyOf(s);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    merged.push({ ...s, _fallbackFromStations: true });
+}
+
+export function init(svgElement) {
+  try {
+    svg = svgElement;
+    __coreDebug("render.init called", { allStations: allStations.length, routes: routes.size, poi: poiList.length });
+    if (!svg) throw new Error('No SVG element provided to render.init()');
+    reportInitProgress(0.05, "Initializing map render");
+
+
+  // Populate routes from allStations
+  // Already done at top level
+
+  // Create and attach SVG layers via module helper
+  ({
+    sharedTrackLayer,
+    routeLayer,
+    transferLayer,
+    stopLayer,
+    poiLayer,
+    labelLayer,
+    interactionLayer,
+  } = createSvgLayers(svg));
+
+  reportInitProgress(0.25, "SVG layers attached");
+  __coreDebug('render.init stage', 'layers attached');
+
+  // Populate station name index
+  for (const stop of allStations) {
+    const key = String(stop.stop_name || "").trim().toLowerCase();
+    if (!stationNameIndex.has(key)) stationNameIndex.set(key, []);
+    stationNameIndex.get(key).push(stop);
   }
-  return merged;
+
+  // HOHO routes
+  for (const stop of allStations) {
+    const isHoho = String(stop.category || "").toUpperCase() === "HOHO";
+    if (!isHoho) continue;
+    const key = String(stop.stop_name || "").trim().toLowerCase();
+    if (!key) continue;
+    if (!hohoRoutesByStopName.has(key)) hohoRoutesByStopName.set(key, new Set());
+    hohoRoutesByStopName.get(key).add(String(stop.route_id || ""));
+  }
+
+  // Geo projection
+  for (const s of allStations) {
+    const [x, y] = layoutProjectGeo(s.stop_lat, s.stop_lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+    s.xgeo = x;
+    s.ygeo = y;
+  }
+
+  for (const p of poiList) {
+    const [x, y] = layoutProjectGeo(p.lat, p.lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+    p.xgeo = x;
+    p.ygeo = y;
+  }
+
+  reportInitProgress(0.55, "Computed geo projection");
+  __coreDebug('render.init stage', 'geo projection computed');
+
+  // Now safe to run all render init code
+  const layoutInfo = layoutBuildSchematic(allStations, routes, getRouteMode, { svgWidth: SVG_WIDTH, svgHeight: SVG_HEIGHT, margin: MARGIN });
+  if (layoutInfo?.centroidLat != null && layoutInfo?.centroidLon != null) {
+    emitToast(
+      translatef(
+        "layout_centroid_info",
+        "Map layout: centroid ({lat}, {lon}) with trunk-first directional schematic",
+        { lat: layoutInfo.centroidLat.toFixed(4), lon: layoutInfo.centroidLon.toFixed(4) }
+      ),
+      "info"
+    );
+  }
+  buildPoiLayout();
+
+  __coreDebug('render.init stage', 'layout built and POI layout done');
+
+  rebuildRouteGeometryCaches();
+  applyRenderedStopPlacement();
+  spreadSharedRailStops();
+  rebuildRouteGeometryCaches();
+  applyRenderedStopPlacement();
+  spreadSharedRailStops();
+  alignBusStopsToRailTransferStations();
+  fitVisibleNetworkToViewport();
+  refreshRouteBaseCoordinates();
+  buildBusLoopRenderCache();
+  syncBusLoopStopsToRenderedPath();
+  rebuildSpatialIndexes(mapVisibleStops, poiList);
+
+  reportInitProgress(0.75, "Spatial indexes rebuilt");
+  __coreDebug('render.init stage', 'geometry caches built');
+  interchangeCandidates = mapVisibleStops.filter(
+    (s) => s.isInterchange || s.isConnecting
+  );
+
+  // ================= DRAW ROUTES + INTERCHANGES + STOPS + POI =================
+  drawRoutes({
+    routes,
+    routeDisplayStops,
+    routeLayer,
+    routeLineRegistry,
+    getRouteColor,
+    getRouteMode,
+    getOffsetPolyline,
+    getRouteStopPoint,
+    getSegmentOffset,
+    makeSegmentKey,
+    isCcRailRouteId,
+    isCcRailStop,
+    polylinePathFromPoints,
+    PRIMARY_RAIL_STROKE,
+    SECONDARY_RAIL_STROKE,
+    BUS_STROKE,
+    routeLayerWeight,
+    busLoopRenderCache,
+  });
+
+  drawInterchanges({
+    interchangeCandidates,
+    schemaStopIndex,
+    transferLayer,
+    SCHEMA_BUCKET_SIZE,
+    getNearbyFromIndex,
+    getRouteMode,
+    TRANSFER_DISTANCE,
+    CONNECTION_STROKE,
+    transferLineRegistry,
+  });
+
+  drawStopsAndPois({
+    mapVisibleStops,
+    stopLayer,
+    interactionLayer,
+    labelLayer,
+    poiLayer,
+    poiList,
+    stopElementRegistry,
+    poiElementRegistry,
+    getRouteMode,
+    TOUCH_SELECT_RADIUS,
+    TRANSFER_RADIUS,
+    getPoiCategoryStyle,
+    terminalStopIds,
+  });
+
+  // Create endpoint badges
+  startBadge = createEndpointBadge("S", "#0D6EFD");
+  endBadge = createEndpointBadge("E", "#D63384");
+  svg.appendChild(startBadge.g);
+  svg.appendChild(endBadge.g);
+
+  __coreDebug("render.init completed", {
+    routeLayerCount: routeLayer?.children?.length ?? 0,
+    stopLayerCount: stopLayer?.children?.length ?? 0,
+    poiLayerCount: poiLayer?.children?.length ?? 0,
+    interactionLayerCount: interactionLayer?.children?.length ?? 0,
+  });
+
+  if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('jronda:render-ready'));
+    reportInitProgress(1, "Map render complete");
+  }
+
+  const profile = computeMapRenderProfile(mapVisibleStops);
+  __coreDebug('render mapVisibleStops bounds', profile);
+  window.jrondaRenderDebug = { routeLayerCount: routeLayer.children.length, stopLayerCount: stopLayer.children.length, profile };
+
+  // ... rest of init calls ...
+  }
+  catch (err) {
+    console.error('render.init error', err);
+    throw err;
+  }
 }
 
 const mergedRail = mergeRailStops(rail, stations);
 const allStations = [...hohoKL, ...hohoSel, ...goKL, ...rapidbus, ...mergedRail];
-const poiList = (poiRaw || []).map((p) => ({
-  ...p,
-  lon: Number(p.longitude),
-  lat: Number(p.latitude),
-})).filter((p) => Number.isFinite(p.lon) && Number.isFinite(p.lat));
-for (let i = 0; i < poiList.length; i++) {
-  poiList[i].id = String(poiList[i].id || `poi-${i + 1}`);
-}
+const poiList = assignPoiIds(normalizePoiList(poiRaw));
 const stationById = new Map(allStations.map((s) => [String(s.stop_id), s]));
 const railRouteIds = new Set(mergedRail.map((s) => String(s.route_id)));
-const pendingInitToasts = [];
 
-function emitToast(message, type = "info") {
-  pendingInitToasts.push({ message, type });
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("jronda:toast", {
-    detail: { message, type },
-  }));
+let routes = new Map();
+for (const s of allStations) {
+  if (!routes.has(s.route_id)) routes.set(s.route_id, []);
+  routes.get(s.route_id).push(s);
 }
-
-function translate(key, fallback = "") {
-  if (typeof window !== "undefined" && window.jrondaI18n?.t) {
-    return window.jrondaI18n.t(key, fallback);
-  }
-  return fallback || key;
-}
-
-function translatef(key, fallback, params = {}) {
-  let out = translate(key, fallback);
-  for (const [pKey, pValue] of Object.entries(params)) {
-    out = out.replace(new RegExp(`\\{${pKey}\\}`, "g"), String(pValue));
-  }
-  return out;
+for (const [routeId, routeStops] of routes.entries()) {
+  routeStops.sort((a, b) => {
+    const as = Number(a.seq ?? 0);
+    const bs = Number(b.seq ?? 0);
+    if (as !== bs) return as - bs;
+    return String(a.stop_id || "").localeCompare(String(b.stop_id || ""));
+  });
+  routes.set(routeId, routeStops);
 }
 
 export function consumeInitToasts() {
-  const out = pendingInitToasts.slice();
-  pendingInitToasts.length = 0;
+  const out = getPendingInitToasts();
+  clearPendingInitToasts();
   return out;
 }
 
@@ -121,8 +263,9 @@ function getRouteMode(routeId) {
 
 function routeLayerWeight(routeIdOrCategory) {
   const mode = getRouteMode(routeIdOrCategory);
-  if (mode === "RAIL") return 0;
-  return 1;
+  // Passenger rail should render on top of bus lines.
+  if (mode === "RAIL") return 1;
+  return 0;
 }
 
 function haversineMeters(lat1, lon1, lat2, lon2) {
@@ -145,6 +288,75 @@ function parseHHMMToMinutes(v) {
   const mm = Number(m[2]);
   if (!Number.isFinite(hh) || !Number.isFinite(mm) || mm < 0 || mm > 59) return null;
   return hh * 60 + mm;
+}
+
+function formatMinutesFromNow(targetMinutes, nowMinutes) {
+  if (!Number.isFinite(targetMinutes) || !Number.isFinite(nowMinutes)) return null;
+  const diff = Math.max(0, Math.round(targetMinutes - nowMinutes));
+  return diff;
+}
+
+function estimateHeadwayMinutes(times) {
+  const mins = (Array.isArray(times) ? times : [])
+    .map(parseHHMMToMinutes)
+    .filter((x) => Number.isFinite(x))
+    .sort((a, b) => a - b);
+  if (mins.length < 2) return null;
+  const diffs = [];
+  for (let i = 1; i < mins.length; i++) {
+    const d = mins[i] - mins[i - 1];
+    if (d > 0 && d <= 180) diffs.push(d);
+  }
+  if (!diffs.length) return null;
+  diffs.sort((a, b) => a - b);
+  const mid = Math.floor(diffs.length / 2);
+  return diffs.length % 2 ? diffs[mid] : Math.round((diffs[mid - 1] + diffs[mid]) / 2);
+}
+
+function buildEstimatedSchedule(times, nowMinutes, limit = 3) {
+  const base = (Array.isArray(times) ? times : [])
+    .map((t) => ({ t, m: parseHHMMToMinutes(t) }))
+    .filter((x) => x.m != null)
+    .sort((a, b) => a.m - b.m);
+  if (!base.length) return [];
+
+  const start = base[0].m;
+  const end = base[base.length - 1].m;
+  const headway = estimateHeadwayMinutes(base.map((x) => x.t)) || 10;
+  if (!Number.isFinite(start) || !Number.isFinite(end) || headway <= 0) return [];
+
+  const rows = [];
+  let cursor = start;
+  while (cursor <= end) {
+    rows.push(cursor);
+    cursor += headway;
+    if (rows.length > 2400) break;
+  }
+
+  const past = rows.filter((m) => m < nowMinutes);
+  const future = rows.filter((m) => m >= nowMinutes);
+  const out = [];
+  const lastPast = past[past.length - 1];
+  if (lastPast != null) out.push({ t: formatMinutesToHHMM(lastPast), m: lastPast, status: "past" });
+  for (let i = 0; i < future.length && out.length < limit; i++) {
+    out.push({ t: formatMinutesToHHMM(future[i]), m: future[i], status: i === 0 ? "next" : "upcoming" });
+  }
+  if (!out.length) return [];
+  return out.slice(0, limit);
+}
+
+function formatMinutesToHHMM(mins) {
+  const total = Math.max(0, Math.round(mins));
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
+function getNextDeparturesInMinutes(times, nowMinutes, limit = 2) {
+  const schedule = buildEstimatedSchedule(times, nowMinutes, Math.max(limit, 3))
+    .filter((row) => row.status !== "past")
+    .map((row) => row.m);
+  return schedule.slice(0, limit).map((m) => formatMinutesFromNow(m, nowMinutes));
 }
 
 function getTodayTimetableBucket() {
@@ -210,22 +422,6 @@ function getNearbyFromIndex(index, x, y, size) {
   return out;
 }
 
-// ================= ROUTE GROUPING =================
-const routes = new Map();
-for (const s of allStations) {
-  if (!routes.has(s.route_id)) routes.set(s.route_id, []);
-  routes.get(s.route_id).push(s);
-}
-for (const [routeId, routeStops] of routes.entries()) {
-  routeStops.sort((a, b) => {
-    const as = Number(a.seq ?? 0);
-    const bs = Number(b.seq ?? 0);
-    if (as !== bs) return as - bs;
-    return String(a.stop_id || "").localeCompare(String(b.stop_id || ""));
-  });
-  routes.set(routeId, routeStops);
-}
-
 const routeLineRegistry = new Map();
 const stopElementRegistry = new Map();
 const poiElementRegistry = [];
@@ -233,120 +429,15 @@ const stationNameIndex = new Map();
 const transferLineRegistry = [];
 let continuationPanelData = [];
 let includeBusLayer = true;
-let selectedRailRouteId = null;
-let selectedRailCategory = null;
 let startStopBadgeId = null;
 let endStopBadgeId = null;
-
-const sharedTrackLayer = document.createElementNS(svg.namespaceURI, "g");
-sharedTrackLayer.setAttribute("id", "offset-layer");
-const routeLayer = document.createElementNS(svg.namespaceURI, "g");
-routeLayer.setAttribute("id", "route-layer");
-const transferLayer = document.createElementNS(svg.namespaceURI, "g");
-transferLayer.setAttribute("id", "transfer-layer");
-const stopLayer = document.createElementNS(svg.namespaceURI, "g");
-stopLayer.setAttribute("id", "stop-layer");
-const poiLayer = document.createElementNS(svg.namespaceURI, "g");
-poiLayer.setAttribute("id", "poi-layer");
-const labelLayer = document.createElementNS(svg.namespaceURI, "g");
-labelLayer.setAttribute("id", "label-layer");
-const interactionLayer = document.createElementNS(svg.namespaceURI, "g");
-interactionLayer.setAttribute("id", "interaction-layer");
-
-const defs = document.createElementNS(svg.namespaceURI, "defs");
-const clip = document.createElementNS(svg.namespaceURI, "clipPath");
-clip.setAttribute("id", "map-clip");
-const clipRect = document.createElementNS(svg.namespaceURI, "rect");
-clipRect.setAttribute("x", "0");
-clipRect.setAttribute("y", "0");
-clipRect.setAttribute("width", String(svgWidth));
-clipRect.setAttribute("height", String(svgHeight));
-clip.appendChild(clipRect);
-defs.appendChild(clip);
-svg.appendChild(defs);
-sharedTrackLayer.setAttribute("clip-path", "url(#map-clip)");
-routeLayer.setAttribute("clip-path", "url(#map-clip)");
-transferLayer.setAttribute("clip-path", "url(#map-clip)");
-stopLayer.setAttribute("clip-path", "url(#map-clip)");
-poiLayer.setAttribute("clip-path", "url(#map-clip)");
-labelLayer.setAttribute("clip-path", "url(#map-clip)");
-interactionLayer.setAttribute("clip-path", "url(#map-clip)");
-svg.appendChild(sharedTrackLayer);
-svg.appendChild(routeLayer);
-svg.appendChild(transferLayer);
-svg.appendChild(poiLayer);
-svg.appendChild(stopLayer);
-svg.appendChild(labelLayer);
-svg.appendChild(interactionLayer);
-
-for (const stop of allStations) {
-  const key = String(stop.stop_name || "").trim().toLowerCase();
-  if (!stationNameIndex.has(key)) stationNameIndex.set(key, []);
-  stationNameIndex.get(key).push(stop);
-}
+let selectedRailRouteId = null;
+let selectedRailCategory = null;
 
 const hohoRoutesByStopName = new Map();
-for (const stop of allStations) {
-  const isHoho = String(stop.category || "").toUpperCase() === "HOHO";
-  if (!isHoho) continue;
-  const key = String(stop.stop_name || "").trim().toLowerCase();
-  if (!key) continue;
-  if (!hohoRoutesByStopName.has(key)) hohoRoutesByStopName.set(key, new Set());
-  hohoRoutesByStopName.get(key).add(String(stop.route_id || ""));
-}
-
-function isHohoWeekendOnlyRoute(routeId) {
-  const rid = String(routeId || "").toUpperCase();
-  return rid === "HOHOS-SAT" || rid === "HOHOS-SUN";
-}
-
-function isHohoRouteActiveToday(routeId) {
-  const rid = String(routeId || "").toUpperCase();
-  const day = new Date().getDay();
-  if (rid === "HOHOS-SAT") return day === 6;
-  if (rid === "HOHOS-SUN") return day === 0;
-  return true;
-}
-
-// ================= GEO PROJECTION =================
-const lats = allStations.map(s => s.stop_lat);
-const lons = allStations.map(s => s.stop_lon);
-const minLat = Math.min(...lats);
-const maxLat = Math.max(...lats);
-const minLon = Math.min(...lons);
-const maxLon = Math.max(...lons);
-
-function projectGeo(lat, lon) {
-  const x = ((lon - minLon) / (maxLon - minLon)) * (svgWidth - 2 * margin) + margin;
-  const y = ((maxLat - lat) / (maxLat - minLat)) * (svgHeight - 2 * margin) + margin;
-  return [x, y];
-}
-
-for (const s of allStations) {
-  const [x, y] = projectGeo(s.stop_lat, s.stop_lon);
-  s.xgeo = x;
-  s.ygeo = y;
-}
-
-for (const p of poiList) {
-  const [x, y] = projectGeo(p.lat, p.lon);
-  p.xgeo = x;
-  p.ygeo = y;
-}
 
 // ================= SCHEMATIC LAYOUT =================
-function normalizeStopName(name) {
-  return String(name || "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function snapAngle45(dx, dy) {
-  const angle = Math.atan2(dy, dx);
-  return Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-}
+// Helpers delegated to layout-engine.js (normalizeStopName, snapAngle45)
 
 function isCcRailRouteId(routeId) {
   const id = String(routeId || "").toUpperCase();
@@ -540,7 +631,7 @@ function buildCcAnchoredTopology(railStops) {
     fallbackDir = b;
   }
 
-  const center = { x: svgWidth * 0.5, y: svgHeight * 0.5 };
+  const center = { x: SVG_WIDTH * 0.5, y: SVG_HEIGHT * 0.5 };
   const ccPos = [{ x: center.x, y: center.y }];
   for (let i = 1; i < ccNodes.length; i++) {
     const v = dirVec(ccDirections[i - 1]);
@@ -691,11 +782,11 @@ function buildCcAnchoredTopology(railStops) {
 
   const width = Math.max(1, maxX - minX);
   const height = Math.max(1, maxY - minY);
-  const innerW = svgWidth - MIN_MARGIN * 2;
-  const innerH = svgHeight - MIN_MARGIN * 2;
+  const innerW = SVG_WIDTH - MIN_MARGIN * 2;
+  const innerH = SVG_HEIGHT - MIN_MARGIN * 2;
   const scale = Math.min(innerW / width, innerH / height);
-  const tx = (svgWidth - width * scale) / 2 - minX * scale;
-  const ty = (svgHeight - height * scale) / 2 - minY * scale;
+  const tx = (SVG_WIDTH - width * scale) / 2 - minX * scale;
+  const ty = (SVG_HEIGHT - height * scale) / 2 - minY * scale;
   for (const s of railStops) {
     if (!Number.isFinite(s.xschema) || !Number.isFinite(s.yschema)) continue;
     s.xschema = s.xschema * scale + tx;
@@ -705,453 +796,8 @@ function buildCcAnchoredTopology(railStops) {
   return true;
 }
 
-function buildSchematicLayout() {
-  const railStops = allStations.filter((stop) => getRouteMode(stop.route_id) === "RAIL");
-  const busStops = allStations.filter((stop) => getRouteMode(stop.route_id) !== "RAIL");
-  const railRoutes = Array.from(routes.entries())
-    .filter(([routeId]) => getRouteMode(routeId) === "RAIL")
-    .map(([routeId, routeStops]) => [String(routeId), routeStops]);
-  const busRoutes = Array.from(routes.entries())
-    .filter(([routeId]) => getRouteMode(routeId) !== "RAIL")
-    .map(([routeId, routeStops]) => [String(routeId), routeStops]);
-
-  if (!railStops.length) {
-    for (const stop of allStations) {
-      stop.xschema = stop.xgeo;
-      stop.yschema = stop.ygeo;
-    }
-    return;
-  }
-
-  const GRID_SPACING = 80;
-  const HUB_SPACING = 140;
-  const MAX_STRAIGHT_SEGMENT_NODES = 6;
-
-  const centroidLon =
-    railStops.reduce((sum, stop) => sum + Number(stop.stop_lon || 0), 0) / Math.max(1, railStops.length);
-  const centroidLat =
-    railStops.reduce((sum, stop) => sum + Number(stop.stop_lat || 0), 0) / Math.max(1, railStops.length);
-
-  const stopById = new Map(allStations.map((stop) => [String(stop.stop_id), stop]));
-  const neighbors = new Map();
-  const routeLengthById = new Map();
-  for (const stop of railStops) {
-    const sid = String(stop.stop_id);
-    if (!neighbors.has(sid)) neighbors.set(sid, new Set());
-    stop.layoutX = null;
-    stop.layoutY = null;
-  }
-
-  const segmentUsage = new Map();
-  const railEdges = [];
-  const seenEdge = new Set();
-  function edgeKeyByStops(aStop, bStop) {
-    const a = canonicalStopKey(aStop) || String(aStop.stop_id);
-    const b = canonicalStopKey(bStop) || String(bStop.stop_id);
-    return a < b ? `${a}|${b}` : `${b}|${a}`;
-  }
-  function edgeIdByStopIds(aId, bId) {
-    return aId < bId ? `${aId}|${bId}` : `${bId}|${aId}`;
-  }
-
-  for (const [routeId, routeStops] of railRoutes) {
-    routeLengthById.set(routeId, routeStops.length);
-    for (let i = 0; i < routeStops.length - 1; i++) {
-      const fromStop = routeStops[i];
-      const toStop = routeStops[i + 1];
-      const fromId = String(fromStop.stop_id);
-      const toId = String(toStop.stop_id);
-      if (!neighbors.has(fromId)) neighbors.set(fromId, new Set());
-      if (!neighbors.has(toId)) neighbors.set(toId, new Set());
-      neighbors.get(fromId).add(toId);
-      neighbors.get(toId).add(fromId);
-
-      const sharedKey = edgeKeyByStops(fromStop, toStop);
-      if (!segmentUsage.has(sharedKey)) segmentUsage.set(sharedKey, new Set());
-      segmentUsage.get(sharedKey).add(routeId);
-
-      const edgeId = edgeIdByStopIds(fromId, toId);
-
-      if (!seenEdge.has(edgeId)) {
-        seenEdge.add(edgeId);
-        railEdges.push([fromId, toId]);
-      }
-    }
-
-    if (routeStops.length >= 3) {
-      const firstStop = routeStops[0];
-      const lastStop = routeStops[routeStops.length - 1];
-      const loopLike =
-        canonicalStopKey(firstStop) === canonicalStopKey(lastStop) ||
-        haversineMeters(
-          Number(firstStop.stop_lat),
-          Number(firstStop.stop_lon),
-          Number(lastStop.stop_lat),
-          Number(lastStop.stop_lon)
-        ) < 900;
-      if (loopLike) {
-        const firstId = String(firstStop.stop_id);
-        const lastId = String(lastStop.stop_id);
-        if (firstId !== lastId) {
-          const edgeId = edgeIdByStopIds(firstId, lastId);
-          if (!seenEdge.has(edgeId)) {
-            seenEdge.add(edgeId);
-            railEdges.push([firstId, lastId]);
-          }
-        }
-      }
-    }
-  }
-
-  const degreeByStop = new Map();
-  for (const stop of railStops) {
-    degreeByStop.set(String(stop.stop_id), (neighbors.get(String(stop.stop_id)) || new Set()).size);
-  }
-
-  const anchors = new Set();
-  for (const stop of railStops) {
-    const sid = String(stop.stop_id);
-    const degree = degreeByStop.get(sid) || 0;
-    if (degree >= 3 || stop.isInterchange || stop.isConnecting) anchors.add(sid);
-  }
-  for (const [, routeStops] of railRoutes) {
-    if (!routeStops.length) continue;
-    anchors.add(String(routeStops[0].stop_id));
-    anchors.add(String(routeStops[routeStops.length - 1].stop_id));
-  }
-
-  const corridorScores = [];
-  for (const [corridorKey, routeSet] of segmentUsage.entries()) {
-    const routeIds = Array.from(routeSet);
-    const maxRouteLength = routeIds.reduce(
-      (maxLen, routeId) => Math.max(maxLen, routeLengthById.get(routeId) || 0),
-      0
-    );
-    const corridorScore = routeSet.size * 5 + maxRouteLength;
-    corridorScores.push({ corridorKey, corridorScore });
-  }
-  corridorScores.sort((a, b) => b.corridorScore - a.corridorScore);
-  const trunkCount = Math.max(1, Math.ceil(corridorScores.length * 0.3));
-  const trunkCorridorKeys = new Set(
-    corridorScores.slice(0, trunkCount).map((entry) => entry.corridorKey)
-  );
-  const routePlacementScore = new Map();
-  for (const [routeId, routeStops] of railRoutes) {
-    let trunkHits = 0;
-    for (let i = 0; i < routeStops.length - 1; i++) {
-      const key = edgeKeyByStops(routeStops[i], routeStops[i + 1]);
-      if (trunkCorridorKeys.has(key)) trunkHits++;
-    }
-    routePlacementScore.set(routeId, trunkHits * 5 + routeStops.length);
-  }
-  railRoutes.sort(
-    (left, right) =>
-      (routePlacementScore.get(right[0]) || 0) -
-      (routePlacementScore.get(left[0]) || 0)
-  );
-
-  const placed = new Set();
-  function absAngleDeltaLocal(a, b) {
-    let d = Math.abs(a - b) % (Math.PI * 2);
-    if (d > Math.PI) d = Math.PI * 2 - d;
-    return d;
-  }
-  function chooseOutwardTheta(anchorX, anchorY, preferredTheta) {
-    const centerDx = centerX - anchorX;
-    const centerDy = centerY - anchorY;
-    let baseTheta = preferredTheta;
-    if (Math.cos(baseTheta) * centerDx + Math.sin(baseTheta) * centerDy > 0) {
-      baseTheta += Math.PI;
-    }
-    const candidateAngles = [0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (deg * Math.PI) / 180);
-    let bestTheta = baseTheta;
-    let bestDelta = Infinity;
-    for (const candidate of candidateAngles) {
-      if (absAngleDeltaLocal(candidate, preferredTheta) > Math.PI / 4 + 0.001) continue;
-      const ux = Math.cos(candidate);
-      const uy = Math.sin(candidate);
-      const dotToCenter = ux * centerDx + uy * centerDy;
-      if (dotToCenter > 0) continue;
-      const delta = absAngleDeltaLocal(candidate, preferredTheta);
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        bestTheta = candidate;
-      }
-    }
-    return bestTheta;
-  }
-  function spacingForEdge(aId, bId) {
-    const aDegree = degreeByStop.get(String(aId)) || 0;
-    const bDegree = degreeByStop.get(String(bId)) || 0;
-    return aDegree > 4 || bDegree > 4 ? HUB_SPACING : GRID_SPACING;
-  }
-  function placeStop(stop, x, y, blend = 1) {
-    const sid = String(stop.stop_id);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
-    if (placed.has(sid)) {
-      if (anchors.has(sid)) return false;
-      stop.layoutX = stop.layoutX * (1 - blend) + x * blend;
-      stop.layoutY = stop.layoutY * (1 - blend) + y * blend;
-      return false;
-    }
-    stop.layoutX = x;
-    stop.layoutY = y;
-    placed.add(sid);
-    return true;
-  }
-
-  const centerX = svgWidth * 0.5;
-  const centerY = svgHeight * 0.5;
-  let seeded = false;
-  for (const corridor of corridorScores) {
-    if (!trunkCorridorKeys.has(corridor.corridorKey)) continue;
-    let match = null;
-    for (const [aId, bId] of railEdges) {
-      const aStop = stopById.get(aId);
-      const bStop = stopById.get(bId);
-      if (!aStop || !bStop) continue;
-      if (edgeKeyByStops(aStop, bStop) !== corridor.corridorKey) continue;
-      match = [aStop, bStop];
-      break;
-    }
-    if (!match) continue;
-    const [aStop, bStop] = match;
-    const theta = snapAngle45(
-      Number(bStop.stop_lon) - Number(aStop.stop_lon),
-      Number(bStop.stop_lat) - Number(aStop.stop_lat)
-    );
-    const step = spacingForEdge(aStop.stop_id, bStop.stop_id);
-    if (!seeded) {
-      placeStop(aStop, centerX, centerY);
-      placeStop(bStop, centerX + Math.cos(theta) * step, centerY + Math.sin(theta) * step);
-      seeded = true;
-      continue;
-    }
-    const aPlaced = placed.has(String(aStop.stop_id));
-    const bPlaced = placed.has(String(bStop.stop_id));
-    if (aPlaced && !bPlaced) {
-      placeStop(
-        bStop,
-        aStop.layoutX + Math.cos(theta) * step,
-        aStop.layoutY + Math.sin(theta) * step
-      );
-    } else if (!aPlaced && bPlaced) {
-      placeStop(
-        aStop,
-        bStop.layoutX - Math.cos(theta) * step,
-        bStop.layoutY - Math.sin(theta) * step
-      );
-    }
-  }
-
-  function placeRouteSequential(routeId, routeStops, seedIndex) {
-    if (!routeStops.length) return 0;
-    let created = 0;
-    let anchorIndex = routeStops.findIndex((stop) => placed.has(String(stop.stop_id)));
-    if (anchorIndex < 0) {
-      const theta = (Math.PI * 2 * seedIndex) / Math.max(1, railRoutes.length);
-      const seedX = centerX + Math.cos(theta) * GRID_SPACING * 1.4;
-      const seedY = centerY + Math.sin(theta) * GRID_SPACING * 1.4;
-      anchorIndex = 0;
-      created += placeStop(routeStops[0], seedX, seedY) ? 1 : 0;
-    }
-
-    let forwardStraightCount = 0;
-    let forwardPrevTheta = null;
-    for (let i = anchorIndex + 1; i < routeStops.length; i++) {
-      const prev = routeStops[i - 1];
-      const curr = routeStops[i];
-      if (!placed.has(String(prev.stop_id))) continue;
-      if (placed.has(String(curr.stop_id))) continue;
-      const step = spacingForEdge(prev.stop_id, curr.stop_id);
-      const geoTheta = snapAngle45(
-        Number(curr.stop_lon) - Number(prev.stop_lon),
-        Number(curr.stop_lat) - Number(prev.stop_lat)
-      );
-      let theta = chooseOutwardTheta(prev.layoutX, prev.layoutY, geoTheta);
-      if (forwardPrevTheta != null && absAngleDeltaLocal(forwardPrevTheta, theta) < 0.001) {
-        forwardStraightCount++;
-      } else {
-        forwardStraightCount = 1;
-      }
-      forwardPrevTheta = theta;
-      if (forwardStraightCount > MAX_STRAIGHT_SEGMENT_NODES) {
-        const bendA = geoTheta + Math.PI / 4;
-        const bendB = geoTheta - Math.PI / 4;
-        const outA = chooseOutwardTheta(prev.layoutX, prev.layoutY, bendA);
-        const outB = chooseOutwardTheta(prev.layoutX, prev.layoutY, bendB);
-        theta =
-          absAngleDeltaLocal(outA, geoTheta) <= absAngleDeltaLocal(outB, geoTheta)
-            ? outA
-            : outB;
-        forwardStraightCount = 1;
-      }
-      if (absAngleDeltaLocal(theta, geoTheta) > Math.PI / 4) theta = geoTheta;
-      const x = prev.layoutX + Math.cos(theta) * step;
-      const y = prev.layoutY + Math.sin(theta) * step;
-      created += placeStop(curr, x, y) ? 1 : 0;
-    }
-
-    let backwardStraightCount = 0;
-    let backwardPrevTheta = null;
-    for (let i = anchorIndex - 1; i >= 0; i--) {
-      const next = routeStops[i + 1];
-      const curr = routeStops[i];
-      if (!placed.has(String(next.stop_id))) continue;
-      if (placed.has(String(curr.stop_id))) continue;
-      const step = spacingForEdge(curr.stop_id, next.stop_id);
-      const geoTheta = snapAngle45(
-        Number(curr.stop_lon) - Number(next.stop_lon),
-        Number(curr.stop_lat) - Number(next.stop_lat)
-      );
-      let theta = chooseOutwardTheta(next.layoutX, next.layoutY, geoTheta);
-      if (backwardPrevTheta != null && absAngleDeltaLocal(backwardPrevTheta, theta) < 0.001) {
-        backwardStraightCount++;
-      } else {
-        backwardStraightCount = 1;
-      }
-      backwardPrevTheta = theta;
-      if (backwardStraightCount > MAX_STRAIGHT_SEGMENT_NODES) {
-        const bendA = geoTheta + Math.PI / 4;
-        const bendB = geoTheta - Math.PI / 4;
-        const outA = chooseOutwardTheta(next.layoutX, next.layoutY, bendA);
-        const outB = chooseOutwardTheta(next.layoutX, next.layoutY, bendB);
-        theta =
-          absAngleDeltaLocal(outA, geoTheta) <= absAngleDeltaLocal(outB, geoTheta)
-            ? outA
-            : outB;
-        backwardStraightCount = 1;
-      }
-      if (absAngleDeltaLocal(theta, geoTheta) > Math.PI / 4) theta = geoTheta;
-      const x = next.layoutX + Math.cos(theta) * step;
-      const y = next.layoutY + Math.sin(theta) * step;
-      created += placeStop(curr, x, y) ? 1 : 0;
-    }
-    return created;
-  }
-
-  let grown = true;
-  let pass = 0;
-  while (grown && pass < 10) {
-    grown = false;
-    pass++;
-    for (let routeIndex = 0; routeIndex < railRoutes.length; routeIndex++) {
-      const [routeId, routeStops] = railRoutes[routeIndex];
-      const created = placeRouteSequential(routeId, routeStops, routeIndex);
-      if (created > 0) grown = true;
-    }
-  }
-
-  for (const stop of railStops) {
-    if (placed.has(String(stop.stop_id))) continue;
-    const px = ((stop.xgeo - margin) / Math.max(1, svgWidth - margin * 2)) * (svgWidth - MIN_MARGIN * 2) + MIN_MARGIN;
-    const py = ((stop.ygeo - margin) / Math.max(1, svgHeight - margin * 2)) * (svgHeight - MIN_MARGIN * 2) + MIN_MARGIN;
-    placeStop(stop, px, py);
-  }
-
-  let minLayoutX = Infinity;
-  let maxLayoutX = -Infinity;
-  let minLayoutY = Infinity;
-  let maxLayoutY = -Infinity;
-  for (const stop of railStops) {
-    minLayoutX = Math.min(minLayoutX, stop.layoutX);
-    maxLayoutX = Math.max(maxLayoutX, stop.layoutX);
-    minLayoutY = Math.min(minLayoutY, stop.layoutY);
-    maxLayoutY = Math.max(maxLayoutY, stop.layoutY);
-  }
-  const layoutWidth = Math.max(1, maxLayoutX - minLayoutX);
-  const layoutHeight = Math.max(1, maxLayoutY - minLayoutY);
-  const fitScale = Math.min(
-    (svgWidth - MIN_MARGIN * 2) / layoutWidth,
-    (svgHeight - MIN_MARGIN * 2) / layoutHeight
-  );
-  const fitTx = (svgWidth - layoutWidth * fitScale) * 0.5 - minLayoutX * fitScale;
-  const fitTy = (svgHeight - layoutHeight * fitScale) * 0.5 - minLayoutY * fitScale;
-  for (const stop of railStops) {
-    stop.xschema = stop.layoutX * fitScale + fitTx;
-    stop.yschema = stop.layoutY * fitScale + fitTy;
-  }
-
-  let railGeoMinX = Infinity;
-  let railGeoMaxX = -Infinity;
-  let railGeoMinY = Infinity;
-  let railGeoMaxY = -Infinity;
-  for (const stop of railStops) {
-    railGeoMinX = Math.min(railGeoMinX, stop.xgeo);
-    railGeoMaxX = Math.max(railGeoMaxX, stop.xgeo);
-    railGeoMinY = Math.min(railGeoMinY, stop.ygeo);
-    railGeoMaxY = Math.max(railGeoMaxY, stop.ygeo);
-  }
-  function mapGeoToRailSchema(x, y) {
-    const tx = (x - railGeoMinX) / Math.max(1, railGeoMaxX - railGeoMinX);
-    const ty = (y - railGeoMinY) / Math.max(1, railGeoMaxY - railGeoMinY);
-    return [
-      MIN_MARGIN + tx * (svgWidth - MIN_MARGIN * 2),
-      MIN_MARGIN + ty * (svgHeight - MIN_MARGIN * 2),
-    ];
-  }
-
-  const railByName = new Map();
-  for (const stop of railStops) {
-    const key = normalizeStopName(stop.stop_name);
-    if (!key || railByName.has(key)) continue;
-    railByName.set(key, stop);
-  }
-
-  for (const stop of busStops) {
-    stop.xschema = null;
-    stop.yschema = null;
-  }
-  for (const [, routeStops] of busRoutes) {
-    for (let i = 0; i < routeStops.length; i++) {
-      const currentStop = routeStops[i];
-      const railMatch = railByName.get(normalizeStopName(currentStop.stop_name));
-      if (railMatch) {
-        currentStop.xschema = railMatch.xschema;
-        currentStop.yschema = railMatch.yschema;
-        continue;
-      }
-      if (i === 0) {
-        const [sx, sy] = mapGeoToRailSchema(currentStop.xgeo, currentStop.ygeo);
-        currentStop.xschema = sx;
-        currentStop.yschema = sy;
-        continue;
-      }
-      const previousStop = routeStops[i - 1];
-      const prevX = Number.isFinite(previousStop.xschema)
-        ? previousStop.xschema
-        : mapGeoToRailSchema(previousStop.xgeo, previousStop.ygeo)[0];
-      const prevY = Number.isFinite(previousStop.yschema)
-        ? previousStop.yschema
-        : mapGeoToRailSchema(previousStop.xgeo, previousStop.ygeo)[1];
-      const theta = snapAngle45(
-        Number(currentStop.stop_lon) - Number(previousStop.stop_lon),
-        Number(currentStop.stop_lat) - Number(previousStop.stop_lat)
-      );
-      const step = Math.max(18, GRID_SPACING * 0.5);
-      currentStop.xschema = prevX + Math.cos(theta) * step;
-      currentStop.yschema = prevY + Math.sin(theta) * step;
-    }
-  }
-
-  for (const stop of allStations) {
-    if (!Number.isFinite(stop.xschema) || !Number.isFinite(stop.yschema)) {
-      stop.xschema = stop.xgeo;
-      stop.yschema = stop.ygeo;
-    }
-  }
-
-  emitToast(
-    translatef(
-      "layout_centroid_info",
-      "Map layout: centroid ({lat}, {lon}) with trunk-first directional schematic",
-      { lat: centroidLat.toFixed(4), lon: centroidLon.toFixed(4) }
-    ),
-    "info"
-  );
-}
-
-buildSchematicLayout();
+// Schematic layout logic now lives in src/core/layout-engine.js
+// and is invoked from init() via layoutBuildSchematic().
 
 function buildPoiLayout() {
   if (!poiList.length) return;
@@ -1227,35 +873,17 @@ const mapVisibleStops = allStations.filter(
   (s) => !mapHiddenStopIds.has(String(s.stop_id))
 );
 
+const terminalStopIds = new Set();
+for (const [routeId, stops] of routes.entries()) {
+  if (getRouteMode(routeId) !== "RAIL") continue;
+  const displayStops = routeDisplayStops.get(String(routeId)) || stops;
+  if (!displayStops.length) continue;
+  terminalStopIds.add(String(displayStops[0].stop_id));
+  terminalStopIds.add(String(displayStops[displayStops.length - 1].stop_id));
+}
+
 function fitVisibleNetworkToViewport() {
-  const nodes = mapVisibleStops.filter(
-    (s) => Number.isFinite(s.xschema) && Number.isFinite(s.yschema)
-  );
-  if (!nodes.length) return;
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (const s of nodes) {
-    minX = Math.min(minX, s.xschema);
-    maxX = Math.max(maxX, s.xschema);
-    minY = Math.min(minY, s.yschema);
-    maxY = Math.max(maxY, s.yschema);
-  }
-
-  const width = Math.max(1, maxX - minX);
-  const height = Math.max(1, maxY - minY);
-  const innerW = svgWidth - MIN_MARGIN * 2;
-  const innerH = svgHeight - MIN_MARGIN * 2;
-  const scale = Math.min(innerW / width, innerH / height);
-  const tx = (svgWidth - width * scale) / 2 - minX * scale;
-  const ty = (svgHeight - height * scale) / 2 - minY * scale;
-
-  for (const s of nodes) {
-    s.xschema = s.xschema * scale + tx;
-    s.yschema = s.yschema * scale + ty;
-  }
+  const { scale, tx, ty } = layoutFitVisibleNetwork(mapVisibleStops, SVG_WIDTH, SVG_HEIGHT, MIN_MARGIN);
   for (const p of poiList) {
     if (!Number.isFinite(p.xschema) || !Number.isFinite(p.yschema)) continue;
     p.xschema = p.xschema * scale + tx;
@@ -1265,34 +893,7 @@ function fitVisibleNetworkToViewport() {
 
 fitVisibleNetworkToViewport();
 
-let schemaStopIndex = new Map();
-let geoStopIndex = new Map();
-let poiSchemaIndex = new Map();
 let interchangeCandidates = [];
-
-function rebuildSpatialIndexes() {
-  schemaStopIndex = buildSpatialIndex(
-    mapVisibleStops,
-    (s) => s.xschema,
-    (s) => s.yschema,
-    SCHEMA_BUCKET_SIZE
-  );
-  geoStopIndex = buildSpatialIndex(
-    mapVisibleStops,
-    (s) => s.xgeo,
-    (s) => s.ygeo,
-    GEO_BUCKET_SIZE
-  );
-  poiSchemaIndex = buildSpatialIndex(
-    poiList,
-    (p) => p.xschema,
-    (p) => p.yschema,
-    SCHEMA_BUCKET_SIZE
-  );
-  interchangeCandidates = mapVisibleStops.filter(
-    (s) => s.isInterchange || s.isConnecting
-  );
-}
 
 function makeSegmentKey(a, b) {
   const aId = canonicalStopKey(a);
@@ -1649,8 +1250,7 @@ function getRouteStopPoint(routeId, stop) {
   return { x: stop.xschema, y: stop.yschema };
 }
 
-function getSegmentOffset(routeId, a, b) {
-  const key = makeSegmentKey(a, b);
+function getSegmentOffset(routeId, key, a, b) {
   const list = sharedSegmentOrder.get(key);
   if (!list || list.length < 2) return 0;
   const idx = list.indexOf(String(routeId));
@@ -1663,33 +1263,12 @@ function getSegmentOffset(routeId, a, b) {
   return centered * directionSign;
 }
 
-function getOffsetPolyline(routeId, stops) {
-  const points = [];
-  for (let i = 0; i < stops.length - 1; i++) {
-    const a = stops[i];
-    const b = stops[i + 1];
-    const ap = getRouteStopPoint(routeId, a);
-    const bp = getRouteStopPoint(routeId, b);
-    const dx = bp.x - ap.x;
-    const dy = bp.y - ap.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-    const offset = getSegmentOffset(routeId, a, b);
-    const p1 = { x: ap.x + nx * offset, y: ap.y + ny * offset };
-    const p2 = { x: bp.x + nx * offset, y: bp.y + ny * offset };
-    if (i === 0) points.push(p1);
-    points.push(p2);
-  }
-  return points;
-}
-
 function applyRenderedStopPlacement() {
   const acc = new Map();
   for (const [routeId, stops] of routes.entries()) {
     const displayStops = routeDisplayStops.get(String(routeId)) || stops;
     if (!displayStops || displayStops.length < 2) continue;
-    const pts = getOffsetPolyline(routeId, displayStops);
+    const pts = getOffsetPolyline(routeId, displayStops, getRouteStopPoint, getSegmentOffset, makeSegmentKey);
     if (!pts.length || pts.length !== displayStops.length) continue;
     for (let i = 0; i < displayStops.length; i++) {
       const stop = displayStops[i];
@@ -1804,94 +1383,8 @@ function syncBusLoopStopsToRenderedPath() {
   }
 }
 
-rebuildRouteGeometryCaches();
-applyRenderedStopPlacement();
-spreadSharedRailStops();
-rebuildRouteGeometryCaches();
-applyRenderedStopPlacement();
-spreadSharedRailStops();
-alignBusStopsToRailTransferStations();
-fitVisibleNetworkToViewport();
-refreshRouteBaseCoordinates();
-buildBusLoopRenderCache();
-syncBusLoopStopsToRenderedPath();
-rebuildSpatialIndexes();
-
-function polylinePathFromPoints(points) {
-  if (!points.length) return "";
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-  let d = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 1; i < points.length; i++) {
-    d += ` L ${points[i].x} ${points[i].y}`;
-  }
-  return d;
-}
-
-function capsulePathFromStops(routeId, stops) {
-  const pts = stops
-    .map((s) => getRouteStopPoint(routeId, s))
-    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
-  if (pts.length < 2) return polylinePathFromPoints(pts);
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (const p of pts) {
-    minX = Math.min(minX, p.x);
-    maxX = Math.max(maxX, p.x);
-    minY = Math.min(minY, p.y);
-    maxY = Math.max(maxY, p.y);
-  }
-
-  const cx = (minX + maxX) * 0.5;
-  const cy = (minY + maxY) * 0.5;
-  let w = Math.max(42, maxX - minX + 24);
-  let h = Math.max(26, maxY - minY + 20);
-  const majorHorizontal = w >= h;
-  if (majorHorizontal) h = Math.min(h, w * 0.55);
-  else w = Math.min(w, h * 0.55);
-  const r = majorHorizontal ? h * 0.5 : w * 0.5;
-
-  const dx = pts[pts.length - 1].x - pts[0].x;
-  const dy = pts[pts.length - 1].y - pts[0].y;
-  const theta = snapAngle45(dx, dy);
-  const deg = (theta * 180) / Math.PI;
-
-  let d = "";
-  if (majorHorizontal) {
-    const x0 = cx - w * 0.5;
-    const x1 = cx + w * 0.5;
-    const y0 = cy - h * 0.5;
-    const y1 = cy + h * 0.5;
-    d = [
-      `M ${x0 + r} ${y0}`,
-      `L ${x1 - r} ${y0}`,
-      `A ${r} ${r} 0 0 1 ${x1 - r} ${y1}`,
-      `L ${x0 + r} ${y1}`,
-      `A ${r} ${r} 0 0 1 ${x0 + r} ${y0}`,
-      "Z",
-    ].join(" ");
-  } else {
-    const x0 = cx - w * 0.5;
-    const x1 = cx + w * 0.5;
-    const y0 = cy - h * 0.5;
-    const y1 = cy + h * 0.5;
-    d = [
-      `M ${x0} ${y0 + r}`,
-      `L ${x0} ${y1 - r}`,
-      `A ${r} ${r} 0 0 1 ${x1} ${y1 - r}`,
-      `L ${x1} ${y0 + r}`,
-      `A ${r} ${r} 0 0 1 ${x0} ${y0 + r}`,
-      "Z",
-    ].join(" ");
-  }
-  return {
-    d,
-    transform: `rotate(${deg} ${cx} ${cy})`,
-  };
-}
-
+// Top-level drawing code removed - moved to init()
+/*
 // ================= DRAW ROUTES =================
 const routeEntries = Array.from(routes.entries()).sort(
   ([routeA], [routeB]) => {
@@ -1909,15 +1402,17 @@ for (const [route_id, stops] of routeEntries) {
   if (!displayStops || displayStops.length < 2) continue;
   const baseColor = getRouteColor(route_id, false, displayStops[0]?.route_color ?? null).color;
   const mode = getRouteMode(route_id);
-  const routePoints = getOffsetPolyline(route_id, displayStops);
+  const routePoints = getOffsetPolyline(route_id, displayStops, getRouteStopPoint, getSegmentOffset, makeSegmentKey);
+  const validRoutePoints = routePoints.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
+  if (validRoutePoints.length < 2) continue;
   const isLoopBus = mode !== "RAIL" && displayStops.some((s) => Boolean(s.isLoop));
   const isCcRail = mode === "RAIL" && (isCcRailRouteId(route_id) || displayStops.some((s) => isCcRailStop(s)));
   const loopPath = busLoopRenderCache.get(String(route_id));
   const routePathD = isLoopBus
-    ? (loopPath?.pathD || polylinePathFromPoints(routePoints))
-    : (isCcRail && routePoints.length > 2
-      ? polylinePathFromPoints([...routePoints, routePoints[0]])
-      : polylinePathFromPoints(routePoints));
+    ? (loopPath?.pathD || polylinePathFromPoints(validRoutePoints))
+    : (isCcRail && validRoutePoints.length > 2
+      ? polylinePathFromPoints([...validRoutePoints, validRoutePoints[0]])
+      : polylinePathFromPoints(validRoutePoints));
   const strokeWidth = mode === "RAIL"
     ? (displayStops.length >= 26 ? PRIMARY_RAIL_STROKE : SECONDARY_RAIL_STROKE)
     : BUS_STROKE;
@@ -1954,6 +1449,7 @@ for (const [route_id, stops] of routeEntries) {
   }
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", baseColor);
+  path.setAttribute("stroke-opacity", "0.95");
   path.setAttribute("stroke-width", String(strokeWidth));
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
@@ -2165,6 +1661,9 @@ for (const p of poiList) {
   hit.dataset.poiId = String(p.id);
   interactionLayer.appendChild(hit);
 }
+*/
+
+// =================
 
 function smoothPathFromStops(stops) {
   const pts = stops
@@ -2292,7 +1791,7 @@ function dispatchStationInfo(stop, source) {
   }));
 }
 
-function showStationTooltip(stop, clientX, clientY) {
+function buildStationDetailMarkup(stop, includeActions = true) {
   const t = (key, fallback) => {
     if (window?.jrondaI18n && typeof window.jrondaI18n.t === "function") {
       return window.jrondaI18n.t(key, fallback);
@@ -2311,6 +1810,8 @@ function showStationTooltip(stop, clientX, clientY) {
   const nearbyPoi = findNearbyPoiForStop(stop, 1400, 4);
   const todayBucket = getTodayTimetableBucket();
   const dayLabel = todayBucket === "weekday" ? "Weekday" : (todayBucket === "saturday" ? "Saturday" : "Sunday");
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   for (const s of siblings) {
     const routeId = String(s.route_id);
@@ -2328,11 +1829,16 @@ function showStationTooltip(stop, clientX, clientY) {
         const routeTable = railTimetables?.[routeId]?.[sourceStopId];
         const times = Array.isArray(routeTable?.[todayBucket]) ? routeTable[todayBucket] : [];
         if (times.length) {
-          const next = getUpcomingDepartures(times, 4).join(", ");
-          const first = times[0];
-          const last = times[times.length - 1];
+          const rows = buildEstimatedSchedule(times, nowMinutes, 3);
+          const nextMins = getNextDeparturesInMinutes(times, nowMinutes, 2);
+          const nextLabel = nextMins.length
+            ? nextMins.map((m) => `${m} min`).join(", ")
+            : t("no_more_trains_today", "No more trains today");
+          const rowHtml = rows
+            .map((row) => `<div class="tt-row ${row.status}"><span class="tt-time">${row.t}</span></div>`)
+            .join("");
           railTimetableRows.push(
-            `<div><b>${routeLabel}</b>: ${dayLabel} ${first} - ${last}<br/><span class="tooltip-next">Next: ${next}</span></div>`
+            `<div><b>${routeLabel}</b>: ${dayLabel}<br/><div class="tt-table">${rowHtml}</div><span class="tooltip-next">${t("next_train", "Next train")}: ${nextLabel}</span></div>`
           );
         } else {
           railTimetableRows.push(
@@ -2347,11 +1853,16 @@ function showStationTooltip(stop, clientX, clientY) {
       const bTable = busTimetables?.[routeId]?.[sourceStopId];
       const bt = Array.isArray(bTable?.[todayBucket]) ? bTable[todayBucket] : [];
       if (bt.length) {
-        const next = getUpcomingDepartures(bt, 3).join(", ");
-        const first = bt[0];
-        const last = bt[bt.length - 1];
+        const rows = buildEstimatedSchedule(bt, nowMinutes, 3);
+        const nextMins = getNextDeparturesInMinutes(bt, nowMinutes, 2);
+        const nextLabel = nextMins.length
+          ? nextMins.map((m) => `${m} min`).join(", ")
+          : t("no_more_buses_today", "No more buses today");
+        const rowHtml = rows
+          .map((row) => `<div class="tt-row ${row.status}"><span class="tt-time">${row.t}</span></div>`)
+          .join("");
         busTimetableRows.push(
-          `<div><b>${routeLabel}</b>: ${dayLabel} ${first} - ${last}<br/><span class="tooltip-next">Next: ${next}</span></div>`
+          `<div><b>${routeLabel}</b>: ${dayLabel}<br/><div class="tt-table">${rowHtml}</div><span class="tooltip-next">${t("next_bus", "Next bus")}: ${nextLabel}</span></div>`
         );
       } else {
         busTimetableRows.push(
@@ -2361,7 +1872,7 @@ function showStationTooltip(stop, clientX, clientY) {
     }
   }
 
-  tooltipStopId = String(stop.stop_id);
+  const tooltipId = String(stop.stop_id);
   const primaryLabel = getServiceLabel(stop, getRouteMode(stop.route_id));
   const isHoho = String(stop.category || "").toUpperCase() === "HOHO";
   const hohoRouteCount = (hohoRoutesByStopName.get(key) || new Set()).size;
@@ -2379,12 +1890,20 @@ function showStationTooltip(stop, clientX, clientY) {
     ? "tooltip-btn tooltip-btn-disabled"
     : "tooltip-btn tooltip-btn-secondary";
   function poiIcon(category) {
-    const { color, iconPath } = getPoiCategoryStyle(category);
-    return `<svg width="12" height="12" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;">
-      <path d="${iconPath || ""}" fill="${color}" stroke="#fff" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
-    </svg>`;
+    const { color, filename } = getPoiCategoryStyle(category);
+    if (filename) {
+      return `<img src="/src/img/poi/${filename}" width="12" height="12" style="vertical-align:middle;margin-right:4px;" alt=""/>`;
+    }
+    const dotColor = color || "#64748b";
+    return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dotColor};margin-right:6px;vertical-align:middle;"></span>`;
   }
-  stationTooltip.innerHTML = `
+  const actionsHtml = includeActions ? `
+    <div class="tooltip-actions">
+      ${endOnly ? "" : `<button id="jronda-start-here" class="${startButtonClassName}" type="button" aria-label="${t("set_start_here", "Set start here")}" ${disabledStateAttributes}>${t("start_here", "Start here")}</button>`}
+      ${startOnly ? "" : `<button id="jronda-end-here" class="${endButtonClassName}" type="button" aria-label="${t("set_end_here", "Set end here")}" ${disabledStateAttributes}>${t("end_here", "End here")}</button>`}
+    </div>
+  ` : "";
+  const html = `
     <div class="tooltip-title">${stop.stop_name || stop.stop_id}</div>
     <div class="tooltip-line">${t("primary_line", "Primary line")}: <b>${primaryLabel}</b> (${getRouteMode(stop.route_id)})</div>
     <div class="tooltip-line">${t("rail_lines", "Rail lines")}: ${railRoutes.join(", ") || t("none", "None")}</div>
@@ -2397,11 +1916,21 @@ function showStationTooltip(stop, clientX, clientY) {
         ? nearbyPoi.map((p) => `${poiIcon(p.category)} ${p.name} (${p.category}, ${p.meters}m)`).join("<br/>")
         : t("none_1_4km", "None in 1.4km")
     }</div>
-    <div class="tooltip-actions">
-      ${endOnly ? "" : `<button id="jronda-start-here" class="${startButtonClassName}" type="button" aria-label="${t("set_start_here", "Set start here")}" ${disabledStateAttributes}>${t("start_here", "Start here")}</button>`}
-      ${startOnly ? "" : `<button id="jronda-end-here" class="${endButtonClassName}" type="button" aria-label="${t("set_end_here", "Set end here")}" ${disabledStateAttributes}>${t("end_here", "End here")}</button>`}
-    </div>
+    ${actionsHtml}
   `;
+  return { html, actionDisabled, tooltipId };
+}
+
+export function getStationDetailHtml(stopId) {
+  const stop = stationById.get(String(stopId || ""));
+  if (!stop) return "";
+  return buildStationDetailMarkup(stop, false).html;
+}
+
+function showStationTooltip(stop, clientX, clientY) {
+  const detail = buildStationDetailMarkup(stop, true);
+  tooltipStopId = detail.tooltipId;
+  stationTooltip.innerHTML = detail.html;
   positionAndShowStationTooltip(clientX, clientY, 140);
   armFloatingPanelTimeout();
 
@@ -2409,7 +1938,7 @@ function showStationTooltip(stop, clientX, clientY) {
   const endBtn = document.getElementById("jronda-end-here");
   if (startBtn) {
     startBtn.onclick = () => {
-      if (actionDisabled) {
+      if (detail.actionDisabled) {
         emitToast(translate("hoho_not_active", "This HOHO service is not active today."), "warn");
         return;
       }
@@ -2420,7 +1949,7 @@ function showStationTooltip(stop, clientX, clientY) {
   }
   if (endBtn) {
     endBtn.onclick = () => {
-      if (actionDisabled) {
+      if (detail.actionDisabled) {
         emitToast(translate("hoho_not_active", "This HOHO service is not active today."), "warn");
         return;
       }
@@ -2688,6 +2217,10 @@ function findDisplayStop(stopId) {
 }
 
 function createEndpointBadge(label, color) {
+  if (!svg || !svg.namespaceURI) {
+    __coreDebug('SVG not initialized for endpoint badge creation');
+    return { g: null, bubble: null, text: null };
+  }
   const g = document.createElementNS(svg.namespaceURI, "g");
   const bubble = document.createElementNS(svg.namespaceURI, "rect");
   const text = document.createElementNS(svg.namespaceURI, "text");
@@ -2709,12 +2242,10 @@ function createEndpointBadge(label, color) {
   return { g, bubble, text };
 }
 
-const startBadge = createEndpointBadge("S", "#0D6EFD");
-const endBadge = createEndpointBadge("E", "#D63384");
-svg.appendChild(startBadge.g);
-svg.appendChild(endBadge.g);
+// Badge creation moved to init()
 
 function positionBadge(badge, stop, visible) {
+  if (!badge?.g) return;
   if (!visible || !stop) {
     badge.g.setAttribute("display", "none");
     return;
@@ -2729,6 +2260,16 @@ function positionBadge(badge, stop, visible) {
 }
 
 function refreshEndpointBadges() {
+  // Skip badge recreation if SVG not ready (avoid warn spam)
+  if (svg && !startBadge?.g) {
+    startBadge = createEndpointBadge("S", "#0D6EFD");
+    svg.appendChild(startBadge.g);
+  }
+  if (svg && !endBadge?.g) {
+    endBadge = createEndpointBadge("E", "#D63384");
+    svg.appendChild(endBadge.g);
+  }
+  
   const s = startStopBadgeId ? findDisplayStop(startStopBadgeId) : null;
   const e = endStopBadgeId ? findDisplayStop(endStopBadgeId) : null;
   positionBadge(startBadge, s, Boolean(s));
@@ -2739,15 +2280,53 @@ function isRailMode(mode) {
   return mode === "RAIL";
 }
 
+function isHohoWeekendOnlyRoute(routeId) {
+  const rid = String(routeId || "").toUpperCase();
+  // No known HOHO weekend-only route in data; keep placeholder for future schedule filtering.
+  return false;
+}
+
+function isHohoRouteActiveToday(routeId) {
+  const rid = String(routeId || "").toUpperCase();
+  if (!rid.includes("HOHO")) return true;
+  if (isHohoWeekendOnlyRoute(rid)) {
+    const bucket = getTodayTimetableBucket();
+    return bucket === "saturday" || bucket === "sunday";
+  }
+  return true;
+}
+
+function getBusOperator(routeId, category = "") {
+  const cat = String(category || "").toUpperCase();
+  if (cat.includes("HOHO")) return "HOHO";
+  if (cat.includes("GOKL")) return "GOKL";
+  if (cat.includes("RAPID")) return "RAPID";
+
+  const rid = String(routeId || "").toUpperCase();
+  if (rid.startsWith("HOHO")) return "HOHO";
+  if (rid.startsWith("GOKL") || rid.includes("GOKL")) return "GOKL";
+  if (rid.startsWith("RAPID") || rid.includes("RAPID")) return "RAPID";
+  return "OTHER";
+}
+
+let includeBusConfig = { hoho: true, gokl: true, rapid: true, other: true };
+
 function applyLayerVisibility() {
   for (const [routeId, meta] of routeLineRegistry.entries()) {
     let visible = true;
+    if (meta.mode === "BUS") {
+      const op = getBusOperator(routeId, meta.category);
+      if (op === "HOHO") visible = includeBusConfig.hoho;
+      else if (op === "GOKL") visible = includeBusConfig.gokl;
+      else if (op === "RAPID") visible = includeBusConfig.rapid;
+      else visible = includeBusConfig.other;
+    }
     if (!includeBusLayer && meta.mode === "BUS") {
       visible = false;
     }
     if (
       selectedRailCategory &&
-      isRailMode(meta.mode) &&
+      meta.mode === "RAIL" &&
       String(meta.category || "").toUpperCase() !== String(selectedRailCategory).toUpperCase()
     ) {
       visible = false;
@@ -2758,12 +2337,21 @@ function applyLayerVisibility() {
 
     if (selectedRailRouteId) {
       const focused = routeId === selectedRailRouteId;
-      meta.el.setAttribute("stroke", focused ? (meta.color || meta.el.dataset.baseColor || "#888") : INACTIVE_ROUTE_COLOR);
-      meta.el.setAttribute("stroke-width", focused ? String(ACTIVE_ROUTE_STROKE) : String(INACTIVE_ROUTE_STROKE));
+      meta.el.setAttribute(
+        "stroke",
+        focused ? (meta.color || meta.el.dataset.baseColor || "#888") : INACTIVE_ROUTE_COLOR
+      );
+      meta.el.setAttribute(
+        "stroke-width",
+        focused ? String(ACTIVE_ROUTE_STROKE) : String(INACTIVE_ROUTE_STROKE)
+      );
       meta.el.setAttribute("opacity", "1");
       if (meta.caseEl) {
         meta.caseEl.setAttribute("stroke", focused ? "#FFFFFF" : "#F3F4F6");
-        meta.caseEl.setAttribute("stroke-width", focused ? String(meta.caseWidth) : String(INACTIVE_ROUTE_STROKE + 1));
+        meta.caseEl.setAttribute(
+          "stroke-width",
+          focused ? String(meta.caseWidth) : String(INACTIVE_ROUTE_STROKE + 1)
+        );
         meta.caseEl.setAttribute("opacity", "1");
       }
     } else {
@@ -2781,6 +2369,13 @@ function applyLayerVisibility() {
   for (const entries of stopElementRegistry.values()) {
     for (const entry of entries) {
       let visible = true;
+      if (entry.mode === "BUS") {
+        const op = getBusOperator(entry.routeId, entry.category);
+        if (op === "HOHO") visible = includeBusConfig.hoho;
+        else if (op === "GOKL") visible = includeBusConfig.gokl;
+        else if (op === "RAPID") visible = includeBusConfig.rapid;
+        else visible = includeBusConfig.other;
+      }
       if (!includeBusLayer && entry.mode === "BUS") {
         visible = false;
       }
@@ -2821,8 +2416,18 @@ export function setRouteEndpoints(startId, endId) {
   refreshEndpointBadges();
 }
 
-export function setBusVisibility(includeBus) {
-  includeBusLayer = Boolean(includeBus);
+export function setBusVisibility(config) {
+  if (typeof config === "boolean") {
+    includeBusConfig = { hoho: config, gokl: config, rapid: config, other: config };
+  } else if (typeof config === "object" && config !== null) {
+    includeBusConfig = {
+      hoho: config.hoho ?? true,
+      gokl: config.gokl ?? true,
+      rapid: config.rapid ?? true,
+      other: config.other ?? true,
+    };
+  }
+  includeBusLayer = Boolean(includeBusConfig.hoho || includeBusConfig.gokl || includeBusConfig.rapid || includeBusConfig.other);
   applyLayerVisibility();
   refreshEndpointBadges();
 }
@@ -2902,7 +2507,7 @@ function findNearestStopByGeo(lat, lon) {
   let nearest = null;
   let minMeters = Infinity;
 
-  const [xgeo, ygeo] = projectGeo(lat, lon);
+  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
   const nearby = getNearbyFromIndex(geoStopIndex, xgeo, ygeo, GEO_BUCKET_SIZE);
   const candidates = nearby.length ? nearby : mapVisibleStops;
 
@@ -2925,7 +2530,7 @@ function findNearestStopByGeo(lat, lon) {
 
 // ---- Project GPS directly into schematic space ----
 function projectGpsToSchema(lat, lon) {
-  const [xgeo, ygeo] = projectGeo(lat, lon);
+  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
 
   // Find closest station in geo space
   let nearest = null;
@@ -2953,6 +2558,12 @@ function projectGpsToSchema(lat, lon) {
 // ---- Draw user marker ----
 function drawUserMarker() {
   if (!userLocation) return;
+  if (!svg || !svg.namespaceURI) return;
+  
+  // GPS index safety check (rebuild if empty/missing)
+  if (!geoStopIndex || !geoStopIndex.size || !schemaStopIndex || !schemaStopIndex.size) {
+    rebuildSpatialIndexes(mapVisibleStops || allStations, poiList || []);
+  }
 
   const lat = userLocation.lat ?? userLocation.stop_lat;
   const lon = userLocation.lon ?? userLocation.stop_lon;

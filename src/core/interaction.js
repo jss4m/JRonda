@@ -1,13 +1,13 @@
 // ======= interaction.js =======
 import { createUI } from "./ui.js";
 import { RoutingService } from "./bootstrap.js";
-import { getServiceLabel } from "../style/routeStyle.js";
-import { getRouteColor } from "../style/routeStyle.js";
+import { getServiceLabel, getRouteColor, getRouteMode, normalizeRouteId, railRouteIds } from "../style/routeStyle.js";
 import {
   consumeInitToasts,
   drawRoute as renderDrawRoute,
   getContinuationPanelData,
   getRenderPointerInteractionBindings,
+  getStationDetailHtml,
   resetRenderState,
   setRailRouteFilter,
   setRouteEndpoints,
@@ -34,6 +34,10 @@ const sourceLabel = (source) => {
   if (source === "search") return t("source_search", "search");
   return String(source || "");
 };
+
+function __coreDebug(...args) {
+  // no-op in production
+}
 
 function wireRenderPointerInteractions(config) {
   const {
@@ -198,8 +202,8 @@ let selectedIndex = 0;
 let includeBus = true;
 let resetTimerId = null;
 let legendResetTimer = null;
-const AUTO_RESET_MS = 2 * 60 * 1000;
-const PANEL_IDLE_MS = 15 * 1000;
+const AUTO_RESET_MS = 45 * 1000;
+const PANEL_IDLE_MS = 45 * 1000;
 const LEGEND_RESET_MS = 15 * 1000;
 let panelIdleTimer = null;
 
@@ -229,82 +233,145 @@ const stationOptions = Array.from(RoutingService.stationMap.values())
     route_id: String(s.route_id || ""),
   }));
 
+const LEGEND_ORDER = [
+  { id: "KTM1", label: "1" },
+  { id: "KTM2", label: "2" },
+  { id: "AG", label: "3" },
+  { id: "PH", label: "4" },
+  { id: "KJ", label: "5" },
+  { id: "ERL2", label: "6" },
+  { id: "ERL1", label: "7" },
+  { id: "MR", label: "8" },
+  { id: "MRT", label: "9" },
+  { id: "KTM3", label: "10" },
+  { id: "SA", label: "11" },
+  { id: "PYL", label: "12" },
+  { id: "CC", label: "13" },
+  { id: "BRT", label: "B1" },
+];
+const LEGEND_ORDER_MAP = new Map(LEGEND_ORDER.map((entry, idx) => [entry.id, { rank: idx, label: entry.label }]));
+
+const normalizeLegendKey = (routeId) => {
+  const base = normalizeRouteId(routeId);
+  return base.replace(/\s+/g, "");
+};
+
 const legendItems = Array.from(
   new Map(
-    Array.from(RoutingService.stationMap.values()).map((s) => {
-      const routeId = String(s.route_id || "");
-      const color = getRouteColor(routeId, false, s.route_color ?? null).color;
-      return [
-        routeId,
-        {
-          routeId,
-          label: getServiceLabel(s, s.mode),
-          color,
-          mode: s.mode,
-        },
-      ];
-    })
+    Array.from(RoutingService.stationMap.values())
+      .filter((station) => station.mode === "RAIL" && !station.passThrough && station.route_id)
+      .map((s) => {
+        const routeId = normalizeRouteId(String(s.route_id));
+        const legendKey = normalizeLegendKey(routeId);
+        if (!routeId) return null;
+        const mode = getRouteMode(routeId);
+        const color = getRouteColor(routeId, false, s.route_color ?? null).color;
+        const baseLabel = String(s.route_public_name || "").trim() || getServiceLabel(s, mode);
+        const orderMeta = LEGEND_ORDER_MAP.get(legendKey);
+        const label = orderMeta ? `${orderMeta.label} - ${baseLabel}` : baseLabel;
+        return [routeId, { routeId, legendKey, label, color, mode }];
+      })
+      .filter(Boolean)
   ).values()
 )
   .filter((item) => item.routeId)
   .sort((a, b) => {
-    if (a.mode !== b.mode) return a.mode === "RAIL" ? -1 : 1;
+    const aMeta = LEGEND_ORDER_MAP.get(String(a.legendKey || a.routeId));
+    const bMeta = LEGEND_ORDER_MAP.get(String(b.legendKey || b.routeId));
+    const aRank = aMeta ? aMeta.rank : Infinity;
+    const bRank = bMeta ? bMeta.rank : Infinity;
+    const aGroup = Number.isFinite(aRank) ? 0 : (a.mode === "RAIL" ? 1 : 2);
+    const bGroup = Number.isFinite(bRank) ? 0 : (b.mode === "RAIL" ? 1 : 2);
+    if (aGroup !== bGroup) return aGroup - bGroup;
+    if (aMeta || bMeta) return aRank - bRank;
     return a.label.localeCompare(b.label);
   });
 
 // ================= SETUP UI =================
-const {
-  updatePanel,
-  setStationInfo,
-  setRailRouteOptions,
-  resetUI,
-  showToast,
-  setLegendItems,
-  setLegendActiveRoute,
-} = createUI({
+let showToast = null;
+const toastWrapper = (message, type = "info") => {
+  if (typeof showToast === "function") {
+    showToast(message, type);
+  } else {
+    window.dispatchEvent(new CustomEvent("jronda:toast", { detail: { message, type } }));
+  }
+};
+
+const ui = createUI({
   onPresetChange: (preset) => {
     currentPreset = preset;
-    showToast(tf("preset_changed", "Preset changed: {preset}", { preset }));
+    toastWrapper(tf("preset_changed", "Preset changed: {preset}", { preset }));
     if (startId && endId) updateRoute(true);
   },
-  onBusToggle: (busEnabled) => {
-    includeBus = Boolean(busEnabled);
-    setBusVisibility(includeBus);
-    showToast(includeBus ? t("bus_routes_included", "Bus routes included") : t("bus_routes_hidden", "Bus routes hidden"));
+  onBusToggle: (busConfig) => {
+    if (typeof busConfig === "boolean") {
+      includeBus = busConfig;
+    } else if (typeof busConfig === "object" && busConfig !== null) {
+      includeBus = Boolean(busConfig.hoho || busConfig.gokl || busConfig.rapid || busConfig.other);
+    }
+    setBusVisibility(busConfig);
+    const status = [];
+    if (busConfig.hoho) status.push("HOHO");
+    if (busConfig.gokl) status.push("goKL");
+    if (busConfig.rapid) status.push("RapidBus");
+    if (status.length === 0) {
+      toastWrapper(t("bus_routes_hidden", "Bus routes hidden"));
+    } else {
+      toastWrapper(tf("bus_routes_included", "Bus routes included: {types}", { types: status.join(", ") }));
+    }
     if (startId && endId) updateRoute(true);
   },
   onRailRouteChange: (routeId) => {
     const selected = routeId ? String(routeId) : null;
-    setRailRouteFilter(selected);
     setLegendActiveRoute(selected);
     if (selected) {
-      showToast(tf("rail_focus", "Rail line focus: {route}", { route: selected }));
+      toastWrapper(tf("rail_focus", "Rail line focus: {route}", { route: selected }));
     } else {
-      showToast(t("rail_focus_cleared", "Rail line focus cleared"));
+      toastWrapper(t("rail_focus_cleared", "Rail line focus cleared"));
     }
   },
   onLegendRouteSelect: (routeId) => {
     const selected = routeId ? String(routeId) : null;
-    setRailRouteFilter(selected);
     setLegendActiveRoute(selected);
+    setRailRouteFilter(selected);
     if (legendResetTimer) clearTimeout(legendResetTimer);
     legendResetTimer = setTimeout(() => {
-      setRailRouteFilter(null);
       setLegendActiveRoute(null);
-      showToast(t("legend_highlight_reset", "Legend highlight reset"));
+      setRailRouteFilter(null);
+      toastWrapper(t("legend_highlight_reset", "Legend highlight reset"));
     }, LEGEND_RESET_MS);
-    if (selected) showToast(tf("legend_highlight", "Legend highlight: {route}", { route: selected }));
+    if (selected) toastWrapper(tf("legend_highlight", "Legend highlight: {route}", { route: selected }));
   },
   onReset: () => {
     resetAllState("manual");
   },
-  onSearchSelect: (stopId) => {
+  onSearchSelect: (stopId, choice) => {
+    if (choice === "start") {
+      setStartStop(String(stopId));
+      return;
+    }
+    if (choice === "end") {
+      setEndStop(String(stopId));
+      return;
+    }
     handleStationSelection(String(stopId), "search");
   },
   stationOptions,
   summaryPanels: getContinuationPanelData(),
 });
-setRailRouteOptions(allRailRouteOptions);
+
+const {
+  updatePanel,
+  setStationInfo,
+  setStationDetailHtml,
+  setRailRouteOptions,
+  resetUI,
+  showToast: showToastInner,
+  setLegendItems,
+  setLegendActiveRoute,
+} = ui;
+showToast = showToastInner;
+
 setLegendItems(legendItems);
 
 for (const t of consumeInitToasts()) {
@@ -334,17 +401,20 @@ function resetAllState(reason = "manual") {
   RoutingService.routeCache.clear();
   setRouteEndpoints(null, null);
   setBusVisibility(true);
-  setRailRouteFilter(null);
   setLegendActiveRoute(null);
+  setRailRouteFilter(null);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("jronda:close-legend-modal"));
+  }
   if (legendResetTimer) {
     clearTimeout(legendResetTimer);
     legendResetTimer = null;
   }
-  setRailRouteOptions(allRailRouteOptions);
+  // rail route filter removed; no-op
   resetRenderState();
   resetUI();
   updatePanel([], 0);
-  setStationInfo(reason === "auto" ? t("session_auto_reset", "Session auto-reset.") : t("reset_complete", "Reset complete."));
+  setStationInfo(t("tap_station_info", "Tap a station to view details"));
   showToast(reason === "auto" ? t("auto_reset_due_inactivity", "Auto reset due to inactivity") : t("reset_complete", "Reset complete."));
   armAutoResetTimer();
   armPanelIdleTimer();
@@ -409,6 +479,8 @@ function handleStationSelection(stopId, source = "tap") {
       source: sourceLabel(source),
     }));
     showToast(tf("selected_station_toast", "Selected: {station}", { station: station.stop_name }));
+    const detailHtml = getStationDetailHtml(stopId);
+    if (detailHtml) setStationDetailHtml(detailHtml);
   }
   if (!startId || (startId && endId)) {
     startId = String(stopId);
@@ -428,6 +500,7 @@ function handleStationSelection(stopId, source = "tap") {
 
 // ================= ROUTE UPDATE =================
 function updateRoute(forceRefresh = false) {
+  setStationDetailHtml("");
   currentRoutes = RoutingService.getRoutes(startId, endId, {
     k: 3,
     preset: currentPreset,
@@ -436,7 +509,7 @@ function updateRoute(forceRefresh = false) {
   });
 
   if (!currentRoutes || !currentRoutes.length) {
-    console.warn("No routes found.");
+    __coreDebug("No routes found.");
     setStationInfo(t("no_route_found_filters", "No route found for the selected stations and filters."));
     showToast(t("no_route_found_current_filters", "No route found with current filters."), "warn");
     updatePanel([], 0);
@@ -477,6 +550,8 @@ if (typeof window !== "undefined") {
         station: station.stop_name,
         label,
       }));
+      const detailHtml = getStationDetailHtml(stopId);
+      if (detailHtml) setStationDetailHtml(detailHtml);
     }
     armAutoResetTimer();
     armPanelIdleTimer();
@@ -491,7 +566,12 @@ if (typeof window !== "undefined") {
     const startRouteId = evt?.detail?.startId;
     const endRouteId = evt?.detail?.endId;
     if (!startRouteId || !endRouteId) return;
+    // Clear any prior rail route filter when routing via trace gesture so path selection can display all applicable routes.
+    setRailRouteFilter(null);
     setStartAndEnd(String(startRouteId), String(endRouteId), true);
+  });
+  window.addEventListener("jronda:legend-retry", () => {
+    setLegendItems(legendItems);
   });
   window.addEventListener("jronda:set-start", (evt) => {
     const stopId = evt?.detail?.stopId;
@@ -510,10 +590,33 @@ if (typeof window !== "undefined") {
       armPanelIdleTimer();
     }, { passive: true });
   }
+  window.addEventListener("visibilitychange", () => {
+    if (document.hidden) return;
+    setLegendItems(legendItems);
+    setupRenderInteractions();
+  });
 }
 
 setBusVisibility(includeBus);
-setRailRouteFilter(null);
-wireRenderPointerInteractions(getRenderPointerInteractionBindings());
+
+function setupRenderInteractions() {
+  const bindings = getRenderPointerInteractionBindings();
+  if (bindings?.svg) {
+    __coreDebug('interaction: binding render pointer interactions to SVG');
+    wireRenderPointerInteractions(bindings);
+    window.jrondaInteractionsWired = true;
+    return true;
+  }
+  __coreDebug('interaction: render not ready yet; waiting for jronda:render-ready');
+  return false;
+}
+
+if (!setupRenderInteractions()) {
+  window.addEventListener('jronda:render-ready', () => {
+    setupRenderInteractions();
+    setLegendItems(legendItems);
+  }, { once: true });
+}
+
 armAutoResetTimer();
 armPanelIdleTimer();

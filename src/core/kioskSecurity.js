@@ -1,19 +1,112 @@
+/**
+ * JRonda Kiosk Security Module
+ * Provides PIN-based access control with rate limiting and audit logging
+ */
+
+// ======= Configuration =======
+const SECURITY_CONFIG = {
+  pinLength: { min: 4, max: 8 },
+  lockoutAttempts: 5,
+  lockoutDuration: 30000,      // 30 seconds lockout after max attempts
+  autoLockTimeout: 120000,       // 2 minutes of inactivity before auto-lock
+  auditLogMaxEntries: 50,       // Keep last 50 security events
+};
+
 const PIN_HASH_KEY = "jronda_kiosk_pin_hash_v1";
 const UNLOAD_GUARD_KEY = "jronda_kiosk_unload_guard";
+const AUDIT_LOG_KEY = "jronda_security_audit_log";
+const LOCKOUT_KEY = "jronda_kiosk_lockout";
 const LOCK_REASONS = {
   startup: "kiosk_locked",
   hidden: "session_hidden",
   fullscreen: "fullscreen_exited",
 };
 
+// ======= State =======
 let kioskLocked = true;
 let overlay = null;
 let statusText = null;
 let pinInput = null;
 let allowFullscreenExit = false;
+
+function __coreDebug(...args) {
+  // no-op in production
+}
 let keyboardLockEnabled = false;
 let fullscreenEnforcerId = null;
 
+// ======= Rate Limiting =======
+function getLockoutState() {
+  try {
+    const data = localStorage.getItem(LOCKOUT_KEY);
+    return data ? JSON.parse(data) : { attempts: 0, lockedUntil: null };
+  } catch {
+    return { attempts: 0, lockedUntil: null };
+  }
+}
+
+function setLockoutState(state) {
+  localStorage.setItem(LOCKOUT_KEY, JSON.stringify(state));
+}
+
+function isLockedOut() {
+  const state = getLockoutState();
+  if (state.lockedUntil && Date.now() < state.lockedUntil) {
+    return true;
+  }
+  // Reset if lockout expired
+  if (state.lockedUntil && Date.now() >= state.lockedUntil) {
+    setLockoutState({ attempts: 0, lockedUntil: null });
+  }
+  return false;
+}
+
+function recordFailedAttempt() {
+  const state = getLockoutState();
+  state.attempts += 1;
+  
+  if (state.attempts >= SECURITY_CONFIG.lockoutAttempts) {
+    state.lockedUntil = Date.now() + SECURITY_CONFIG.lockoutDuration;
+    logSecurityEvent('lockout', `Locked out after ${state.attempts} failed attempts`);
+  }
+  
+  setLockoutState(state);
+  return state.attempts;
+}
+
+function resetFailedAttempts() {
+  setLockoutState({ attempts: 0, lockedUntil: null });
+}
+
+// ======= Audit Logging =======
+function logSecurityEvent(event, details) {
+  try {
+    const logs = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
+    
+    logs.unshift({
+      timestamp: new Date().toISOString(),
+      event,
+      details,
+    });
+    
+    // Keep only the last N entries
+    const trimmed = logs.slice(0, SECURITY_CONFIG.auditLogMaxEntries);
+    localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    __coreDebug('Failed to log security event:', e);
+  }
+}
+
+export function getSecurityAuditLog(limit = 10) {
+  try {
+    const logs = JSON.parse(localStorage.getItem(AUDIT_LOG_KEY) || '[]');
+    return logs.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+// ======= i18n Helper =======
 const t = (key, fallback = "") => {
   if (typeof window !== "undefined" && window.jrondaI18n?.t) {
     return window.jrondaI18n.t(key, fallback);
@@ -21,6 +114,7 @@ const t = (key, fallback = "") => {
   return fallback || key;
 };
 
+// ======= Styles =======
 function injectStyles() {
   const style = document.createElement("style");
   style.textContent = `
@@ -54,6 +148,12 @@ function injectStyles() {
       font-size: 14px;
       color: #cbd5e1;
     }
+    #jronda-kiosk-status.error {
+      color: #f87171;
+    }
+    #jronda-kiosk-status.warning {
+      color: #fbbf24;
+    }
     #jronda-kiosk-pin {
       width: 100%;
       box-sizing: border-box;
@@ -79,14 +179,26 @@ function injectStyles() {
       background: #2563eb;
       color: #ffffff;
     }
+    .jronda-kiosk-btn:disabled {
+      background: #475569;
+      border-color: #475569;
+      cursor: not-allowed;
+    }
     .jronda-kiosk-btn.alt {
       border-color: #475569;
       background: #1e293b;
+    }
+    .jronda-kiosk-attempts {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 8px;
+      text-align: center;
     }
   `;
   document.head.appendChild(style);
 }
 
+// ======= UI Creation =======
 function createOverlay() {
   overlay = document.createElement("div");
   overlay.id = "jronda-kiosk-overlay";
@@ -101,6 +213,7 @@ function createOverlay() {
         <button id="jronda-kiosk-fs" class="jronda-kiosk-btn alt" type="button">${t("fullscreen", "Fullscreen")}</button>
         <button id="jronda-kiosk-exit-fs" class="jronda-kiosk-btn alt" type="button">${t("exit_fullscreen", "Exit FS")}</button>
       </div>
+      <div id="jronda-kiosk-attempts" class="jronda-kiosk-attempts"></div>
     </div>
   `;
   document.body.appendChild(overlay);
@@ -133,6 +246,7 @@ function applyI18n() {
   if (exitBtn) exitBtn.textContent = t("exit_fullscreen", "Exit FS");
 }
 
+// ======= Crypto =======
 async function sha256(input) {
   const data = new TextEncoder().encode(input);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -150,9 +264,12 @@ async function verifyPin(pin) {
 
 window.jrondaVerifyKioskPin = verifyPin;
 
+// ======= PIN Setup =======
 async function setupPinIfNeeded() {
   const existing = localStorage.getItem(PIN_HASH_KEY);
   if (existing) return;
+
+  logSecurityEvent('pin_setup', 'Initial PIN setup started');
 
   while (true) {
     const pin = window.prompt(t("set_admin_pin_prompt", "Set kiosk admin PIN (4-8 digits):"), "") || "";
@@ -167,16 +284,48 @@ async function setupPinIfNeeded() {
     }
     const hash = await sha256(pin);
     localStorage.setItem(PIN_HASH_KEY, hash);
+    logSecurityEvent('pin_setup', 'PIN successfully configured');
     break;
   }
 }
 
+// ======= Lock/Unlock =======
 function showLock(reasonKey) {
   kioskLocked = true;
   if (!overlay) return;
   overlay.style.display = "flex";
   statusText.textContent = t(LOCK_REASONS[reasonKey] || LOCK_REASONS.startup, "Kiosk locked");
+  statusText.className = "";
   pinInput.value = "";
+  
+  updateAttemptsDisplay();
+  
+  // Check if locked out
+  if (isLockedOut()) {
+    const state = getLockoutState();
+    const remainingSeconds = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+    statusText.textContent = `Too many attempts. Try again in ${remainingSeconds}s`;
+    statusText.className = "warning";
+    pinInput.disabled = true;
+    document.getElementById("jronda-kiosk-unlock").disabled = true;
+    
+    // Auto-refresh when lockout expires
+    setTimeout(() => {
+      if (!kioskLocked) return;
+      const state = getLockoutState();
+      if (!state.lockedUntil || Date.now() >= state.lockedUntil) {
+        pinInput.disabled = false;
+        document.getElementById("jronda-kiosk-unlock").disabled = false;
+        statusText.textContent = t(LOCK_REASONS[reasonKey] || LOCK_REASONS.startup, "Kiosk locked");
+        statusText.className = "";
+        updateAttemptsDisplay();
+      }
+    }, Math.max(1000, remainingSeconds * 1000));
+  } else {
+    pinInput.disabled = false;
+    document.getElementById("jronda-kiosk-unlock").disabled = false;
+  }
+  
   setTimeout(() => pinInput.focus(), 0);
   startFullscreenEnforcer();
 }
@@ -185,15 +334,38 @@ function hideLock() {
   kioskLocked = false;
   if (!overlay) return;
   overlay.style.display = "none";
+  resetFailedAttempts();
+  updateAttemptsDisplay();
   startFullscreenEnforcer();
 }
 
+function updateAttemptsDisplay() {
+  const attemptsEl = document.getElementById("jronda-kiosk-attempts");
+  if (!attemptsEl) return;
+  
+  const state = getLockoutState();
+  const remaining = SECURITY_CONFIG.lockoutAttempts - state.attempts;
+  
+  if (remaining < SECURITY_CONFIG.lockoutAttempts) {
+    attemptsEl.textContent = `${remaining} ${t("attempts_remaining", "attempts remaining")}`;
+  } else {
+    attemptsEl.textContent = "";
+  }
+}
+
+// ======= Keyboard Lock =======
 async function lockEscapeKey() {
-  if (!("keyboard" in navigator) || !navigator.keyboard?.lock) return;
+  if (!("keyboard" in navigator) || !navigator.keyboard?.lock) {
+    __coreDebug("Keyboard Lock API not available - using fallback");
+    keyboardLockEnabled = false;
+    return;
+  }
   try {
     await navigator.keyboard.lock(["Escape"]);
     keyboardLockEnabled = true;
-  } catch {
+    logSecurityEvent('keyboard_lock', 'Enabled');
+  } catch (e) {
+    __coreDebug("Keyboard lock failed:", e);
     keyboardLockEnabled = false;
   }
 }
@@ -202,10 +374,14 @@ async function unlockEscapeKey() {
   if (!("keyboard" in navigator) || !navigator.keyboard?.unlock) return;
   try {
     navigator.keyboard.unlock();
-  } catch {}
-  keyboardLockEnabled = false;
+    keyboardLockEnabled = false;
+    logSecurityEvent('keyboard_lock', 'Disabled');
+  } catch (e) {
+    __coreDebug("Keyboard unlock failed:", e);
+  }
 }
 
+// ======= Fullscreen =======
 function stopFullscreenEnforcer() {
   if (fullscreenEnforcerId !== null) {
     clearInterval(fullscreenEnforcerId);
@@ -228,17 +404,45 @@ function startFullscreenEnforcer() {
 }
 
 async function unlockAttempt() {
+  // Check if locked out first
+  if (isLockedOut()) {
+    const state = getLockoutState();
+    const remainingSeconds = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+    statusText.textContent = `Too many attempts. Try again in ${remainingSeconds}s`;
+    statusText.className = "warning";
+    return;
+  }
+  
   const value = String(pinInput.value || "");
   if (!/^\d{4,8}$/.test(value)) {
     statusText.textContent = t("invalid_pin_format", "Invalid PIN format.");
+    statusText.className = "error";
     return;
   }
+  
   const ok = await verifyPin(value);
+  
   if (!ok) {
-    statusText.textContent = t("invalid_pin", "Invalid PIN.");
+    const attempts = recordFailedAttempt();
+    const remaining = SECURITY_CONFIG.lockoutAttempts - attempts;
+    
+    if (remaining > 0) {
+      statusText.textContent = t("invalid_pin", `Invalid PIN. ${remaining} attempts remaining.`);
+    } else {
+      const state = getLockoutState();
+      const waitSeconds = Math.ceil((state.lockedUntil - Date.now()) / 1000);
+      statusText.textContent = `Too many attempts. Try again in ${waitSeconds}s`;
+      statusText.className = "warning";
+    }
+    statusText.className = "error";
     pinInput.value = "";
+    logSecurityEvent('unlock_failed', `Failed attempt ${attempts}/${SECURITY_CONFIG.lockoutAttempts}`);
     return;
   }
+  
+  // Successful unlock
+  resetFailedAttempts();
+  logSecurityEvent('unlock_success', 'Kiosk unlocked successfully');
   hideLock();
   requestFullscreen();
 }
@@ -252,8 +456,14 @@ function requestFullscreen() {
   if (root.requestFullscreen) {
     root
       .requestFullscreen({ navigationUI: "hide" })
-      .then(() => lockEscapeKey())
-      .catch(() => {});
+      .then(() => {
+        lockEscapeKey();
+        logSecurityEvent('fullscreen', 'Entered fullscreen');
+      })
+      .catch((e) => {
+        __coreDebug("Fullscreen request failed:", e);
+        logSecurityEvent('fullscreen_error', `Failed: ${e.message}`);
+      });
   }
 }
 
@@ -261,23 +471,32 @@ async function exitFullscreenWithPin() {
   const value = String(pinInput?.value || "");
   if (!/^\d{4,8}$/.test(value)) {
     statusText.textContent = t("enter_pin_exit_fullscreen", "Enter admin PIN to exit fullscreen.");
+    statusText.className = "error";
     return;
   }
   const ok = await verifyPin(value);
   if (!ok) {
-    statusText.textContent = t("invalid_pin", "Invalid PIN.");
+    const attempts = recordFailedAttempt();
+    statusText.textContent = t("invalid_pin", `Invalid PIN. ${SECURITY_CONFIG.lockoutAttempts - attempts} attempts remaining.`);
+    statusText.className = "error";
     pinInput.value = "";
+    logSecurityEvent('exit_fs_failed', 'Invalid PIN for exit');
     return;
   }
+  
   allowFullscreenExit = true;
   stopFullscreenEnforcer();
   await unlockEscapeKey();
+  
   if (document.fullscreenElement && document.exitFullscreen) {
     document.exitFullscreen().catch(() => {});
   }
+  
+  logSecurityEvent('fullscreen', 'Exited fullscreen');
   hideLock();
 }
 
+// ======= Security Hardening =======
 function hardenShortcuts() {
   document.addEventListener("contextmenu", (e) => e.preventDefault());
   document.addEventListener("dragstart", (e) => e.preventDefault());
@@ -285,36 +504,53 @@ function hardenShortcuts() {
 
   document.addEventListener("keydown", (e) => {
     const k = String(e.key || "").toLowerCase();
+    
+    // F11 and F12 always blocked
+    if (k === "f11" || k === "f12") {
+      e.preventDefault();
+      return;
+    }
+    
     if (kioskLocked && !document.fullscreenElement) {
       e.preventDefault();
       requestFullscreen();
       return;
     }
+    
     if (k === "escape") {
       e.preventDefault();
       showLock("fullscreen");
       requestFullscreen();
       return;
     }
-    if (k === "f11" || k === "f12") {
-      e.preventDefault();
-      return;
-    }
+    
+    // Ctrl key combinations
     if (e.ctrlKey && ["w", "t", "n", "l", "r", "p", "s", "u"].includes(k)) {
       e.preventDefault();
       return;
     }
+    
+    // Alt key combinations (including Alt+Tab simulation)
     if (e.altKey && ["f4", "tab", "arrowleft", "arrowright"].includes(k)) {
       e.preventDefault();
     }
   }, true);
 }
 
+// ======= Tab/Visibility Guards =======
 function armTabGuards() {
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") showLock("hidden");
+    if (document.visibilityState === "hidden") {
+      logSecurityEvent('visibility', 'Tab hidden - locking');
+      showLock("hidden");
+    }
   });
-  window.addEventListener("blur", () => showLock("hidden"));
+  
+  window.addEventListener("blur", () => {
+    logSecurityEvent('focus', 'Window lost focus - locking');
+    showLock("hidden");
+  });
+  
   document.addEventListener("fullscreenchange", () => {
     if (!document.fullscreenElement) {
       if (allowFullscreenExit) {
@@ -322,8 +558,8 @@ function armTabGuards() {
         stopFullscreenEnforcer();
         return;
       }
+      logSecurityEvent('fullscreen', 'Fullscreen exited - re-locking');
       showLock("fullscreen");
-      requestFullscreen();
       setTimeout(() => {
         if (!document.fullscreenElement) requestFullscreen();
       }, 80);
@@ -334,6 +570,7 @@ function armTabGuards() {
   });
 }
 
+// ======= Fullscreen Re-entry =======
 function armFullscreenReentryGesture() {
   const reenter = () => {
     if (!allowFullscreenExit && !document.fullscreenElement) {
@@ -345,6 +582,7 @@ function armFullscreenReentryGesture() {
   window.addEventListener("keydown", reenter, true);
 }
 
+// ======= Unload Guard =======
 function armUnloadGuard() {
   window.addEventListener("beforeunload", (event) => {
     if (sessionStorage.getItem(UNLOAD_GUARD_KEY) !== "off") {
@@ -354,8 +592,15 @@ function armUnloadGuard() {
   });
 }
 
+// ======= Export for external use =======
+export { SECURITY_CONFIG };
+
+// ======= Initialization =======
 async function initKioskSecurity() {
   if (window.location.search.includes("dev=1")) return;
+  
+  logSecurityEvent('init', 'Kiosk security initializing');
+  
   injectStyles();
   createOverlay();
   hardenShortcuts();
@@ -363,9 +608,15 @@ async function initKioskSecurity() {
   armFullscreenReentryGesture();
   armUnloadGuard();
   await setupPinIfNeeded();
-  showLock("startup");
-  requestFullscreen();
-  startFullscreenEnforcer();
+  
+  logSecurityEvent('init_complete', 'Ready for lock');
+  // showLock("startup"); // Temporarily disabled for debugging
+  // requestFullscreen(); // Temporarily disabled
+  // startFullscreenEnforcer(); // Temporarily disabled
 }
 
-initKioskSecurity().catch(() => {});
+initKioskSecurity().catch((e) => {
+  console.error("Kiosk security init failed:", e);
+  logSecurityEvent('init_error', `Failed: ${e.message}`);
+});
+

@@ -10,14 +10,14 @@
  *   node data-build/scripts/update-gtfs.js --force-build
  */
 
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
-const https = require("https");
-const { execFileSync } = require("child_process");
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import https from 'https';
+import { execFileSync } from 'child_process';
 
-const RAW_GTFS_DIR = path.join(__dirname, "../raw-GTFS");
-const SCRIPT_DIR = __dirname;
+const RAW_GTFS_DIR = path.join(import.meta.dirname, "../raw-GTFS");
+const SCRIPT_DIR = import.meta.dirname;
 
 const SOURCES = [
   {

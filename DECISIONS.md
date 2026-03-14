@@ -52,3 +52,8 @@
   - mode
   - operator
 - Derived flags (interchange, connecting, loop) are intentionally excluded at this stage.
+
+2026-03-15 — Kiosk disturbance recovery
+- If UI wiring is disturbed (render interactions drop, legend disconnects), the app rebinds on `jronda:render-ready` and on visibility regain.
+- Legend shows a fallback message and supports tap-to-retry to rehydrate the list without forcing a full reload.
+- This favors self-healing over hard reloads to avoid breaking kiosk uptime.

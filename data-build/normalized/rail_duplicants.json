@@ -20,20 +20,6 @@
         "stop_name": "SENAI",
         "route_id": "ERT",
         "category": "KTM"
-      },
-      {
-        "stop_id": "ES_36000",
-        "source_stop_id": "36000",
-        "stop_name": "Kulai",
-        "route_id": "ES",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ES_36600",
-        "source_stop_id": "36600",
-        "stop_name": "SENAI",
-        "route_id": "ES",
-        "category": "KTM"
       }
     ]
   },

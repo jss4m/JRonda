@@ -1761,103 +1761,6 @@
     ]
   },
   {
-    "route_id": "ES",
-    "mode": "rail",
-    "category": "KTM",
-    "route_color": null,
-    "route_short_name": "ES",
-    "route_long_name": "Intercity Ekspres Selatan Gemas - JB Sentral",
-    "route_public_name": "ES",
-    "operator": "ktmb",
-    "isLoop": false,
-    "stops": [
-      {
-        "stop_id": "27800",
-        "seq": 1
-      },
-      {
-        "stop_id": "28300",
-        "seq": 2
-      },
-      {
-        "stop_id": "29100",
-        "seq": 3
-      },
-      {
-        "stop_id": "29500",
-        "seq": 4
-      },
-      {
-        "stop_id": "29900",
-        "seq": 5
-      },
-      {
-        "stop_id": "30500",
-        "seq": 6
-      },
-      {
-        "stop_id": "31300",
-        "seq": 7
-      },
-      {
-        "stop_id": "32100",
-        "seq": 8
-      },
-      {
-        "stop_id": "32400",
-        "seq": 9
-      },
-      {
-        "stop_id": "33200",
-        "seq": 10
-      },
-      {
-        "stop_id": "33600",
-        "seq": 11
-      },
-      {
-        "stop_id": "34200",
-        "seq": 12
-      },
-      {
-        "stop_id": "34800",
-        "seq": 13
-      },
-      {
-        "stop_id": "35500",
-        "seq": 14
-      },
-      {
-        "stop_id": "36000",
-        "seq": 15
-      },
-      {
-        "stop_id": "36600",
-        "seq": 16
-      },
-      {
-        "stop_id": "36900",
-        "seq": 17
-      },
-      {
-        "stop_id": "37200",
-        "seq": 18
-      },
-      {
-        "stop_id": "37400",
-        "seq": 19
-      },
-      {
-        "stop_id": "37405",
-        "seq": 20
-      },
-      {
-        "stop_id": "37500",
-        "seq": 21
-      }
-    ]
-  },
-  {
     "route_id": "ST",
     "mode": "rail",
     "category": "KTM",
@@ -1890,248 +1793,192 @@
     "isLoop": false,
     "stops": [
       {
-        "stop_id": "100",
+        "stop_id": "47300",
         "seq": 1
       },
       {
-        "stop_id": "400",
+        "stop_id": "46300",
         "seq": 2
       },
       {
-        "stop_id": "600",
+        "stop_id": "45800",
         "seq": 3
       },
       {
-        "stop_id": "1000",
+        "stop_id": "45600",
         "seq": 4
       },
       {
-        "stop_id": "1700",
+        "stop_id": "44400",
         "seq": 5
       },
       {
-        "stop_id": "1900",
+        "stop_id": "44000",
         "seq": 6
       },
       {
-        "stop_id": "2600",
+        "stop_id": "43500",
         "seq": 7
       },
       {
-        "stop_id": "4500",
+        "stop_id": "43100",
         "seq": 8
       },
       {
-        "stop_id": "4700",
+        "stop_id": "42400",
         "seq": 9
       },
       {
-        "stop_id": "5700",
+        "stop_id": "41400",
         "seq": 10
       },
       {
-        "stop_id": "6300",
+        "stop_id": "40500",
         "seq": 11
       },
       {
-        "stop_id": "7300",
+        "stop_id": "1000",
         "seq": 12
       },
       {
-        "stop_id": "8000",
+        "stop_id": "1700",
         "seq": 13
       },
       {
-        "stop_id": "8600",
+        "stop_id": "1900",
         "seq": 14
       },
       {
-        "stop_id": "9000",
+        "stop_id": "2600",
         "seq": 15
       },
       {
-        "stop_id": "9400",
+        "stop_id": "4500",
         "seq": 16
       },
       {
-        "stop_id": "9700",
+        "stop_id": "4700",
         "seq": 17
       },
       {
-        "stop_id": "10200",
+        "stop_id": "5700",
         "seq": 18
       },
       {
-        "stop_id": "10900",
+        "stop_id": "6300",
         "seq": 19
       },
       {
-        "stop_id": "11600",
+        "stop_id": "7300",
         "seq": 20
       },
       {
-        "stop_id": "12900",
+        "stop_id": "8000",
         "seq": 21
       },
       {
-        "stop_id": "14100",
+        "stop_id": "8600",
         "seq": 22
       },
       {
-        "stop_id": "14600",
+        "stop_id": "9000",
         "seq": 23
       },
       {
-        "stop_id": "15200",
+        "stop_id": "9400",
         "seq": 24
       },
       {
-        "stop_id": "15400",
+        "stop_id": "9700",
         "seq": 25
       },
       {
-        "stop_id": "16100",
+        "stop_id": "10200",
         "seq": 26
       },
       {
-        "stop_id": "16300",
+        "stop_id": "10900",
         "seq": 27
       },
       {
-        "stop_id": "16500",
+        "stop_id": "11600",
         "seq": 28
       },
       {
-        "stop_id": "17300",
+        "stop_id": "12900",
         "seq": 29
       },
       {
-        "stop_id": "17800",
+        "stop_id": "14100",
         "seq": 30
       },
       {
-        "stop_id": "18100",
+        "stop_id": "14600",
         "seq": 31
       },
       {
-        "stop_id": "18500",
+        "stop_id": "15200",
         "seq": 32
       },
       {
-        "stop_id": "18400",
+        "stop_id": "15400",
         "seq": 33
       },
       {
-        "stop_id": "18600",
+        "stop_id": "16100",
         "seq": 34
       },
       {
-        "stop_id": "18700",
+        "stop_id": "16300",
         "seq": 35
       },
       {
-        "stop_id": "18800",
+        "stop_id": "16500",
         "seq": 36
       },
       {
-        "stop_id": "18900",
+        "stop_id": "17300",
         "seq": 37
       },
       {
-        "stop_id": "19000",
+        "stop_id": "17800",
         "seq": 38
       },
       {
-        "stop_id": "19100",
+        "stop_id": "18100",
         "seq": 39
       },
       {
-        "stop_id": "19205",
+        "stop_id": "18500",
         "seq": 40
       },
       {
-        "stop_id": "19300",
+        "stop_id": "18400",
         "seq": 41
       },
       {
-        "stop_id": "19400",
+        "stop_id": "18600",
         "seq": 42
       },
       {
-        "stop_id": "19600",
+        "stop_id": "18700",
         "seq": 43
       },
       {
-        "stop_id": "19900",
+        "stop_id": "18800",
         "seq": 44
       },
       {
-        "stop_id": "20400",
+        "stop_id": "18900",
         "seq": 45
       },
       {
-        "stop_id": "20402",
+        "stop_id": "19000",
         "seq": 46
       },
       {
-        "stop_id": "20500",
+        "stop_id": "19100",
         "seq": 47
-      },
-      {
-        "stop_id": "20900",
-        "seq": 48
-      },
-      {
-        "stop_id": "21300",
-        "seq": 49
-      },
-      {
-        "stop_id": "21500",
-        "seq": 50
-      },
-      {
-        "stop_id": "22000",
-        "seq": 51
-      },
-      {
-        "stop_id": "22400",
-        "seq": 52
-      },
-      {
-        "stop_id": "22700",
-        "seq": 53
-      },
-      {
-        "stop_id": "22900",
-        "seq": 54
-      },
-      {
-        "stop_id": "23100",
-        "seq": 55
-      },
-      {
-        "stop_id": "23900",
-        "seq": 56
-      },
-      {
-        "stop_id": "25100",
-        "seq": 57
-      },
-      {
-        "stop_id": "26400",
-        "seq": 58
-      },
-      {
-        "stop_id": "27800",
-        "seq": 59
-      },
-      {
-        "stop_id": "28300",
-        "seq": 60
-      },
-      {
-        "stop_id": "29100",
-        "seq": 61
       }
     ]
   }

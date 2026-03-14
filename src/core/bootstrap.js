@@ -5,13 +5,13 @@ import {
 } from "./routerLogic.js";
 import { getRouteColor, getServiceLabel } from "../style/routeStyle.js";
 
-import { stations } from "/data/rail/stations.js";
-import { rail } from "/data/rail/rail.js";
-import { railTimetables } from "/data/rail/timetables.js";
-import { goKL } from "/data/gokl/goKL.js";
-import { hohoAll } from "/data/hoho/hoho.js";
-import { rapidbus } from "/data/bus/rapidbus.js";
-import { busTimetables } from "/data/bus/timetables.js";
+import { stations } from "../../data/rail/stations.js";
+import { rail } from "../../data/rail/rail.js";
+import { railTimetables } from "../../data/rail/timetables.js";
+import { goKL } from "../../data/gokl/goKL.js";
+import { hohoAll } from "../../data/hoho/hoho.js";
+import { rapidbus } from "../../data/bus/rapidbus.js";
+import { busTimetables } from "../../data/bus/timetables.js";
 
 function mergeRailStops(primary, fallback) {
   const out = [];

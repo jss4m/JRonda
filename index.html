@@ -8,8 +8,21 @@
   <link rel="stylesheet" href="./src/style/kiosk.css" />
   <title>JRonda – Render Test</title>
 </head>
-<body>
-  <svg id="map" viewBox="0 0 1000 1000"></svg>
+<body style="margin:0;padding:0;height:100vh;overflow:hidden;">
+  <div id="kiosk-root">
+    <div id="kiosk-map-wrap">
+      <div id="kiosk-map-surface">
+        <svg id="map" viewBox="0 0 1000 1000" tabindex="-1"></svg>
+      </div>
+      <div id="map-legend-dock"><!-- Legend dock --></div>
+    </div>
+    <div id="kiosk-sidebar">
+      <!-- Sidebar controls will populate here -->
+    </div>
+  </div>
+
+  <div id="jronda-toast-root"></div>
+  <div id="station-tooltip"></div>
 
   <script>
     if ("serviceWorker" in navigator) {
@@ -18,7 +31,17 @@
       });
     }
   </script>
-  <script type="module" src="./src/core/kioskSecurity.js"></script>
-  <script type="module" src="./src/core/interaction.js"></script>
+  <script type="module">
+    import './src/core/bootstrap.js';
+    import './src/core/render.js';
+    import './src/core/ui.js';
+    import './src/core/kioskSecurity.js';
+    import './src/core/interaction.js';
+    
+    // Initialize after all modules loaded
+    window.addEventListener('load', () => {
+      console.log('JRonda kiosk loaded');
+    });
+  </script>
 </body>
 </html>
