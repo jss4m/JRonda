@@ -33,27 +33,6 @@
     ],
     "records": [
       {
-        "stop_id": "SH_60800",
-        "source_stop_id": "60800",
-        "stop_name": "LONDAH",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_61000",
-        "source_stop_id": "61000",
-        "stop_name": "ROMPIN",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_62500",
-        "source_stop_id": "62500",
-        "stop_name": "SERTING",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
         "stop_id": "ERT_60800",
         "source_stop_id": "60800",
         "stop_name": "LONDAH",
@@ -80,21 +59,21 @@
     "stop_lat": 3.083373,
     "stop_lon": 101.61143,
     "stop_names": [
-      "SETIA JAYA",
-      "Seri Setia"
+      "Seri Setia",
+      "SETIA JAYA"
     ],
     "records": [
-      {
-        "stop_id": "KA15_KD19_53600",
-        "source_stop_id": "53600",
-        "stop_name": "SETIA JAYA",
-        "route_id": "KA15_KD19",
-        "category": "KTM"
-      },
       {
         "stop_id": "KA15_KD19_53500",
         "source_stop_id": "53500",
         "stop_name": "Seri Setia",
+        "route_id": "KA15_KD19",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "KA15_KD19_53600",
+        "source_stop_id": "53600",
+        "stop_name": "SETIA JAYA",
         "route_id": "KA15_KD19",
         "category": "KTM"
       }
@@ -108,20 +87,6 @@
       "MENTRI"
     ],
     "records": [
-      {
-        "stop_id": "SH_64400",
-        "source_stop_id": "64400",
-        "stop_name": "Triang",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_64700",
-        "source_stop_id": "64700",
-        "stop_name": "MENTRI",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "ERT_64400",
         "source_stop_id": "64400",
@@ -142,24 +107,10 @@
     "stop_lat": 3.710453,
     "stop_lon": 102.366258,
     "stop_names": [
-      "Kuala Krau",
-      "SUNGAI DALAM"
+      "SUNGAI DALAM",
+      "Kuala Krau"
     ],
     "records": [
-      {
-        "stop_id": "SH_67400",
-        "source_stop_id": "67400",
-        "stop_name": "Kuala Krau",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_67100",
-        "source_stop_id": "67100",
-        "stop_name": "SUNGAI DALAM",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "ERT_67100",
         "source_stop_id": "67100",
@@ -180,24 +131,10 @@
     "stop_lat": 3.937265,
     "stop_lon": 102.357945,
     "stop_names": [
-      "Jerantut",
-      "JERANSONG"
+      "JERANSONG",
+      "Jerantut"
     ],
     "records": [
-      {
-        "stop_id": "SH_68700",
-        "source_stop_id": "68700",
-        "stop_name": "Jerantut",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_68200",
-        "source_stop_id": "68200",
-        "stop_name": "JERANSONG",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "ERT_68200",
         "source_stop_id": "68200",
@@ -218,21 +155,21 @@
     "stop_lat": 4.186634,
     "stop_lon": 102.053791,
     "stop_names": [
-      "KUALA LIPIS",
-      "KG TELANG"
+      "KG TELANG",
+      "KUALA LIPIS"
     ],
     "records": [
-      {
-        "stop_id": "SH_71300",
-        "source_stop_id": "71300",
-        "stop_name": "KUALA LIPIS",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "SH_72000",
         "source_stop_id": "72000",
         "stop_name": "KG TELANG",
+        "route_id": "SH",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "SH_71300",
+        "source_stop_id": "71300",
+        "stop_name": "KUALA LIPIS",
         "route_id": "SH",
         "category": "KTM"
       },
@@ -256,17 +193,10 @@
     "stop_lat": 4.69314,
     "stop_lon": 102.00328,
     "stop_names": [
-      "KUBANG RUSA",
-      "Merapoh"
+      "Merapoh",
+      "KUBANG RUSA"
     ],
     "records": [
-      {
-        "stop_id": "SH_74000",
-        "source_stop_id": "74000",
-        "stop_name": "KUBANG RUSA",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "SH_74800",
         "source_stop_id": "74800",
@@ -275,16 +205,23 @@
         "category": "KTM"
       },
       {
-        "stop_id": "ERT_74800",
-        "source_stop_id": "74800",
-        "stop_name": "Merapoh",
-        "route_id": "ERT",
+        "stop_id": "SH_74000",
+        "source_stop_id": "74000",
+        "stop_name": "KUBANG RUSA",
+        "route_id": "SH",
         "category": "KTM"
       },
       {
         "stop_id": "ERT_74000",
         "source_stop_id": "74000",
         "stop_name": "KUBANG RUSA",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_74800",
+        "source_stop_id": "74800",
+        "stop_name": "Merapoh",
         "route_id": "ERT",
         "category": "KTM"
       }
@@ -294,17 +231,10 @@
     "stop_lat": 4.878941,
     "stop_lon": 101.966634,
     "stop_names": [
-      "LAPAN TUPAI",
-      "Gua Musang"
+      "Gua Musang",
+      "LAPAN TUPAI"
     ],
     "records": [
-      {
-        "stop_id": "SH_75300",
-        "source_stop_id": "75300",
-        "stop_name": "LAPAN TUPAI",
-        "route_id": "SH",
-        "category": "KTM"
-      },
       {
         "stop_id": "SH_76000",
         "source_stop_id": "76000",
@@ -313,16 +243,23 @@
         "category": "KTM"
       },
       {
-        "stop_id": "ERT_76000",
-        "source_stop_id": "76000",
-        "stop_name": "Gua Musang",
-        "route_id": "ERT",
+        "stop_id": "SH_75300",
+        "source_stop_id": "75300",
+        "stop_name": "LAPAN TUPAI",
+        "route_id": "SH",
         "category": "KTM"
       },
       {
         "stop_id": "ERT_75300",
         "source_stop_id": "75300",
         "stop_name": "LAPAN TUPAI",
+        "route_id": "ERT",
+        "category": "KTM"
+      },
+      {
+        "stop_id": "ERT_76000",
+        "source_stop_id": "76000",
+        "stop_name": "Gua Musang",
         "route_id": "ERT",
         "category": "KTM"
       }

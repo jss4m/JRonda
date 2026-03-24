@@ -6,10 +6,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if ([string]::IsNullOrWhiteSpace($Root)) {
-  $Root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-} else {
-  $Root = (Resolve-Path $Root).Path
+$Root = if ([string]::IsNullOrWhiteSpace($Root)) { Split-Path $PSScriptRoot -Parent } else { $Root }
+if (-not (Test-Path $Root -PathType Container)) {
+  Write-Error "Root path invalid: $Root"
+  exit 1
 }
 
 $listener = [System.Net.HttpListener]::new()

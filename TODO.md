@@ -1,1 +1,7 @@
-# JRonda Fix Task Progress\n\n## Steps from Approved Plan:\n\n- [x] 1. Fix src/core/interaction.js line 275 syntax error (legendItems Map construction). *(Vite/TS fixed)*\n- [x] 2. Scan/prioritize other faults & update IMPROVEMENTS.md (remove old checklist, add new summary).\n- [ ] 3a. Data-build normalize scripts: Aggregate console.warn (optional).\n- [ ] 3b. map-layout.js: Integrate bus_stops (optional).\n- [ ] 3c. Remove TODOs (layout-engine, etc.) (optional).\n- [ ] 4. Followups: npm test, npm run dev verify.\n\n**Status**: Core task complete, optionals pending.\n**Demo**: npm run dev
+# JRonda Audit Task TODO
+
+- [x] 1. Analyze task & scan files (search_files, read key files: report.txt, IMPROVEMENTS.md, package.json, index.html, rail.js)
+- [x] 2. Identify issues (3 TODOs in src/core/*.js, 51 consoles mostly data-build, no major ethics violations)
+- [x] 3. Update report.txt (append current structure audit summary)
+- [x] 4. Rewrite IMPROVEMENTS.md (file [issues] format)
+- [x] 5. Complete task (attempt_completion)

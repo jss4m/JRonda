@@ -33,14 +33,44 @@ function mergeRailStops(primary, fallback) {
   return out;
 }
 
-const mergedRail = mergeRailStops(rail || [], stations || []);
+const ETS_ROUTE_ID = "ETS";
+const EXCLUDED_NON_CANONICAL_RAIL_IDS = new Set(["100_47300", "100_9000", "SH", "ST", "ERT"]);
+const KLANG_VALLEY_BOUNDS = {
+  minLat: 2.6,
+  maxLat: 3.5,
+  minLon: 101.2,
+  maxLon: 102.1,
+};
 
-const allStations = [
+function inKlangValley(lat, lon) {
+  const la = Number(lat);
+  const lo = Number(lon);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return false;
+  return (
+    la >= KLANG_VALLEY_BOUNDS.minLat &&
+    la <= KLANG_VALLEY_BOUNDS.maxLat &&
+    lo >= KLANG_VALLEY_BOUNDS.minLon &&
+    lo <= KLANG_VALLEY_BOUNDS.maxLon
+  );
+}
+
+const railNoETS = (rail || []).filter((s) => {
+  const routeId = String(s.route_id || "");
+  return routeId !== ETS_ROUTE_ID && !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(routeId);
+});
+const stationsNoETS = (stations || []).filter((s) => {
+  const routeId = String(s.route_id || "");
+  return routeId !== ETS_ROUTE_ID && !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(routeId);
+});
+const mergedRail = mergeRailStops(railNoETS, stationsNoETS);
+
+const allStationsRaw = [
   ...mergedRail,
   ...goKL,
   ...hohoAll,
   ...rapidbus
 ];
+const allStations = allStationsRaw.filter((s) => inKlangValley(s.stop_lat, s.stop_lon));
 
 const { graph, stationMap } = buildGraph(allStations);
 const { graph: railGraph, stationMap: railStationMap } = buildRailOnlyNetwork(graph, stationMap);
@@ -252,3 +282,17 @@ function compressModes(segments) {
   }
   return modes;
 }
+
+(async () => {
+  try {
+    const { UIState, setState } = await import('./ui-state.js');
+    
+    // Global access for other modules
+    window.UIState = UIState;
+    window.setState = setState;
+    
+    console.log('[UIState] Initialized - ready for subscribers');
+  } catch (err) {
+    console.error('[UIState] Bootstrap failed:', err);
+  }
+})();

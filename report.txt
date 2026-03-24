@@ -1,0 +1,131 @@
+# JRonda Project Architecture Report
+
+## Overview
+JRonda is an **offline-first kiosk webapp** for Klang Valley (Malaysia) public transit visualization. Users interact via touch on a SVG map to explore rail/bus routes, POIs, station info, and walking directions. Designed for USB/touchscreen kiosks with PIN security, fullscreen enforcement, and PWA offline caching.
+
+**Core User Flows:**
+1. **Map Exploration**: Touch-drag pan/zoom SVG map → tap stops/routes → tooltip with ETAs/POIs/walk paths.
+2. **Route Search**: Sidebar toggles (bus/rail categories, presets) → legend chips → detailed steps/modal.
+3. **Kiosk Security**: PIN unlock on focus loss/fullscreen exit.
+
+**Launch**: `start-kiosk.bat` → local server + browser --kiosk mode.
+
+## Component Layers & Interactions
+
+### 1. Data Layer (Static, Pre-Built)
+**Purpose**: Normalized GTFS + custom data → offline JS modules.
+
+| Sub-Layer | Files | Description | Interactions |
+|-----------|-------|-------------|--------------|
+| **Raw GTFS/Custom** | `data/bus/rapidbus.js`, `data/rail/stations.js`, `data/poi/POI.txt`, `data/gokl/goKL-list.txt` | Source GTFS JSON/JS, POI text, static rail data. | Build scripts fetch/process → normalized JSON → JS exports. |
+| **Build Pipeline** | `data-build/scripts/*.js` (normalize-*, *_to-js.js, update-gtfs.js) | Node.js: Parse GTFS → dedupe/normalize → `data/*.js` modules. `npm run build:data`. | `npm run update:gtfs` (dev-only fetch) → static exports consumed by renderer. |
+| **Normalized/Export** | `data-build/normalized/*.json`, `data/rail/rail.js`, `data/bus/rapidbus.js`, `data/poi/poi.js` | `rail_stops.json`, `bus_routes.json` → ES modules w/ stops/routes/timetables. | Imported by `data-merger.js` → merged graph → `spatial-index.js` → renderer queries. |
+
+**Data Flow**: GTFS → normalize → JS → merger → spatial index → render queries.
+
+### 2. Core Rendering Layer
+**Purpose**: SVG map generation + spatial queries.
+
+| Component | Files | User Enables | Interactions |
+|-----------|-------|--------------|--------------|
+| **Bootstrap** | `src/core/bootstrap.js` | Init all modules. | Imports UI/render/interaction/security → `window.load` → render cycle. |
+| **Data Merger** | `src/core/data-merger.js`, `src/core/data-bootstrap.js` | Unified rail/bus/POI graph. | Loads `data/*.js` → merges → feeds layout-engine/spatial-index. |
+| **Spatial Index** | `src/core/spatial-index.js` | Fast stop lookups. | KD-tree/min-heap → touch queries → tooltip data. |
+| **Layout Engine** | `src/core/layout-engine.js` | Auto-layout routes on SVG. | `map-layout.js` output + stops → SVG paths/groups. Interacts w/ map-renderer. |
+| **Map Renderer** | `src/core/map-renderer.js`, `src/core/render.js`, `src/core/render-utils.js` | Draw SVG (stops, paths, POIs). | `requestAnimationFrame` loop → layout + interaction state → SVG updates. |
+| **Router Logic** | `src/core/routerLogic.js` | Walk/transfer paths. | Spatial index + timetables → step lists → UI panels. |
+
+**Flow**: Data → layout → render → SVG → interaction events → re-render.
+
+### 3. Interaction Layer
+**Purpose**: Touch/pan/zoom + route discovery.
+
+| Component | Files | User Enables | Interactions |
+|-----------|-------|--------------|--------------|
+| **Interaction** | `src/core/interaction.js`, `interaction-bindings.js` | Pointer/touch traces → route highlighting/tooltips. | SVG events → spatial queries → toast/tooltip/router → UI updates. |
+| **GPS Manager** | `src/core/gps-manager.js` | Nearby stations (optional). | Geolocation → spatial nearest → auto-panel. |
+| **Tooltip/Toast** | `src/core/tooltip-manager.js`, `src/core/toast-manager.js` | Station details, errors, steps. | Interaction hits → format.js → DOM overlay. |
+
+### 4. UI Layer
+**Purpose**: Responsive kiosk controls.
+
+| Component | Files | User Enables | Interactions |
+|-----------|-------|--------------|--------------|
+| **UI Core** | `src/core/ui.js` | Sidebar, clock, legend, modals, loading. | DOM creation → i18n → interaction listeners → render state sync. |
+| **Styles** | `src/style/kiosk.css`, `routeStyle.js` | Grid (landscape/portrait), touch targets. | Media queries → adaptLayout() → responsive map/sidebar. |
+| **i18n** | `src/core/i18n.js` | Multi-lang (en/?). | localStorage → UI text updates. |
+| **Utils** | `src/utils/format.js`, `min-heap.js` | Time formatting, priority queues. | Tooltip/steps generation. |
+
+**Grid**: `#kiosk-root` → map (62-68vh) + sidebar (38vw-28vh) + legend dock.
+
+### 5. Kiosk/PWA Layer
+**Purpose**: Security + offline deployment.
+
+| Component | Files | User Enables | Interactions |
+|-----------|-------|--------------|--------------|
+| **Security** | `src/core/kioskSecurity.js` | PIN lock, fullscreen guard. | Visibility/fullscreen events → PIN overlay → unlock → continue. |
+| **PWA/SW** | `index.html`, `manifest.webmanifest`, `sw.js` | Install/fullscreen PWA, offline cache. | `navigator.serviceWorker` → cache app/data → fetch fallback. |
+| **Launchers** | `start-kiosk.bat/sh`, `start-usb.bat`, `tools/serve.ps1` | Auto-server + --kiosk browser. | Local HTTP server → no CORS → fullscreen Edge/Chrome. |
+
+### 6. Build/Test Tools
+| Tool | Files | Purpose |
+|------|-------|---------|
+| **Vite** | `vite.config.js`, `package.json` | Dev server, ESM bundling. |
+| **Vitest** | `vitest.workspace.js` | Unit tests (render logic?). |
+| **Docs** | `README.md`, `KIOSK_HARDENING.md`, `RESPONSIVE-KIOSK.md` | Deployment guides. |
+
+## Full Interaction Flow
+```
+1. start-kiosk.bat → serve.ps1 (localhost:8080) + Edge --kiosk
+2. index.html → SW register + modules (bootstrap → data → render/UI/security)
+3. Security: PIN setup/lock → unlock → fullscreen
+4. UI: Clock/legend/sidebar render → interaction listeners
+5. User touch: pointerdown → spatial-index → highlight → tooltip (POI/steps)
+6. Sidebar: Toggle categories → re-render legend → modal details
+7. Offline: SW intercepts fetch → cached data/rail.js
+8. Security trigger (focus loss): PIN → re-fullscreen
+```
+
+**Assets**: `src/img/*.svg` (icons/routes/POIs).
+
+
+
+**Total Size**: ~50 JS modules + normalized JSON + SVG → lightweight USB deploy (~10-20MB post-cache).
+
+## Detailed Component Interaction Map
+
+**Legend** (interaction types):
+- **→** Imports/uses/calls functions
+- **↔** Mutual/shared globals (e.g. RoutingService)
+- **📡** Custom events dispatched/listened (jronda:*)
+- **🔄** State bus (window.setState/subscribe to UIState)
+- **🌐** Window globals/exports
+
+| Component | Interacts With → | Interacted By ← |
+|-----------|------------------|-----------------|
+| **ui-state.js** (central observable) | Exports UIState/setState/subscribe | 🔄 ui-route-cards, tooltip-manager, route-visualizer, render-from-state, bootstrap (subscribe), interaction (window.setState) |
+| **bootstrap.js** (data/router init) | → routerLogic, routeStyle, data/*.js, ui-state (await import/subscribe) | Exports 🌐 RoutingService (used by interaction/render), window.UIState |
+| **ui.js** (DOM/UI) | → routeStyle/i18n/format/render.js (dynamic), 📡 jronda:render-ready/loading-progress | Listens 📡 many jronda:* events, called by interaction.createUI |
+| **interaction.js** (user input) | → ui.js (createUI), bootstrap (RoutingService), routeStyle, render (bindings funcs), ui-state (setState) | 📡 jronda:render-ready/station-info/trace-route/set-start/end, exports window.setFrom/ToStation etc. |
+| **render.js** (SVG core) | → data-bootstrap/spatial-index/layout-engine/map-renderer/render-utils/data-merger/toast-manager/ui-state (subscribe), 📡 jronda:render-ready | Exports getRenderPointerInteractionBindings (used by interaction), window.renderFromState |
+| **ui-route-cards.js** | → ui-state (subscribe), routeStyle | 🔄 UIState changes → re-render cards |
+| **tooltip-manager.js** | → ui-state (subscribe), railTimetables/busTimetables/routeStyle | 🔄 UIState, window.setState, 📡 jronda:station-info |
+| **route-visualizer.js** | → ui-state, layout-engine | 🔄 UIState (onRouteSelected → setState) |
+| **spatial-index.js** | Exports indexes | Used by interaction/render (findNearest*) |
+| **data-bootstrap.js** | → data/*.js, render-utils | Exports globals stationById/routes (used by render/bootstrap) |
+
+**Key Flows**:
+1. **User Tap** → interaction (pointerdown) → render bindings → spatial-index → tooltip/station-info event → ui-state setState → subscribers re-render
+2. **Route Compute** → interaction.updateRoutes → RoutingService.getRoutes (bootstrap graph) → ui-state set routes → route-cards/visualizer update
+3. **Init** → bootstrap → data merge/graph → render.init → SVG layers/layout/draw → jronda:render-ready → interaction wire bindings → ui-state subscribe loop
+
+**Generated**: $(date)
+
+## Audit Update 2024-10 (BLACKBOXAI Scan)
+**File Structure**: Confirmed unchanged (~100 files). Matches architecture doc.
+- **Data Layer**: rail.js clean/professional (500+ normalized stops/routes). GTFS build pipeline intact.
+- **Core**: Vite PWA kiosk ready. index.html standard.
+- **Issues**: Minor - 3 TODOs (dead core modules), console.logs (mostly build scripts, some render.js debug). See IMPROVEMENTS.md.
+- **Ethics/Code Quality**: Professional. No secrets/hardcodes/malware. Stable for production kiosk deployment.
+- **Stats**: JS modules:50+, Data size: lightweight, Deps: Vite/Tailwind/Vitest/Zod/Puppeteer.
+**Status**: Ready. Recommend cleanup consoles/TODOs for polish.

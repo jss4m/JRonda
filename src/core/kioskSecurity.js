@@ -126,7 +126,7 @@ function injectStyles() {
       align-items: center;
       justify-content: center;
       background: rgba(2, 6, 23, 0.94);
-      font-family: "Segoe UI", Arial, sans-serif;
+      font-family: "Outfit", "Segoe UI", Arial, sans-serif;
       color: #e2e8f0;
     }
     #jronda-kiosk-card {
@@ -136,6 +136,43 @@ function injectStyles() {
       background: #0f172a;
       padding: 20px;
       box-shadow: 0 18px 60px rgba(0, 0, 0, 0.4);
+    }
+    #jronda-kiosk-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    #jronda-kiosk-brand .brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+      flex-shrink: 0;
+    }
+    #jronda-kiosk-brand .brand-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    #jronda-kiosk-brand .brand-text {
+      font-size: 18px;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: -0.02em;
+    }
+    #jronda-kiosk-brand .brand-text .r {
+      background: linear-gradient(135deg, #7c3aed, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     #jronda-kiosk-title {
       margin: 0 0 8px;
@@ -205,9 +242,15 @@ function createOverlay() {
   overlay.style.display = "none";
   overlay.innerHTML = `
     <div id="jronda-kiosk-card" role="dialog" aria-modal="true" aria-label="${t("kiosk_lock_aria", "Kiosk lock")}">
+      <div id="jronda-kiosk-brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.5"/><line x1="8" y1="1" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="15"/><line x1="1" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="15" y2="8"/><line x1="3.1" y1="3.1" x2="5.2" y2="5.2"/><line x1="10.8" y1="10.8" x2="12.9" y2="12.9"/></svg>
+        </div>
+        <div class="brand-text">J<span class="r">R</span>onda</div>
+      </div>
       <h2 id="jronda-kiosk-title">${t("kiosk_lock_title", "Kiosk Locked")}</h2>
       <p id="jronda-kiosk-status"></p>
-      <input id="jronda-kiosk-pin" type="password" inputmode="numeric" placeholder="${t("enter_admin_pin", "Enter admin PIN")}" autocomplete="off" />
+      <input id="jronda-kiosk-pin" type="password" inputmode="text" pattern="[0-9]*" placeholder="${t("enter_admin_pin", "Enter admin PIN")}" autocomplete="off" />
       <div id="jronda-kiosk-actions">
         <button id="jronda-kiosk-unlock" class="jronda-kiosk-btn" type="button">${t("unlock", "Unlock")}</button>
         <button id="jronda-kiosk-fs" class="jronda-kiosk-btn alt" type="button">${t("fullscreen", "Fullscreen")}</button>
@@ -256,13 +299,40 @@ async function sha256(input) {
 }
 
 async function verifyPin(pin) {
+  const normalizedPin = pin.toString().replace(/\D/g, '');
+  if (!/^\d{4,8}$/.test(normalizedPin)) return false;
   const stored = localStorage.getItem(PIN_HASH_KEY);
   if (!stored) return false;
-  const hash = await sha256(pin);
+  const hash = await sha256(normalizedPin);
   return hash === stored;
 }
 
 window.jrondaVerifyKioskPin = verifyPin;
+
+async function changePinWithPrompt() {
+  const current = window.prompt(t("enter_admin_pin", "Enter admin PIN:"), "") || "";
+  if (!current) return false;
+  const ok = await verifyPin(current);
+  if (!ok) {
+    alert(t("invalid_passkey_update", "Invalid passkey for kiosk station update."));
+    return false;
+  }
+  const pin = window.prompt(t("set_admin_pin_prompt", "Set kiosk admin PIN (4-8 digits):"), "") || "";
+  if (!/^\d{4,8}$/.test(pin)) {
+    alert(t("pin_format_error", "PIN must be 4-8 digits."));
+    return false;
+  }
+  const confirmPin = window.prompt(t("confirm_admin_pin_prompt", "Confirm admin PIN:"), "") || "";
+  if (pin !== confirmPin) {
+    alert(t("pin_mismatch", "PIN mismatch. Try again."));
+    return false;
+  }
+  const hash = await sha256(pin);
+  localStorage.setItem(PIN_HASH_KEY, hash);
+  return true;
+}
+
+window.jrondaChangeKioskPin = changePinWithPrompt;
 
 // ======= PIN Setup =======
 async function setupPinIfNeeded() {
@@ -413,7 +483,7 @@ async function unlockAttempt() {
     return;
   }
   
-  const value = String(pinInput.value || "");
+  const value = pinInput.value.toString().replace(/\D/g, '');
   if (!/^\d{4,8}$/.test(value)) {
     statusText.textContent = t("invalid_pin_format", "Invalid PIN format.");
     statusText.className = "error";
@@ -468,7 +538,7 @@ function requestFullscreen() {
 }
 
 async function exitFullscreenWithPin() {
-  const value = String(pinInput?.value || "");
+  const value = (pinInput?.value || '').toString().replace(/\D/g, '');
   if (!/^\d{4,8}$/.test(value)) {
     statusText.textContent = t("enter_pin_exit_fullscreen", "Enter admin PIN to exit fullscreen.");
     statusText.className = "error";
@@ -619,4 +689,3 @@ initKioskSecurity().catch((e) => {
   console.error("Kiosk security init failed:", e);
   logSecurityEvent('init_error', `Failed: ${e.message}`);
 });
-

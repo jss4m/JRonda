@@ -1,4 +1,5 @@
 import { mergeRailStops } from './render-utils.js';
+// TODO: verify - module currently not imported in app bootstrap; remove or wire explicitly.
 // Use absolute paths for data (Vite handles)
 import { stations } from '../../data/rail/stations.js';
 import { rail } from '../../data/rail/rail.js';

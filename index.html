@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0f172a" />
+  <meta name="theme-color" content="#f4f7fb" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./src/style/kiosk.css" />
-  <title>JRonda – Render Test</title>
+  <link rel="stylesheet" href="./src/style/style.css" />
+    <title>JRonda - Transit Kiosk</title>
 </head>
-<body style="margin:0;padding:0;height:100vh;overflow:hidden;">
+<body>
   <div id="kiosk-root">
     <div id="kiosk-map-wrap">
       <div id="kiosk-map-surface">
@@ -16,13 +16,18 @@
       </div>
       <div id="map-legend-dock"><!-- Legend dock --></div>
     </div>
-    <div id="kiosk-sidebar">
+  <div id="kiosk-sidebar">
       <!-- Sidebar controls will populate here -->
+      <button id="jronda-update-data" class="hidden-admin-btn" title="Update GTFS data (admin)" style="
+        position: fixed; top: 10px; right: 10px; z-index: 1000;
+        padding: 8px 12px; background: #059669; color: white; border: none;
+        border-radius: 6px; font-size: 12px; cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      ">⟳ Update Data</button>
     </div>
   </div>
 
   <div id="jronda-toast-root"></div>
-  <div id="station-tooltip"></div>
 
   <script>
     if ("serviceWorker" in navigator) {
@@ -37,6 +42,20 @@
     import './src/core/ui.js';
     import './src/core/kioskSecurity.js';
     import './src/core/interaction.js';
+    
+    // Debug mode from URL param
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('debug')) {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const debugBtn = document.getElementById('jronda-layout-debug');
+          if (debugBtn && typeof window.toggleLayoutDebug === 'function') {
+            window.toggleLayoutDebug();
+          }
+          console.log('Auto-enabled layout debug (?debug=1)');
+        }, 2000);
+      });
+    }
     
     // Initialize after all modules loaded
     window.addEventListener('load', () => {

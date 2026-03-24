@@ -1,10 +1,7 @@
 export function deriveMode(category) {
   const normalized = String(category || "").toUpperCase();
-  const railCategories = ["MRT", "LRT", "KTM", "ERL", "MRL"];
+  const railCategories = ["MRT", "LRT", "KTM", "ERL", "MRL", "RAIL"];
   if (railCategories.includes(normalized)) return "RAIL";
-
-  if (normalized === "HOHO") return "TOURIST";
-
   return "BUS";
 }
 
@@ -105,20 +102,20 @@ export function buildGraph(stations) {
     return passThroughStopId;
   }
 
-  function addUndirectedEdge(fromStopId, toStopId, weightMeters, routeId, segmentKey) {
+function addDirectedEdge(fromStopId, toStopId, weightMeters, routeId, segmentKey) {
     const safeWeight = Number.isFinite(weightMeters) && weightMeters > 0 ? weightMeters : 1;
     graph.get(fromStopId).push({
       target: toStopId,
       weight: safeWeight,
       routeId,
       segmentKey,
+      direction: 'forward'
     });
-    graph.get(toStopId).push({
-      target: fromStopId,
-      weight: safeWeight,
-      routeId,
-      segmentKey,
-    });
+  }
+
+  function addBidirectionalEdge(fromStopId, toStopId, weightMeters, routeId, segmentKey) {
+    addDirectedEdge(fromStopId, toStopId, weightMeters, routeId, segmentKey);
+    addDirectedEdge(toStopId, fromStopId, weightMeters, routeId, segmentKey);
   }
 
   for (const [routeId, routeStopsRaw] of routes.entries()) {
@@ -165,7 +162,12 @@ export function buildGraph(stations) {
         fromCanonicalId < toCanonicalId
           ? `${fromCanonicalId}-${toCanonicalId}`
           : `${toCanonicalId}-${fromCanonicalId}`;
-      addUndirectedEdge(fromStopId, toStopId, baseDistanceMeters, routeId, segmentKey);
+      const routeMode = deriveMode(routeStops[0]?.category);
+      if (routeMode === 'RAIL') {
+        addBidirectionalEdge(fromStopId, toStopId, baseDistanceMeters, routeId, segmentKey);
+      } else {
+        addDirectedEdge(fromStopId, toStopId, baseDistanceMeters, routeId, segmentKey);
+      }
     }
   }
 
@@ -241,13 +243,24 @@ export function buildGraph(stations) {
       ];
       const segmentWeight = Math.max(1, originalWeight / Math.max(1, chainStopIds.length - 1));
       for (let chainIndex = 0; chainIndex < chainStopIds.length - 1; chainIndex++) {
-        addUndirectedEdge(
-          String(chainStopIds[chainIndex]),
-          String(chainStopIds[chainIndex + 1]),
-          segmentWeight,
-          routeId,
-          segmentKey
-        );
+        const chainRouteMode = deriveMode(routeStops[0]?.category);
+        if (chainRouteMode === 'RAIL') {
+          addBidirectionalEdge(
+            String(chainStopIds[chainIndex]),
+            String(chainStopIds[chainIndex + 1]),
+            segmentWeight,
+            routeId,
+            segmentKey
+          );
+        } else {
+          addDirectedEdge(
+            String(chainStopIds[chainIndex]),
+            String(chainStopIds[chainIndex + 1]),
+            segmentWeight,
+            routeId,
+            segmentKey
+          );
+        }
       }
     }
   }
@@ -302,8 +315,7 @@ export function buildGraph(stations) {
             ? `${a.stop_id}:${b.stop_id}`
             : `${b.stop_id}:${a.stop_id}`;
         if (seenTransferPairs.has(pair)) continue;
-        graph.get(String(a.stop_id)).push({ target: String(b.stop_id), weight });
-        graph.get(String(b.stop_id)).push({ target: String(a.stop_id), weight });
+        addBidirectionalEdge(String(a.stop_id), String(b.stop_id), weight, null, 'transfer');
         seenTransferPairs.add(pair);
       }
     }

@@ -1,18 +1,18 @@
 // ======= interaction.js =======
 import { createUI } from "./ui.js";
 import { RoutingService } from "./bootstrap.js";
-import { getServiceLabel, getRouteColor, getRouteMode, normalizeRouteId, railRouteIds } from "../style/routeStyle.js";
+import { CANONICAL_RAIL_ROUTE_META, getServiceLabel, getRouteColor, getRouteMode, normalizeRouteId } from "../style/routeStyle.js";
 import {
   consumeInitToasts,
-  drawRoute as renderDrawRoute,
-  getContinuationPanelData,
   getRenderPointerInteractionBindings,
-  getStationDetailHtml,
-  resetRenderState,
-  setRailRouteFilter,
-  setRouteEndpoints,
-  setBusVisibility,
 } from "./render.js";
+
+import { UIState } from './ui-state.js';
+import { poi as poiRaw } from "../../data/poi/poi.js";
+
+window.UIState = UIState; // Global bridge during refactor
+
+let includeBus = true; // Fix ReferenceError: declare before use
 
 const t = (key, fallback = "") => {
   if (typeof window !== "undefined" && window.jrondaI18n?.t) {
@@ -144,10 +144,8 @@ function wireRenderPointerInteractions(config) {
         window.dispatchEvent(new CustomEvent("jronda:trace-route", {
           detail: { startId, endId },
         }));
-        showStationTooltip(endStop, evt.clientX, evt.clientY);
       } else {
-        showStationTooltip(endStop, evt.clientX, evt.clientY);
-        dispatchStationInfo(endStop, "tap");
+        // Drag/trace should not open station detail panels.
       }
     } else if (endStop) {
       showStationTooltip(endStop, evt.clientX, evt.clientY);
@@ -194,18 +192,21 @@ function wireRenderPointerInteractions(config) {
 }
 
 // ================= INITIAL CONFIG =================
+// Global state now managed by UIState
+// Local: currentPreset, resetTimerId, legendResetTimer, panelIdleTimer preserved
 let currentPreset = "SMART";
+let resetTimerId = null;
+let legendResetTimer = null;
 let startId = null;
 let endId = null;
 let currentRoutes = [];
 let selectedIndex = 0;
-let includeBus = true;
-let resetTimerId = null;
-let legendResetTimer = null;
 const AUTO_RESET_MS = 45 * 1000;
 const PANEL_IDLE_MS = 45 * 1000;
 const LEGEND_RESET_MS = 15 * 1000;
 let panelIdleTimer = null;
+let selectedNetworkMode = "RAIL";
+const EXCLUDED_NON_CANONICAL_RAIL_IDS = new Set(["100_47300", "100_9000", "SH", "ST", "ERT"]);
 
 const allRailRouteOptions = Array.from(
   new Map(
@@ -227,65 +228,116 @@ const allRailRouteOptions = Array.from(
 
 const stationOptions = Array.from(RoutingService.stationMap.values())
   .filter((station) => !station.passThrough)
+  .filter((station) => !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(normalizeRouteId(station.route_id)))
   .map((s) => ({
     stop_id: String(s.stop_id),
+    source_stop_id: String(s.source_stop_id || s.stop_id || ""),
     stop_name: String(s.stop_name || s.stop_id),
     route_id: String(s.route_id || ""),
+    route_color: String(s.route_color || ""),
+    category: String(s.category || ""),
+    mode: String(s.mode || ""),
+    stop_lat: Number(s.stop_lat),
+    stop_lon: Number(s.stop_lon),
   }));
 
-const LEGEND_ORDER = [
-  { id: "KTM1", label: "1" },
-  { id: "KTM2", label: "2" },
-  { id: "AG", label: "3" },
-  { id: "PH", label: "4" },
-  { id: "KJ", label: "5" },
-  { id: "ERL2", label: "6" },
-  { id: "ERL1", label: "7" },
-  { id: "MR", label: "8" },
-  { id: "MRT", label: "9" },
-  { id: "KTM3", label: "10" },
-  { id: "SA", label: "11" },
-  { id: "PYL", label: "12" },
-  { id: "CC", label: "13" },
-  { id: "BRT", label: "B1" },
-];
-const LEGEND_ORDER_MAP = new Map(LEGEND_ORDER.map((entry, idx) => [entry.id, { rank: idx, label: entry.label }]));
+const lineStops = Array.from(RoutingService.stationMap.values())
+  .filter((station) => !station.passThrough)
+  .filter((station) => !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(normalizeRouteId(station.route_id)))
+  .map((s) => ({
+    stop_id: String(s.stop_id),
+    source_stop_id: String(s.source_stop_id || s.stop_id || ""),
+    stop_name: String(s.stop_name || s.stop_id),
+    route_id: String(s.route_id || ""),
+    route_color: String(s.route_color || ""),
+    category: String(s.category || ""),
+    mode: String(s.mode || ""),
+    stop_sequence: Number(s.stop_sequence ?? s.seq ?? 0),
+  }))
+  .sort((a, b) => {
+    if (a.route_id !== b.route_id) return a.route_id.localeCompare(b.route_id);
+    return (a.stop_sequence || 0) - (b.stop_sequence || 0);
+  });
+
+const LEGEND_ORDER = CANONICAL_RAIL_ROUTE_META.map((entry) => ({ id: normalizeRouteId(entry.id), name: entry.name }));
+const LEGEND_ORDER_MAP = new Map(LEGEND_ORDER.map((entry, idx) => [entry.id, { rank: idx, name: entry.name }]));
 
 const normalizeLegendKey = (routeId) => {
   const base = normalizeRouteId(routeId);
   return base.replace(/\s+/g, "");
 };
 
-const legendItems = Array.from(
-  new Map(
-    Array.from(RoutingService.stationMap.values())
-      .filter((station) => station.mode === "RAIL" && !station.passThrough && station.route_id)
-      .map((s) => {
-        const routeId = normalizeRouteId(String(s.route_id));
-        const legendKey = normalizeLegendKey(routeId);
-        if (!routeId) return null;
-        const mode = getRouteMode(routeId);
-        const color = getRouteColor(routeId, false, s.route_color ?? null).color;
-        const baseLabel = String(s.route_public_name || "").trim() || getServiceLabel(s, mode);
-        const orderMeta = LEGEND_ORDER_MAP.get(legendKey);
-        const label = orderMeta ? `${orderMeta.label} - ${baseLabel}` : baseLabel;
-        return [routeId, { routeId, legendKey, label, color, mode }];
-      })
-      .filter(Boolean)
-  ).values()
-)
-  .filter((item) => item.routeId)
-  .sort((a, b) => {
-    const aMeta = LEGEND_ORDER_MAP.get(String(a.legendKey || a.routeId));
-    const bMeta = LEGEND_ORDER_MAP.get(String(b.legendKey || b.routeId));
-    const aRank = aMeta ? aMeta.rank : Infinity;
-    const bRank = bMeta ? bMeta.rank : Infinity;
-    const aGroup = Number.isFinite(aRank) ? 0 : (a.mode === "RAIL" ? 1 : 2);
-    const bGroup = Number.isFinite(bRank) ? 0 : (b.mode === "RAIL" ? 1 : 2);
-    if (aGroup !== bGroup) return aGroup - bGroup;
-    if (aMeta || bMeta) return aRank - bRank;
-    return a.label.localeCompare(b.label);
+const legendItemByRoute = new Map();
+const stationByRoute = new Map();
+for (const station of RoutingService.stationMap.values()) {
+  if (station.mode !== "RAIL" || station.passThrough || !station.route_id) continue;
+  const rid = normalizeRouteId(String(station.route_id));
+  if (!rid || stationByRoute.has(rid)) continue;
+  stationByRoute.set(rid, station);
+}
+
+function getLegendIcon(category) {
+  const c = String(category || "").toUpperCase();
+  if (c === "KTM") return "/src/img/train-panthograph.svg";
+  return "/src/img/train-noPanthograph.svg";
+}
+
+for (const entry of LEGEND_ORDER) {
+  const routeId = normalizeRouteId(String(entry.id));
+  const legendKey = normalizeLegendKey(routeId);
+  const sample = stationByRoute.get(routeId);
+  const mode = getRouteMode(routeId);
+  const category = sample?.category || (routeId.startsWith("KTM") ? "KTM" : "");
+  const color = getRouteColor(routeId, false, sample?.route_color ?? null).color;
+  const label = entry.name || (sample ? String(sample.route_long_name || "").trim() || getServiceLabel(sample, mode) : routeId);
+  legendItemByRoute.set(routeId, {
+    routeId,
+    legendKey,
+    label,
+    color,
+    mode,
+    group: "RAIL",
+    icon: getLegendIcon(category),
   });
+}
+
+const legendItems = Array.from(legendItemByRoute.values()).sort((a, b) => {
+  const aMeta = LEGEND_ORDER_MAP.get(String(a.legendKey || a.routeId));
+  const bMeta = LEGEND_ORDER_MAP.get(String(b.legendKey || b.routeId));
+  const aRank = aMeta ? aMeta.rank : Infinity;
+  const bRank = bMeta ? bMeta.rank : Infinity;
+  const aGroup = Number.isFinite(aRank) ? 0 : (a.mode === "RAIL" ? 1 : 2);
+  const bGroup = Number.isFinite(bRank) ? 0 : (b.mode === "RAIL" ? 1 : 2);
+  if (aGroup !== bGroup) return aGroup - bGroup;
+  if (aMeta || bMeta) return aRank - bRank;
+  return a.label.localeCompare(b.label);
+});
+
+const busLegendMap = new Map();
+for (const station of RoutingService.stationMap.values()) {
+  if (String(station.mode || "").toUpperCase() !== "BUS") continue;
+  const routeId = normalizeRouteId(String(station.route_id || ""));
+  if (!routeId || busLegendMap.has(routeId)) continue;
+  busLegendMap.set(routeId, {
+    routeId,
+    legendKey: routeId,
+    label: getServiceLabel(station, "BUS"),
+    color: getRouteColor(routeId, false, station.route_color ?? null).color,
+    mode: "BUS",
+    group: routeId.includes("GOKL") ? "GOKL" : (routeId.includes("HOHO") ? "HOHO" : "RAPIDBUS"),
+    icon: "/src/img/bus.svg",
+  });
+}
+const allBusLegendItems = Array.from(busLegendMap.values());
+const goKlLegendItems = allBusLegendItems
+  .filter((item) => String(item.routeId || "").includes("GOKL"))
+  .sort((a, b) => a.label.localeCompare(b.label));
+const rapidBusLegendItems = allBusLegendItems
+  .filter((item) => !String(item.routeId || "").includes("GOKL") && !String(item.routeId || "").includes("HOHO"))
+  .sort((a, b) => a.label.localeCompare(b.label));
+const hohoLegendItems = allBusLegendItems
+  .filter((item) => String(item.routeId || "").includes("HOHO"))
+  .sort((a, b) => a.label.localeCompare(b.label));
 
 // ================= SETUP UI =================
 let showToast = null;
@@ -301,25 +353,7 @@ const ui = createUI({
   onPresetChange: (preset) => {
     currentPreset = preset;
     toastWrapper(tf("preset_changed", "Preset changed: {preset}", { preset }));
-    if (startId && endId) updateRoute(true);
-  },
-  onBusToggle: (busConfig) => {
-    if (typeof busConfig === "boolean") {
-      includeBus = busConfig;
-    } else if (typeof busConfig === "object" && busConfig !== null) {
-      includeBus = Boolean(busConfig.hoho || busConfig.gokl || busConfig.rapid || busConfig.other);
-    }
-    setBusVisibility(busConfig);
-    const status = [];
-    if (busConfig.hoho) status.push("HOHO");
-    if (busConfig.gokl) status.push("goKL");
-    if (busConfig.rapid) status.push("RapidBus");
-    if (status.length === 0) {
-      toastWrapper(t("bus_routes_hidden", "Bus routes hidden"));
-    } else {
-      toastWrapper(tf("bus_routes_included", "Bus routes included: {types}", { types: status.join(", ") }));
-    }
-    if (startId && endId) updateRoute(true);
+    if (UIState.from && UIState.to) updateRoutes();
   },
   onRailRouteChange: (routeId) => {
     const selected = routeId ? String(routeId) : null;
@@ -333,11 +367,11 @@ const ui = createUI({
   onLegendRouteSelect: (routeId) => {
     const selected = routeId ? String(routeId) : null;
     setLegendActiveRoute(selected);
-    setRailRouteFilter(selected);
+    window.setState({ selectedLine: selected, ui: { selectedLine: selected } });
     if (legendResetTimer) clearTimeout(legendResetTimer);
     legendResetTimer = setTimeout(() => {
       setLegendActiveRoute(null);
-      setRailRouteFilter(null);
+      window.setState({ selectedLine: null, ui: { selectedLine: null } });
       toastWrapper(t("legend_highlight_reset", "Legend highlight reset"));
     }, LEGEND_RESET_MS);
     if (selected) toastWrapper(tf("legend_highlight", "Legend highlight: {route}", { route: selected }));
@@ -347,36 +381,56 @@ const ui = createUI({
   },
   onSearchSelect: (stopId, choice) => {
     if (choice === "start") {
-      setStartStop(String(stopId));
+      setFromStation(String(stopId));
       return;
     }
     if (choice === "end") {
-      setEndStop(String(stopId));
+      setToStation(String(stopId));
       return;
     }
-    handleStationSelection(String(stopId), "search");
+    selectStation(String(stopId), "search");
+  },
+  onRouteSelect: (routeIndex) => {
+    const idx = Math.max(0, Math.min((currentRoutes.length || 1) - 1, Number(routeIndex) || 0));
+    selectedIndex = idx;
+    const selected = currentRoutes[idx];
+    if (selected) {
+      window.setState({ selectedRoute: selected, ui: { selectedRoute: selected } });
+      updatePanel(currentRoutes, selectedIndex);
+    }
   },
   stationOptions,
-  summaryPanels: getContinuationPanelData(),
+  lineStops,
+  poiOptions: Array.isArray(poiRaw) ? poiRaw : [],
 });
 
 const {
   updatePanel,
   setStationInfo,
-  setStationDetailHtml,
-  setRailRouteOptions,
+  setJourneyEndpoints,
   resetUI,
   showToast: showToastInner,
   setLegendItems,
   setLegendActiveRoute,
 } = ui;
 showToast = showToastInner;
+const legendItemsCanonical = legendItems.filter(item => LEGEND_ORDER_MAP.has(String(item.legendKey || item.routeId)));
+const legendItemsBar = [...legendItemsCanonical];
+const legendItemsAllForModal = Array.from(
+  new Map(
+    [
+      ...legendItemsCanonical,
+      ...goKlLegendItems,
+      ...rapidBusLegendItems,
+      ...hohoLegendItems,
+    ].map((item) => [String(item.routeId || ""), item])
+  ).values()
+);
+setLegendItems(legendItemsBar, legendItemsAllForModal);
 
-setLegendItems(legendItems);
-
-for (const t of consumeInitToasts()) {
-  showToast(t.message, t.type || "info");
-}
+  for (const t of consumeInitToasts()) {
+    showToast(t.message, t.type || "info");
+  }
 
 function armAutoResetTimer() {
   if (resetTimerId) clearTimeout(resetTimerId);
@@ -399,10 +453,27 @@ function resetAllState(reason = "manual") {
   selectedIndex = 0;
   includeBus = true;
   RoutingService.routeCache.clear();
-  setRouteEndpoints(null, null);
-  setBusVisibility(true);
   setLegendActiveRoute(null);
-  setRailRouteFilter(null);
+  window.setState({
+    from: null,
+    to: null,
+    selectedStation: null,
+    selectedRoute: null,
+    selectedLine: null,
+    highlightedSegments: [],
+    routes: [],
+    ui: {
+      from: null,
+      to: null,
+      selectedStation: null,
+      selectedRoute: null,
+      selectedLine: null,
+      highlighted: [],
+      displayMode: "ALL",
+      busVisibility: true,
+      mode: "idle",
+    },
+  });
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("jronda:close-legend-modal"));
   }
@@ -410,67 +481,141 @@ function resetAllState(reason = "manual") {
     clearTimeout(legendResetTimer);
     legendResetTimer = null;
   }
-  // rail route filter removed; no-op
-  resetRenderState();
   resetUI();
   updatePanel([], 0);
   setStationInfo(t("tap_station_info", "Tap a station to view details"));
+  setJourneyEndpoints(null, null);
   showToast(reason === "auto" ? t("auto_reset_due_inactivity", "Auto reset due to inactivity") : t("reset_complete", "Reset complete."));
+  showNetworkModePicker();
   armAutoResetTimer();
   armPanelIdleTimer();
+}
+
+function applyNetworkMode(modeId = "RAIL") {
+  const mode = String(modeId || "RAIL").toUpperCase();
+  selectedNetworkMode = mode;
+  if (mode === "RAIL") {
+    includeBus = false;
+    window.setState({
+      displayMode: "RAIL",
+      busVisibility: false,
+      ui: { displayMode: "RAIL", busVisibility: false },
+    });
+    return;
+  }
+  includeBus = true;
+  let busVisibility = true;
+  if (mode === "RAPID") busVisibility = { rapid: true, gokl: false, hoho: false, other: false };
+  else if (mode === "GOKL") busVisibility = { rapid: false, gokl: true, hoho: false, other: false };
+  else if (mode === "HOHO") busVisibility = { rapid: false, gokl: false, hoho: true, other: false };
+  window.setState({
+    displayMode: "BUS",
+    busVisibility,
+    ui: { displayMode: "BUS", busVisibility },
+  });
+}
+
+function showNetworkModePicker() {
+  const existing = document.getElementById("jronda-mode-picker");
+  if (existing) existing.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "jronda-mode-picker";
+  overlay.className = "jronda-mode-picker";
+  overlay.innerHTML = `
+    <div class="jronda-mode-card">
+      <div class="jronda-mode-title">Choose Network Mode</div>
+      <div class="jronda-mode-grid">
+        <button type="button" class="jronda-mode-btn" data-mode="RAIL">
+          <span class="jronda-mode-icons">
+            <img src="/src/img/train-noPanthograph.svg" alt="Rail"/>
+            <span>/</span>
+            <img src="/src/img/train-panthograph.svg" alt="Rail"/>
+          </span>
+          <span class="jronda-mode-label">Rail</span>
+        </button>
+        <button type="button" class="jronda-mode-btn" data-mode="RAPID">
+          <span class="jronda-mode-icons"><img src="/src/img/bus.svg" alt="RapidBus"/></span>
+          <span class="jronda-mode-label">RapidBus</span>
+        </button>
+        <button type="button" class="jronda-mode-btn" data-mode="GOKL">
+          <span class="jronda-mode-icons"><img src="/src/img/bus.svg" alt="GoKL"/></span>
+          <span class="jronda-mode-label">GoKL</span>
+        </button>
+        <button type="button" class="jronda-mode-btn" data-mode="HOHO">
+          <span class="jronda-mode-icons"><img src="/src/img/bus.svg" alt="Hop-on Hop-off"/></span>
+          <span class="jronda-mode-label">Hop-on Hop-off</span>
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelectorAll(".jronda-mode-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      applyNetworkMode(btn.dataset.mode || "RAIL");
+      overlay.remove();
+      showToast(`Mode selected: ${btn.dataset.mode || "RAIL"}`);
+    });
+  });
 }
 
 // ================= START / END SELECTION =================
-export function setStartStop(stopId) {
-  const nextStart = String(stopId);
-  if (endId && nextStart === endId) {
+export function setFromStation(id) {
+  const station = RoutingService.stationMap.get(String(id));
+  if (UIState.to === id) {
     setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
     showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
-  startId = nextStart;
-  setRouteEndpoints(startId, endId);
-  const s = RoutingService.stationMap.get(startId);
-  if (s) showToast(tf("start_set", "Start set: {station}", { station: s.stop_name }));
-  if (startId && endId) updateRoute();
+  startId = String(id);
+  window.setState({ from: id, ui: { from: id } });
+  setJourneyEndpoints(station || null, RoutingService.stationMap.get(String(UIState.to || "")) || null);
+  if (station) showToast(tf("start_set", "Start set: {station}", { station: station.stop_name }));
+  if (UIState.to && UIState.to !== id) updateRoutes();
   armAutoResetTimer();
   armPanelIdleTimer();
 }
 
-export function setEndStop(stopId) {
-  const nextEnd = String(stopId);
-  if (startId && nextEnd === startId) {
+export function setToStation(id) {
+  const station = RoutingService.stationMap.get(String(id));
+  if (UIState.from === id) {
     setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
     showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
-  endId = nextEnd;
-  setRouteEndpoints(startId, endId);
-  const e = RoutingService.stationMap.get(endId);
-  if (e) showToast(tf("end_set", "End set: {station}", { station: e.stop_name }));
-  if (startId && endId) updateRoute();
+  endId = String(id);
+  window.setState({ to: id, ui: { to: id } });
+  setJourneyEndpoints(RoutingService.stationMap.get(String(UIState.from || "")) || null, station || null);
+  if (station) showToast(tf("end_set", "End set: {station}", { station: station.stop_name }));
+  if (UIState.from && UIState.from !== id) updateRoutes();
   armAutoResetTimer();
   armPanelIdleTimer();
 }
 
-function setStartAndEnd(startStopId, endStopId, forceRefresh = true) {
-  startId = String(startStopId);
-  endId = String(endStopId);
-  if (startId === endId) {
+export function selectStations(fromId, toId) {
+  const fromStation = RoutingService.stationMap.get(String(fromId));
+  const toStation = RoutingService.stationMap.get(String(toId));
+  if (fromId === toId) {
     setStationInfo(t("start_end_same", "Start and end cannot be the same station."));
     showToast(t("start_end_same", "Start and end cannot be the same station."), "warn");
     return;
   }
-  setRouteEndpoints(startId, endId);
-  if (startId && endId) {
-    updateRoute(forceRefresh);
-  }
+  startId = String(fromId);
+  endId = String(toId);
+  window.setState({ 
+    from: fromId, 
+    to: toId, 
+    mode: 'route-view',
+    routes: [],
+    ui: { from: fromId, to: toId, mode: "route-view" },
+  });
+  setJourneyEndpoints(fromStation || null, toStation || null);
+  updateRoutes();
   armAutoResetTimer();
   armPanelIdleTimer();
 }
 
-function handleStationSelection(stopId, source = "tap") {
-  const station = RoutingService.stationMap.get(String(stopId));
+export function selectStation(id, source = "tap") {
+  const station = RoutingService.stationMap.get(String(id));
   if (station) {
     const label = getServiceLabel(station, station.mode);
     setStationInfo(tf("selected_station", "Selected {station} ({label}) via {source}.", {
@@ -479,67 +624,108 @@ function handleStationSelection(stopId, source = "tap") {
       source: sourceLabel(source),
     }));
     showToast(tf("selected_station_toast", "Selected: {station}", { station: station.stop_name }));
-    const detailHtml = getStationDetailHtml(stopId);
-    if (detailHtml) setStationDetailHtml(detailHtml);
   }
-  if (!startId || (startId && endId)) {
-    startId = String(stopId);
-    endId = null;
-    setRouteEndpoints(startId, endId);
-    armAutoResetTimer();
-    armPanelIdleTimer();
-    return;
-  }
-  if (startId === stopId) return;
-  endId = String(stopId);
-  setRouteEndpoints(startId, endId);
-  updateRoute(true);
+  window.setState({ selectedStation: id });
   armAutoResetTimer();
   armPanelIdleTimer();
 }
 
 // ================= ROUTE UPDATE =================
-function updateRoute(forceRefresh = false) {
-  setStationDetailHtml("");
-  currentRoutes = RoutingService.getRoutes(startId, endId, {
+export function updateRoutes() {
+// Trigger route computation via state change
+  const state = window.UIState;
+  if (!state.from || !state.to) return;
+  
+  const routes = RoutingService.getRoutes(state.from, state.to, {
     k: 3,
     preset: currentPreset,
-    forceRefresh,
     includeBus,
   });
 
-  if (!currentRoutes || !currentRoutes.length) {
+  if (!routes || !routes.length) {
     __coreDebug("No routes found.");
     setStationInfo(t("no_route_found_filters", "No route found for the selected stations and filters."));
     showToast(t("no_route_found_current_filters", "No route found with current filters."), "warn");
-    updatePanel([], 0);
     return;
   }
 
+  window.setState({ 
+    routes,
+    selectedRoute: routes[0],
+    highlightedSegments: [], // Updated by route-visualizer PHASE 4
+    mode: 'route-view',
+    ui: { selectedRoute: routes[0], highlighted: [], mode: "route-view" },
+  });
+  currentRoutes = routes.slice();
   selectedIndex = 0;
-  renderDrawRoute(currentRoutes[selectedIndex]);
-
-  // Update panel with clickable routes
-  const onSelect = (i) => {
-    selectedIndex = i;
-    renderDrawRoute(currentRoutes[selectedIndex]);
-    updatePanel(currentRoutes, selectedIndex, onSelect);
-  };
-  updatePanel(currentRoutes, selectedIndex, onSelect);
-  showToast(tf("route_options_updated", "Route options updated ({count})", { count: currentRoutes.length }));
+  updatePanel(currentRoutes, selectedIndex);
+  const fromStation = RoutingService.stationMap.get(String(state.from || ""));
+  const toStation = RoutingService.stationMap.get(String(state.to || ""));
+  if (fromStation && toStation) {
+    setStationInfo(`${fromStation.stop_name} → ${toStation.stop_name}`);
+  }
+  
+  showToast(tf("route_options_updated", "Route options updated ({count})", { count: routes.length }));
   armAutoResetTimer();
   armPanelIdleTimer();
 }
 
 // ================= EXPORT UTIL =================
 export function highlightRoute(route) {
-  renderDrawRoute(route);
-  updatePanel([route], 0);
+  window.setState({ selectedRoute: route, ui: { selectedRoute: route } });
+}
+
+function haversineMeters(lat1, lon1, lat2, lon2) {
+  const toRad = (v) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function findNearestStationToPoi(poi) {
+  if (!poi) return null;
+  const poiLat = Number(poi.latitude ?? poi.lat);
+  const poiLon = Number(poi.longitude ?? poi.lon);
+  if (!Number.isFinite(poiLat) || !Number.isFinite(poiLon)) return null;
+  let nearest = null;
+  let minDist = Infinity;
+  for (const station of stationOptions) {
+    const lat = Number(station.stop_lat);
+    const lon = Number(station.stop_lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    const meters = haversineMeters(lat, lon, poiLat, poiLon);
+    if (meters < minDist) {
+      minDist = meters;
+      nearest = station;
+    }
+  }
+  return nearest;
+}
+
+function resolveCurrentStartStationId() {
+  if (UIState.from) return String(UIState.from);
+  const fixedStopId = localStorage.getItem("jronda_fixed_station_stop_id");
+  if (fixedStopId) return String(fixedStopId);
+  const bindings = getRenderPointerInteractionBindings();
+  if (bindings?.getUserDotPoint && bindings?.findNearestStopWithin) {
+    const point = bindings.getUserDotPoint();
+    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
+      const stop = bindings.findNearestStopWithin(point.x, point.y, 42);
+      if (stop?.stop_id) return String(stop.stop_id);
+    }
+  }
+  return "";
 }
 
 if (typeof window !== "undefined") {
-  window.setStartStop = setStartStop;
-  window.setEndStop = setEndStop;
+window.setFromStation = setFromStation;
+  window.setToStation = setToStation;
+  window.selectStation = selectStation;
+  window.selectStations = selectStations;
+  window.updateRoutes = updateRoutes;
   window.addEventListener("jronda:station-info", (evt) => {
     const stopId = evt?.detail?.stopId;
     if (!stopId) return;
@@ -550,8 +736,6 @@ if (typeof window !== "undefined") {
         station: station.stop_name,
         label,
       }));
-      const detailHtml = getStationDetailHtml(stopId);
-      if (detailHtml) setStationDetailHtml(detailHtml);
     }
     armAutoResetTimer();
     armPanelIdleTimer();
@@ -562,27 +746,64 @@ if (typeof window !== "undefined") {
     if (!message) return;
     showToast(String(message), String(type));
   });
-  window.addEventListener("jronda:trace-route", (evt) => {
-    const startRouteId = evt?.detail?.startId;
-    const endRouteId = evt?.detail?.endId;
-    if (!startRouteId || !endRouteId) return;
-    // Clear any prior rail route filter when routing via trace gesture so path selection can display all applicable routes.
-    setRailRouteFilter(null);
-    setStartAndEnd(String(startRouteId), String(endRouteId), true);
-  });
+window.addEventListener("jronda:trace-route", (evt) => {
+  const startId = evt?.detail?.startId;
+  const endId = evt?.detail?.endId;
+  if (!startId || !endId) return;
+  window.setState({ selectedLine: null, ui: { selectedLine: null } });
+  selectStations(startId, endId);
+});
+window.addEventListener("jronda:find-route", (evt) => {
+  const fromId = String(evt?.detail?.fromId || "");
+  const toId = String(evt?.detail?.toId || "");
+  if (!fromId || !toId) return;
+  selectStations(fromId, toId);
+});
   window.addEventListener("jronda:legend-retry", () => {
-    setLegendItems(legendItems);
+    setLegendItems(legendItemsBar, legendItemsAllForModal);
   });
-  window.addEventListener("jronda:set-start", (evt) => {
-    const stopId = evt?.detail?.stopId;
-    if (!stopId) return;
-    setStartStop(String(stopId));
-  });
-  window.addEventListener("jronda:set-end", (evt) => {
-    const stopId = evt?.detail?.stopId;
-    if (!stopId) return;
-    setEndStop(String(stopId));
-  });
+window.addEventListener("jronda:set-start", (evt) => {
+  const id = evt?.detail?.stopId;
+  if (!id) return;
+  setFromStation(id);
+});
+window.addEventListener("jronda:set-end", (evt) => {
+  const id = evt?.detail?.stopId;
+  if (!id) return;
+  setToStation(id);
+});
+window.addEventListener("jronda:swap-journey", (evt) => {
+  const fromId = String(evt?.detail?.fromId || "");
+  const toId = String(evt?.detail?.toId || "");
+  if (!fromId || !toId) return;
+  selectStations(fromId, toId);
+});
+window.addEventListener("jronda:nearby-poi-selected", (evt) => {
+  const poi = evt?.detail?.poi;
+  if (!poi) return;
+  const label = String(poi.name || poi.id || "POI");
+  const destination = findNearestStationToPoi(poi);
+  const sourceStopId = resolveCurrentStartStationId();
+  if (!destination?.stop_id) {
+    setStationInfo(`Nearby: ${label}`);
+    showToast(`Nearby selected: ${label}`);
+    return;
+  }
+  if (!sourceStopId) {
+    setToStation(String(destination.stop_id));
+    setStationInfo(`Destination set near ${label}: ${destination.stop_name}`);
+    showToast(`Set destination near ${label}`);
+    return;
+  }
+  if (String(sourceStopId) === String(destination.stop_id)) {
+    setStationInfo(`You are already near ${label} (${destination.stop_name})`);
+    showToast(`Already near ${label}`);
+    return;
+  }
+  selectStations(String(sourceStopId), String(destination.stop_id));
+  setStationInfo(`Route to ${label}: ${RoutingService.stationMap.get(String(sourceStopId))?.stop_name || sourceStopId} → ${destination.stop_name}`);
+  showToast(`Routing to nearby: ${label}`);
+});
   const activityEvents = ["pointerdown", "keydown", "wheel", "touchstart"];
   for (const eventName of activityEvents) {
     window.addEventListener(eventName, () => {
@@ -592,12 +813,12 @@ if (typeof window !== "undefined") {
   }
   window.addEventListener("visibilitychange", () => {
     if (document.hidden) return;
-    setLegendItems(legendItems);
+    setLegendItems(legendItemsBar, legendItemsAllForModal);
     setupRenderInteractions();
   });
 }
 
-setBusVisibility(includeBus);
+window.setState({ busVisibility: includeBus, ui: { busVisibility: includeBus } });
 
 function setupRenderInteractions() {
   const bindings = getRenderPointerInteractionBindings();
@@ -614,9 +835,10 @@ function setupRenderInteractions() {
 if (!setupRenderInteractions()) {
   window.addEventListener('jronda:render-ready', () => {
     setupRenderInteractions();
-    setLegendItems(legendItems);
+    setLegendItems(legendItemsBar, legendItemsAllForModal);
   }, { once: true });
 }
 
+showNetworkModePicker();
 armAutoResetTimer();
 armPanelIdleTimer();

@@ -20,7 +20,7 @@ const APP_SHELL = [
   "/src/core/routerLogic.js",
   "/src/utils/format.js",
   "/src/utils/min-heap.js",
-  "/src/style/kiosk.css",
+
   "/src/style/routeStyle.js"
 ];
 const DATA_CACHE = ["/data/rail/**", "/data/bus/**", "/data/poi/**", "/data/hoho/**", "/data/gokl/**"];
@@ -43,6 +43,11 @@ self.addEventListener("activate", (event) => {
     )
   );
   self.clients.claim();
+
+  // Register background sync for GTFS updates if supported
+  if ('serviceWorker' in navigator && 'sync' in self.registration) {
+    self.registration.sync.register('jronda-data-sync');
+  }
 
   // Broadcast service worker version for client debugging
   self.clients.matchAll().then((clients) => {
@@ -107,12 +112,17 @@ self.addEventListener("message", (event) => {
 });
 
 self.addEventListener("sync", (event) => {
-  // This is a placeholder for periodic background sync events.
   if (event.tag === "jronda-data-sync") {
     event.waitUntil(
-      fetch("/data/rail/rail.json")
-        .then((resp) => resp.ok && caches.open(CACHE_NAME).then((cache) => cache.put("/data/rail/rail.json", resp.clone())))
-        .catch(() => null)
+      // Trigger GTFS update via app proxy or direct data refresh
+      Promise.all([
+        fetch("/data/rail/rail.js?t=" + Date.now()).then(resp => resp.ok && caches.open(CACHE_NAME).then(cache => cache.put("/data/rail/rail.js", resp.clone()))).catch(() => {}),
+        fetch("/data/bus/rapidbus.js?t=" + Date.now()).then(resp => resp.ok && caches.open(CACHE_NAME).then(cache => cache.put("/data/bus/rapidbus.js", resp.clone()))).catch(() => {}),
+        fetch("/data/bus/timetables.js?t=" + Date.now()).then(resp => resp.ok && caches.open(CACHE_NAME).then(cache => cache.put("/data/bus/timetables.js", resp.clone()))).catch(() => {})
+      ]).then(() => {
+        // Notify clients to reload data
+        self.clients.matchAll().then(clients => clients.forEach(client => client.postMessage({type: 'data-updated', timestamp: Date.now()})));
+      })
     );
   }
 });

@@ -15,10 +15,10 @@ const child = spawn('node', [layoutScript], {
 
 child.on('close', (code) => {
   if (code === 0) {
-    console.log('🎉 Layout generation complete!');
+    console.log('Layout generation complete!');
     console.log('Next: Update src/core/layout-engine.js to use layouts');
   } else {
-    console.error('❌ Layout generation failed');
+    console.error('Layout generation failed');
   }
   process.exit(code);
 });

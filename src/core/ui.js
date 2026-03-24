@@ -1,26 +1,19 @@
 // ======= ui.js =======
 import { getRouteColor } from "../style/routeStyle.js";
-import { createI18n, I18N, I18N_KEY } from "./i18n.js";
-import { formatDistance, formatEtaMinutes } from "../utils/format.js";
+import { I18N, I18N_KEY } from "./i18n.js";
 
 export function createUI(config) {
-  // Fail-safe for stale cached HTML: ensure the kiosk stylesheet is present.
-  if (!document.querySelector('link[href$="/src/style/kiosk.css"], link[href="./src/style/kiosk.css"], link[href="/src/style/kiosk.css"]')) {
-    const kioskStylesheetLink = document.createElement("link");
-    kioskStylesheetLink.rel = "stylesheet";
-    kioskStylesheetLink.href = "/src/style/kiosk.css";
-    document.head.appendChild(kioskStylesheetLink);
-  }
+
 
   const {
     onPresetChange = () => {},
-    onBusToggle = () => {},
-    onRailRouteChange = () => {},
     onReset = () => {},
     onSearchSelect = () => {},
+    onRouteSelect = () => {},
     onLegendRouteSelect = () => {},
     stationOptions = [],
-    summaryPanels = [],
+    lineStops = [],
+    poiOptions = []
   } = config || {};
   let lang = localStorage.getItem(I18N_KEY) || "en";
   if (!I18N[lang]) lang = "en";
@@ -33,6 +26,32 @@ export function createUI(config) {
     return out;
   };
   window.jrondaI18n = { t, getLang: () => lang };
+  const dynamicStyleId = "jronda-dynamic-colors";
+  const dynamicColorClasses = new Set();
+
+  function ensureColorClass(color, property) {
+    const normalized = String(color || "").trim();
+    if (!/^#[0-9a-fA-F]{6}$/.test(normalized)) return "";
+    const prop = property === "border-color" ? "border" : "bg";
+    const className = `${prop}-c-${normalized.slice(1).toLowerCase()}`;
+    if (!dynamicColorClasses.has(className)) {
+      const styleNode = document.getElementById(dynamicStyleId) || (() => {
+        const node = document.createElement("style");
+        node.id = dynamicStyleId;
+        document.head.appendChild(node);
+        return node;
+      })();
+      styleNode.appendChild(
+        document.createTextNode(
+          property === "border-color"
+            ? `.step-node.${className}{border-color:${normalized};}`
+            : `.step-line.${className}, .legend-swatch.${className}, .rseg.${className}{background:${normalized};}`
+        )
+      );
+      dynamicColorClasses.add(className);
+    }
+    return className;
+  }
 
   const map = document.getElementById("map");
 
@@ -43,11 +62,43 @@ export function createUI(config) {
 
   const root = document.createElement("div");
   root.id = "kiosk-root";
+  root.className = "bg-slate-50 text-slate-900 antialiased";
+  const topbar = document.createElement("header");
+  topbar.id = "kiosk-topbar";
+  topbar.classList.add("backdrop-blur-sm");
+  topbar.innerHTML = `
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.5"/><line x1="8" y1="1" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="15"/><line x1="1" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="15" y2="8"/><line x1="3.1" y1="3.1" x2="5.2" y2="5.2"/><line x1="10.8" y1="10.8" x2="12.9" y2="12.9"/></svg>
+      </div>
+      <div class="brand-text">J<span class="r">R</span>onda</div>
+    </div>
+    <div class="view-switch" role="tablist" aria-label="Map view switch">
+      <button type="button" class="view-pill act" data-view="map" role="tab" aria-selected="true">Map</button>
+      <button type="button" class="view-pill" data-view="lines" role="tab" aria-selected="false">Lines</button>
+    </div>
+    <div class="topbar-nearby">
+      <label for="jronda-nearby-select" class="nearby-label">Nearby</label>
+      <select id="jronda-nearby-select" class="nearby-select">
+        <option value="">Select POI</option>
+      </select>
+    </div>
+  `;
+  root.appendChild(topbar);
+
+  const body = document.createElement("div");
+  body.id = "kiosk-body";
+  body.className = "shadow-2xl";
 
   const mapWrap = document.createElement("div");
   mapWrap.id = "kiosk-map-wrap";
+  mapWrap.className = "relative";
   const mapSurface = document.createElement("div");
   mapSurface.id = "kiosk-map-surface";
+  mapSurface.dataset.view = "map";
+  const linesView = document.createElement("div");
+  linesView.id = "kiosk-lines-view";
+  linesView.innerHTML = `<div id="kiosk-lines-grid"></div>`;
   const clockWidget = document.createElement("div");
   clockWidget.id = "kiosk-clock";
   clockWidget.setAttribute("aria-live", "off");
@@ -65,27 +116,37 @@ export function createUI(config) {
 
   const sidebar = document.createElement("aside");
   sidebar.id = "kiosk-sidebar";
+  sidebar.className = "bg-white/95";
   sidebar.setAttribute("aria-label", t("sidebar_aria", "Transit controls and route results"));
 
   const loadingOverlay = document.createElement("div");
   loadingOverlay.id = "kiosk-loading-overlay";
-  loadingOverlay.style.cssText = "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(4,11,24,0.65);z-index:200;pointer-events:none;transition:opacity 300ms ease;";
+  loadingOverlay.className = "kiosk-loading-overlay";
 
+  /* ## LOADING BAR COMPONENT (Viewport-responsive: min(90vw,420px) x clamp(12vh,120px)) */
   const loadingPanel = document.createElement("div");
-  loadingPanel.style.cssText = "width:320px;padding:12px 14px;border-radius:10px;background:rgba(15,23,42,0.9);color:#fff;font-size:13px;box-shadow:0 6px 12px rgba(0,0,0,0.2);";
+  loadingPanel.className = "kiosk-loading-panel";
+  loadingPanel.innerHTML = `
+    <div class="loading-brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3.5"/><line x1="8" y1="1" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="15"/><line x1="1" y1="8" x2="4" y2="8"/><line x1="12" y1="8" x2="15" y2="8"/><line x1="3.1" y1="3.1" x2="5.2" y2="5.2"/><line x1="10.8" y1="10.8" x2="12.9" y2="12.9"/></svg>
+      </div>
+      <div class="brand-text">J<span class="r">R</span>onda</div>
+    </div>
+  `;
 
   const loadingMessage = document.createElement("div");
   loadingMessage.id = "kiosk-loading-message";
   loadingMessage.textContent = "Loading map...";
-  loadingMessage.style.marginBottom = "8px";
+  loadingMessage.className = "kiosk-loading-message";
 
   const loadingBar = document.createElement("div");
   loadingBar.id = "kiosk-loading-bar";
-  loadingBar.style.cssText = "width:100%;height:8px;background:rgba(255,255,255,0.2);border-radius:999px;overflow:hidden;";
+  loadingBar.className = "kiosk-loading-bar";
 
   const loadingFill = document.createElement("div");
   loadingFill.id = "kiosk-loading-fill";
-  loadingFill.style.cssText = "width:0%;height:100%;background:#3b82f6;border-radius:999px;transition:width 220ms ease;";
+  loadingFill.className = "kiosk-loading-fill";
 
   loadingBar.appendChild(loadingFill);
   loadingPanel.appendChild(loadingMessage);
@@ -93,15 +154,71 @@ export function createUI(config) {
   loadingOverlay.appendChild(loadingPanel);
 
   if (map) mapSurface.appendChild(map);
-  mapSurface.appendChild(clockWidget);
-  mapSurface.appendChild(loadingOverlay);
+  mapSurface.appendChild(linesView);
   mapWrap.appendChild(mapSurface);
   mapWrap.appendChild(legendDock);
-  root.appendChild(mapWrap);
-  root.appendChild(sidebar);
-document.body.appendChild(root);
+  body.appendChild(mapWrap);
+  body.appendChild(sidebar);
+  root.appendChild(body);
+  const statusDock = document.createElement("div");
+  statusDock.id = "kiosk-status-dock";
+  statusDock.appendChild(clockWidget);
+  statusDock.appendChild(loadingOverlay);
+  root.appendChild(statusDock);
+  document.body.appendChild(root);
+  const nearbySelect = document.getElementById("jronda-nearby-select");
+  const stationById = new Map((stationOptions || []).map((station) => [String(station.stop_id || ""), station]));
+  const allPoi = Array.isArray(poiOptions) ? poiOptions.slice() : [];
+  function geoDistanceMeters(lat1, lon1, lat2, lon2) {
+    const toRad = (v) => (v * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+    return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  function refillNearbyOptions(anchorStopId = "") {
+    if (!nearbySelect) return;
+    nearbySelect.innerHTML = `<option value="">Select POI</option>`;
+    const anchor = stationById.get(String(anchorStopId || ""));
+    const sorted = allPoi.slice().sort((left, right) => {
+      if (!anchor) return String(left.name || "").localeCompare(String(right.name || ""));
+      const lDist = geoDistanceMeters(Number(anchor.stop_lat), Number(anchor.stop_lon), Number(left.latitude ?? left.lat), Number(left.longitude ?? left.lon));
+      const rDist = geoDistanceMeters(Number(anchor.stop_lat), Number(anchor.stop_lon), Number(right.latitude ?? right.lat), Number(right.longitude ?? right.lon));
+      return lDist - rDist;
+    });
+    sorted.slice(0, 120).forEach((poi) => {
+      const opt = document.createElement("option");
+      opt.value = String(poi.id || "");
+      const category = String(poi.category || "POI").trim();
+      const maybeDist = anchor
+        ? ` · ${Math.round(
+            geoDistanceMeters(
+              Number(anchor.stop_lat),
+              Number(anchor.stop_lon),
+              Number(poi.latitude ?? poi.lat),
+              Number(poi.longitude ?? poi.lon)
+            )
+          )}m`
+        : "";
+      opt.textContent = `${String(poi.name || "POI")} (${category})${maybeDist}`;
+      nearbySelect.appendChild(opt);
+    });
+  }
+  if (nearbySelect) {
+    refillNearbyOptions("");
+    nearbySelect.addEventListener("change", () => {
+      const selectedPoi = allPoi.find((poi) => String(poi.id || "") === String(nearbySelect.value || ""));
+      if (!selectedPoi) return;
+      window.dispatchEvent(new CustomEvent("jronda:nearby-poi-selected", { detail: { poi: selectedPoi } }));
+    });
+  }
 
   let lastLoadingProgress = 0;
+  let loadingHideTimer = null;
   function setLoadingState(progress = 0, message = "") {
     const raw = Math.min(1, Math.max(0, Number(progress) || 0));
     const clamped = Math.max(lastLoadingProgress, raw);
@@ -112,12 +229,15 @@ document.body.appendChild(root);
     if (messageNode) messageNode.textContent = message || "Loading map...";
     if (fillNode) fillNode.style.width = `${Math.round(clamped * 100)}%`;
     if (overlayNode) {
-      overlayNode.style.opacity = clamped < 1 ? "1" : "0";
-      overlayNode.style.pointerEvents = clamped < 1 ? "none" : "none";
+      overlayNode.classList.toggle("is-complete", clamped >= 1);
       if (clamped >= 1) {
-        setTimeout(() => {
-          overlayNode.style.display = "none";
+        if (loadingHideTimer) clearTimeout(loadingHideTimer);
+        loadingHideTimer = setTimeout(() => {
+          overlayNode.classList.add("is-hidden");
         }, 320);
+      } else {
+        if (loadingHideTimer) clearTimeout(loadingHideTimer);
+        overlayNode.classList.remove("is-hidden");
       }
     }
   }
@@ -134,34 +254,47 @@ document.body.appendChild(root);
   });
 
   // Trigger render init after DOM
-  import('./render.js').then(module => {
+  import('./render.js').then(async module => {
     if (module.init && map) {
-      module.init(map);
+      await module.init(map);
     }
   });
 
-  const controlBlock = document.createElement("div");
-  controlBlock.className = "panel-block";
+  const controlBlock = document.createElement("section");
+  controlBlock.className = "panel-block sidebar-section controls-section fpills-block rounded-xl border border-slate-200 bg-white/80 p-3 shadow-sm";
+  const controlBlockTitle = document.createElement("h3");
+  controlBlockTitle.className = "section-title";
+  controlBlockTitle.textContent = t("controls", "CONTROLS");
+  controlBlock.appendChild(controlBlockTitle);
   sidebar.appendChild(controlBlock);
+
+  const searchBlock = document.createElement("section");
+  searchBlock.className = "panel-block sidebar-section jplan rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm";
+  const searchBlockTitle = document.createElement("h3");
+  searchBlockTitle.className = "section-title";
+  searchBlockTitle.textContent = t("search", "SEARCH");
+  searchBlock.appendChild(searchBlockTitle);
+  sidebar.appendChild(searchBlock);
+
+  const resultBlock = document.createElement("section");
+  resultBlock.className = "panel-block sidebar-section route-result-section rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm";
+  const resultBlockTitle = document.createElement("h3");
+  resultBlockTitle.className = "section-title";
+  resultBlockTitle.textContent = t("route_result", "ROUTE RESULT");
+  resultBlock.appendChild(resultBlockTitle);
+  sidebar.appendChild(resultBlock);
 
   const presetRow = document.createElement("div");
   presetRow.className = "control-row-presets";
-  presetRow.style.display = "flex";
-  presetRow.style.alignItems = "center";
-  presetRow.style.justifyContent = "space-between";
-  presetRow.style.gap = "12px";
   controlBlock.appendChild(presetRow);
 
   const presetButtonsWrap = document.createElement("div");
-  presetButtonsWrap.style.display = "flex";
-  presetButtonsWrap.style.gap = "8px";
+  presetButtonsWrap.className = "preset-buttons-wrap fpills flex flex-wrap gap-1.5";
   presetRow.appendChild(presetButtonsWrap);
 
   const langSelect = document.createElement("select");
   langSelect.id = "jronda-language";
-  langSelect.className = "sr-control";
-  langSelect.style.minWidth = "52px";
-  langSelect.style.padding = "4px 8px";
+  langSelect.className = "sr-control sr-language";
   const langOptions = [
     ["en", "EN"],
     ["ms", "MS"],
@@ -200,13 +333,14 @@ document.body.appendChild(root);
     for (const [id, btn] of presetButtons.entries()) {
       const active = id === presetId;
       btn.classList.toggle("primary", active);
+      btn.classList.toggle("act", active);
       btn.setAttribute("aria-pressed", active ? "true" : "false");
     }
   }
   presets.forEach((p) => {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "sr-btn";
+    btn.className = "sr-btn fp transition-all duration-150";
     btn.textContent = p.label;
     btn.setAttribute("aria-label", tf("preset_aria", "Use {preset} routing preset", { preset: p.label }));
     btn.onclick = () => {
@@ -218,117 +352,58 @@ document.body.appendChild(root);
   });
   setActivePreset("SMART");
 
-  const optionsRow = document.createElement("div");
-  optionsRow.className = "control-row-options";
-  controlBlock.appendChild(optionsRow);
-
-  const busLabel = document.createElement("label");
-  busLabel.id = "jronda-bus-label";
-  busLabel.textContent = t("include_bus", "Include bus routes");
-  busLabel.className = "label-strong";
-  optionsRow.appendChild(busLabel);
-
-  const busFilterState = { hoho: true, rapid: true, gokl: true, other: true };
-
-  const busOperatorLabel = document.createElement("label");
-  busOperatorLabel.className = "label-strong";
-  busOperatorLabel.id = "jronda-bus-operator-label";
-  busOperatorLabel.textContent = t("bus_operator", "Bus operator");
-  optionsRow.appendChild(busOperatorLabel);
-
-  const busOperatorInput = document.createElement("input");
-  busOperatorInput.className = "sr-control";
-  busOperatorInput.id = "jronda-bus-operator";
-  busOperatorInput.setAttribute("list", "jronda-bus-operator-list");
-  busOperatorInput.placeholder = t("bus_operator_placeholder", "All operators");
-  busOperatorInput.value = t("bus_operator_all", "All");
-  optionsRow.appendChild(busOperatorInput);
-
-  const busOperatorList = document.createElement("datalist");
-  busOperatorList.id = "jronda-bus-operator-list";
-  const operatorOptions = [
-    t("bus_operator_all", "All"),
-    "RapidBus",
-    "goKL",
-    "HOHO",
-    t("bus_operator_other", "Other"),
-  ];
-  operatorOptions.forEach((label) => {
-    const opt = document.createElement("option");
-    opt.value = label;
-    busOperatorList.appendChild(opt);
-  });
-  optionsRow.appendChild(busOperatorList);
-
-  function applyBusOperatorFilter(rawValue) {
-    const value = String(rawValue || "").trim().toLowerCase();
-    busFilterState.hoho = value === "hoho" || value === "all" || value === t("bus_operator_all", "All").toLowerCase();
-    busFilterState.gokl = value === "gokl" || value === "all" || value === t("bus_operator_all", "All").toLowerCase();
-    busFilterState.rapid = value === "rapidbus" || value === "rapid" || value === "all" || value === t("bus_operator_all", "All").toLowerCase();
-    busFilterState.other = value === t("bus_operator_other", "Other").toLowerCase() || value === "other" || value === "all" || value === t("bus_operator_all", "All").toLowerCase();
-    if (value === "hoho") {
-      busFilterState.gokl = false;
-      busFilterState.rapid = false;
-      busFilterState.other = false;
-    } else if (value === "gokl") {
-      busFilterState.hoho = false;
-      busFilterState.rapid = false;
-      busFilterState.other = false;
-    } else if (value === "rapidbus" || value === "rapid") {
-      busFilterState.hoho = false;
-      busFilterState.gokl = false;
-      busFilterState.other = false;
-    } else if (value === "other" || value === t("bus_operator_other", "Other").toLowerCase()) {
-      busFilterState.hoho = false;
-      busFilterState.gokl = false;
-      busFilterState.rapid = false;
-    }
-    onBusToggle({ ...busFilterState });
-  }
-
-  busOperatorInput.onchange = () => applyBusOperatorFilter(busOperatorInput.value);
-  busOperatorInput.onblur = () => {
-    if (!busOperatorInput.value) {
-      busOperatorInput.value = t("bus_operator_all", "All");
-      applyBusOperatorFilter(busOperatorInput.value);
-    }
-  };
-
-  let includeBus = true;
-  onBusToggle({ hoho: true, rapid: true, gokl: true, other: true });
-
   // Rail route filter removed (feature deprecated).
   // Keep a placeholder `routeSelect` variable for backward compatibility
   // with callers that may still attempt to set options.
   let routeSelect = null;
 
-  const searchWrap = document.createElement("div");
-  searchWrap.className = "control-row-search";
-  controlBlock.appendChild(searchWrap);
+  const journeyWrap = document.createElement("div");
+  journeyWrap.className = "jplan-fields flex flex-col gap-1.5";
+  searchBlock.appendChild(journeyWrap);
 
-  const searchLabel = document.createElement("label");
-  searchLabel.id = "jronda-search-label";
-  searchLabel.setAttribute("for", "jronda-station-search");
-  searchLabel.textContent = t("search_station", "Search station");
-  searchLabel.className = "label-strong";
-  searchWrap.appendChild(searchLabel);
+  const fromRow = document.createElement("div");
+  fromRow.className = "frow";
+  fromRow.innerHTML = `
+    <div class="fdot fd-cy"></div>
+    <input id="jronda-from-search" class="sr-control finp" type="text" autocomplete="off" placeholder="From station" aria-label="From station" />
+  `;
+  journeyWrap.appendChild(fromRow);
 
-  const searchInput = document.createElement("input");
-  searchInput.id = "jronda-station-search";
-  searchInput.className = "sr-control";
-  searchInput.type = "text";
-  searchInput.placeholder = t("type_station_name", "Type station name");
-  searchInput.autocomplete = "off";
-  searchInput.setAttribute("aria-autocomplete", "list");
-  searchInput.setAttribute("aria-controls", "search-suggestions");
-  searchInput.setAttribute("aria-expanded", "false");
-  searchInput.setAttribute("aria-label", t("search_station_aria", "Search station"));
-  searchWrap.appendChild(searchInput);
+  const midRow = document.createElement("div");
+  midRow.className = "mid-row";
+  midRow.innerHTML = `
+    <div class="dot-line"></div>
+    <button type="button" id="jronda-swap-btn" class="swap-btn">⇅ swap</button>
+  `;
+  journeyWrap.appendChild(midRow);
 
-  const suggestions = document.createElement("div");
-  suggestions.id = "search-suggestions";
-  suggestions.setAttribute("role", "listbox");
-  searchWrap.appendChild(suggestions);
+  const toRow = document.createElement("div");
+  toRow.className = "frow to-row";
+  toRow.innerHTML = `
+    <div class="fdot fd-pk"></div>
+    <input id="jronda-to-search" class="sr-control finp" type="text" autocomplete="off" placeholder="To station" aria-label="To station" />
+  `;
+  journeyWrap.appendChild(toRow);
+
+  const fromSuggestions = document.createElement("div");
+  fromSuggestions.id = "jronda-from-suggestions";
+  fromSuggestions.className = "search-suggestions";
+  fromSuggestions.setAttribute("role", "listbox");
+  journeyWrap.appendChild(fromSuggestions);
+
+  const toSuggestions = document.createElement("div");
+  toSuggestions.id = "jronda-to-suggestions";
+  toSuggestions.className = "search-suggestions";
+  toSuggestions.setAttribute("role", "listbox");
+  journeyWrap.appendChild(toSuggestions);
+
+  const journeyButtons = document.createElement("div");
+  journeyButtons.className = "jbtns flex items-center gap-2";
+  journeyButtons.innerHTML = `
+    <button type="button" id="jronda-clear-journey" class="jb jb-cl">Clear</button>
+    <button type="button" id="jronda-find-route" class="jb jb-go">Find route</button>
+  `;
+  searchBlock.appendChild(journeyButtons);
 
   const resetRow = document.createElement("div");
   resetRow.className = "control-row-reset";
@@ -345,27 +420,40 @@ document.body.appendChild(root);
 
   const resetHint = document.createElement("span");
   resetHint.id = "jronda-reset-hint";
-  resetHint.className = "hint-text";
+  resetHint.className = "hint-text is-hidden";
   resetHint.textContent = t("auto_reset_active", "Auto reset active");
-  resetHint.style.display = "none";
   resetRow.appendChild(resetHint);
+
+  // Debug toggle button
+  const debugBtn = document.createElement("button");
+  debugBtn.id = "jronda-layout-debug";
+  debugBtn.type = "button";
+  debugBtn.className = "sr-btn ghost";
+  debugBtn.textContent = "Layout Debug";
+  debugBtn.title = "Toggle raw schematic layout overlay";
+  debugBtn.onclick = () => {
+    if (typeof window.drawLayoutDebugOverlay === 'function') {
+      window.drawLayoutDebugOverlay();
+      debugBtn.textContent = debugBtn.textContent === 'Layout Debug' ? 'Hide Debug' : 'Layout Debug';
+    } else {
+      console.warn('drawLayoutDebugOverlay not available');
+    }
+  };
+  resetRow.appendChild(debugBtn);
+
+  // Global toggle function
+  window.toggleLayoutDebug = debugBtn.onclick;
 
   const stationInfo = document.createElement("div");
   stationInfo.id = "jronda-station-info";
   stationInfo.className = "panel-block";
   stationInfo.setAttribute("aria-live", "polite");
   stationInfo.textContent = t("tap_station_info", "Tap a station to view details");
-  sidebar.appendChild(stationInfo);
-
-  const summaryPanel = document.createElement("div");
-  summaryPanel.id = "summary-corridor-panel";
-  summaryPanel.setAttribute("aria-label", "Summarized corridor routes");
-  summaryPanel.hidden = true;
-  sidebar.appendChild(summaryPanel);
+  resultBlock.appendChild(stationInfo);
 
   const panel = document.createElement("div");
   panel.id = "route-info-panel";
-  sidebar.appendChild(panel);
+  resultBlock.appendChild(panel);
 
   const title = document.createElement("h4");
   title.id = "jronda-route-info-title";
@@ -392,7 +480,7 @@ document.body.appendChild(root);
   const routeDetailClose = document.createElement("button");
   routeDetailClose.id = "jronda-route-detail-close";
   routeDetailClose.type = "button";
-  routeDetailClose.className = "sr-btn";
+  routeDetailClose.className = "sr-btn ghost";
   routeDetailClose.textContent = t("close", "Close");
   routeDetailHead.appendChild(routeDetailTitle);
   routeDetailHead.appendChild(routeDetailClose);
@@ -418,7 +506,7 @@ document.body.appendChild(root);
   const searchModalClose = document.createElement("button");
   searchModalClose.id = "search-modal-close";
   searchModalClose.type = "button";
-  searchModalClose.className = "sr-btn";
+  searchModalClose.className = "sr-btn ghost";
   searchModalClose.textContent = t("close", "Close");
   searchModalHead.appendChild(searchModalTitle);
   searchModalHead.appendChild(searchModalClose);
@@ -445,17 +533,13 @@ document.body.appendChild(root);
   legendTitle.onclick = () => {
     if (legendPanel.dataset.legendEmpty === "1") {
       window.dispatchEvent(new CustomEvent("jronda:legend-retry"));
-      return;
     }
-    openLegendModal();
   };
   legendPanel.onclick = (evt) => {
     if (evt.target === legendPanel || evt.target === legendList) {
       if (legendPanel.dataset.legendEmpty === "1") {
         window.dispatchEvent(new CustomEvent("jronda:legend-retry"));
-        return;
       }
-      openLegendModal();
     }
   };
   legendDock.prepend(legendTitle);
@@ -465,6 +549,254 @@ document.body.appendChild(root);
   legendPanel.appendChild(legendList);
   const legendButtons = new Map();
   let legendItemsAll = [];
+
+  function normalizeRouteKey(value) {
+    return String(value || "").trim().toUpperCase().replace(/-/g, "_");
+  }
+
+  function renderLinesView(items = []) {
+    const linesGrid = document.getElementById("kiosk-lines-grid");
+    if (!linesGrid) return;
+    const normalizedItems = Array.isArray(items) ? items : [];
+    if (!normalizedItems.length) {
+      linesGrid.innerHTML = `<div class="lines-empty">${t("legend_unavailable", "Legend unavailable. Tap to retry.")}</div>`;
+      return;
+    }
+    const groupedStops = new Map();
+    const stationBySource = new Map();
+    const stationByName = new Map();
+    const normalizeNameKey = (name) =>
+      String(name || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, " ")
+        .replace(/\s+/g, " ");
+    const sourceStops = Array.isArray(lineStops) && lineStops.length ? lineStops : stationOptions;
+    const sourceKeyOf = (s) => {
+      const source = String(s?.source_stop_id || "").trim();
+      if (source) return source;
+      const sid = String(s?.stop_id || "").trim();
+      if (!sid) return "";
+      const rid = String(s?.route_id || "").trim();
+      const routePrefix = rid ? `${rid}_` : "";
+      if (routePrefix && sid.startsWith(routePrefix)) return sid.slice(routePrefix.length);
+      return sid;
+    };
+    for (const station of stationOptions || []) {
+      const sourceKey = sourceKeyOf(station);
+      if (!sourceKey) continue;
+      const list = stationBySource.get(sourceKey) || [];
+      list.push(station);
+      stationBySource.set(sourceKey, list);
+      const nameKey = normalizeNameKey(station?.stop_name);
+      if (!nameKey) continue;
+      const byName = stationByName.get(nameKey) || [];
+      byName.push(station);
+      stationByName.set(nameKey, byName);
+    }
+    const sortedSourceStops = (sourceStops || []).slice().sort((a, b) => {
+      const routeCmp = String(a?.route_id || "").localeCompare(String(b?.route_id || ""));
+      if (routeCmp !== 0) return routeCmp;
+      const as = Number(a?.stop_sequence ?? a?.seq ?? 0);
+      const bs = Number(b?.stop_sequence ?? b?.seq ?? 0);
+      if (as !== bs) return as - bs;
+      return String(a?.stop_id || "").localeCompare(String(b?.stop_id || ""));
+    });
+    for (const stop of sortedSourceStops) {
+      const key = normalizeRouteKey(stop?.route_id);
+      if (!key) continue;
+      const list = groupedStops.get(key) || [];
+      const stopId = String(stop?.stop_id || "").trim();
+      const name = String(stop?.stop_name || "").trim();
+      const sourceStopId = sourceKeyOf(stop);
+      if (name && stopId && !list.find((x) => x.stopId === stopId)) {
+        list.push({
+          stopId,
+          sourceStopId,
+          stopName: name,
+          routeId: String(stop?.route_id || ""),
+          category: String(stop?.category || ""),
+          mode: String(stop?.mode || ""),
+          color: String(stop?.route_color || ""),
+        });
+      }
+      groupedStops.set(key, list);
+    }
+    linesGrid.innerHTML = "";
+    normalizedItems.forEach((item) => {
+      const routeId = String(item.routeId || "");
+      const color = String(item.color || "#64748b");
+      const row = document.createElement("div");
+      row.className = "lines-row";
+      row.dataset.routeId = routeId;
+      const stops = groupedStops.get(normalizeRouteKey(routeId)) || [];
+      row.innerHTML = `
+        <button type="button" class="lines-line-chip" data-route-id="${routeId}">
+          <span class="lines-chip-swatch" style="background:${color}"></span>
+          <span class="lines-chip-label">${String(item.label || routeId || "")}</span>
+        </button>
+        <div class="lines-stops-track"></div>
+      `;
+      const stopWrap = row.querySelector(".lines-stops-track");
+      if (stopWrap) {
+        if (stops.length) {
+          stopWrap.classList.add("has-stops");
+          stopWrap.style.setProperty("--track-color", color);
+          stops.forEach((stopRef, idx) => {
+            const nodeWrap = document.createElement("div");
+            nodeWrap.className = "lines-node-wrap";
+            const stop = document.createElement("button");
+            stop.type = "button";
+            stop.className = "lines-node";
+            stop.title = stopRef.stopName;
+            stop.setAttribute("data-stop-id", String(stopRef.stopId || ""));
+            stop.addEventListener("click", () => {
+              const match = (stationOptions || []).find((station) => String(station.stop_id || "") === String(stopRef.stopId || ""));
+              if (!match) return;
+              const fromInput = document.getElementById("jronda-from-search");
+              const toInput = document.getElementById("jronda-to-search");
+              const fromId = String(fromInput?.dataset.stopId || "");
+              const toId = String(toInput?.dataset.stopId || "");
+              const useFrom = !fromId || (fromId && toId);
+              if (useFrom && fromInput) {
+                fromInput.value = String(match.stop_name || "");
+                fromInput.dataset.stopId = String(match.stop_id || "");
+                onSearchSelect(String(match.stop_id), "start");
+              } else if (toInput) {
+                toInput.value = String(match.stop_name || "");
+                toInput.dataset.stopId = String(match.stop_id || "");
+                onSearchSelect(String(match.stop_id), "end");
+              }
+              refreshLinesEndpointHighlight();
+            });
+            const label = document.createElement("div");
+            label.className = "lines-node-label";
+            const title = document.createElement("span");
+            title.className = "lines-node-name";
+            title.textContent = stopRef.stopName;
+            label.appendChild(title);
+            const nearbyWrap = document.createElement("span");
+            nearbyWrap.className = "lines-node-nearby";
+            const currentCategory = String(stopRef.category || stopRef.mode || "").toUpperCase();
+            const currentNameKey = normalizeNameKey(stopRef.stopName || "");
+            const sourceSiblings = stationBySource.get(String(stopRef.sourceStopId || "")) || [];
+            const nameSiblings = stationByName.get(currentNameKey) || [];
+            const siblingPool = currentCategory === "ERL"
+              ? nameSiblings
+              : [...sourceSiblings, ...nameSiblings];
+            const siblingRoutes = Array.from(
+              new Map(
+                siblingPool
+                  .filter((s) => normalizeRouteKey(s.route_id) !== normalizeRouteKey(stopRef.routeId))
+                  .map((s) => {
+                    const siblingCategory = String(s.category || s.mode || "").toUpperCase();
+                    const siblingNameKey = normalizeNameKey(s.stop_name || "");
+                    const erlInvolved = currentCategory === "ERL" || siblingCategory === "ERL";
+                    if (erlInvolved && siblingNameKey !== currentNameKey) return null;
+                    let connectionType = "same-family";
+                    if (currentCategory === "ERL" || siblingCategory === "ERL") {
+                      connectionType = "connecting";
+                    } else if (currentCategory === "KTM" && siblingCategory !== "KTM") {
+                      connectionType = "connecting";
+                    } else if (currentCategory !== "KTM" && siblingCategory !== "KTM") {
+                      connectionType = "interchange";
+                    }
+                    if (connectionType === "same-family") return null;
+                    return {
+                      routeId: String(s.route_id || ""),
+                      category: siblingCategory || "RAIL",
+                      color: getRouteColor(String(s.route_id || ""), false, s.route_color ?? null).color,
+                      connectionType,
+                    };
+                  })
+                  .filter(Boolean)
+                  .map((item) => [`${item.routeId}|${item.category}|${item.connectionType}`, item])
+              ).values()
+            );
+            siblingRoutes.slice(0, 6).forEach((item) => {
+              const chip = document.createElement("span");
+              chip.className = "lines-mini-chip";
+              const icon = item.connectionType === "interchange"
+                ? "/src/img/Interchange_icon.svg"
+                : "/src/img/Connecting_icon.svg";
+              chip.innerHTML = `
+                <img class="lines-mini-icon" src="${icon}" alt="${item.category}"/>
+                <span class="lines-mini-swatch" style="background:${item.color || "#64748b"}"></span>
+                <span class="lines-mini-text">${item.category || item.mode || "RAIL"}</span>
+              `;
+              nearbyWrap.appendChild(chip);
+            });
+            if (nearbyWrap.childElementCount > 0) label.appendChild(nearbyWrap);
+            nodeWrap.appendChild(stop);
+            nodeWrap.appendChild(label);
+            stopWrap.appendChild(nodeWrap);
+          });
+        } else {
+          const none = document.createElement("span");
+          none.className = "lines-stop lines-stop-empty";
+          none.textContent = t("route", "Route");
+          stopWrap.appendChild(none);
+        }
+      }
+      const lineBtn = row.querySelector(".lines-line-chip");
+      if (lineBtn) {
+        lineBtn.addEventListener("click", () => {
+          setSurfaceView("map");
+          onLegendRouteSelect(routeId);
+        });
+      }
+      linesGrid.appendChild(row);
+    });
+    requestAnimationFrame(() => {
+      reflowLinesTrackGeometry();
+      requestAnimationFrame(reflowLinesTrackGeometry);
+    });
+    refreshLinesEndpointHighlight();
+  }
+
+  function reflowLinesTrackGeometry() {
+    document.querySelectorAll(".lines-stops-track.has-stops").forEach((track) => {
+      const nodes = track.querySelectorAll(".lines-node");
+      if (!nodes.length) {
+        track.style.removeProperty("--track-left");
+        track.style.removeProperty("--track-right");
+        return;
+      }
+      const firstRect = nodes[0].getBoundingClientRect();
+      const lastRect = nodes[nodes.length - 1].getBoundingClientRect();
+      const trackRect = track.getBoundingClientRect();
+      const left = Math.max(0, (firstRect.left - trackRect.left) + firstRect.width / 2);
+      const right = Math.max(0, trackRect.width - ((lastRect.left - trackRect.left) + lastRect.width / 2));
+      track.style.setProperty("--track-left", `${left}px`);
+      track.style.setProperty("--track-right", `${right}px`);
+    });
+  }
+
+  function refreshLinesEndpointHighlight() {
+    const fromInputEl = document.getElementById("jronda-from-search");
+    const toInputEl = document.getElementById("jronda-to-search");
+    const fromId = String(fromInputEl?.dataset.stopId || "");
+    const toId = String(toInputEl?.dataset.stopId || "");
+    document.querySelectorAll(".lines-node").forEach((node) => {
+      const nodeStopId = String(node.getAttribute("data-stop-id") || "");
+      node.classList.toggle("endpoint-start", Boolean(fromId) && nodeStopId === fromId);
+      node.classList.toggle("endpoint-end", Boolean(toId) && nodeStopId === toId);
+    });
+  }
+
+  function setSurfaceView(viewMode = "map") {
+    const mode = viewMode === "lines" ? "lines" : "map";
+    mapSurface.dataset.view = mode;
+    topbar.querySelectorAll(".view-pill").forEach((btn) => {
+      const active = btn.dataset.view === mode;
+      btn.classList.toggle("act", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  }
+
+  topbar.querySelectorAll(".view-pill").forEach((btn) => {
+    btn.addEventListener("click", () => setSurfaceView(btn.dataset.view));
+  });
 
   const legendModal = document.createElement("div");
   legendModal.id = "legend-modal";
@@ -481,7 +813,7 @@ document.body.appendChild(root);
   const legendModalClose = document.createElement("button");
   legendModalClose.id = "legend-modal-close";
   legendModalClose.type = "button";
-  legendModalClose.className = "sr-btn";
+  legendModalClose.className = "sr-btn ghost";
   legendModalClose.textContent = t("close", "Close");
   legendModalHead.appendChild(legendModalTitle);
   legendModalHead.appendChild(legendModalClose);
@@ -532,6 +864,7 @@ document.body.appendChild(root);
 
   if (typeof window !== "undefined") {
     window.addEventListener("jronda:close-legend-modal", closeLegendModal);
+    window.addEventListener("resize", reflowLinesTrackGeometry);
   }
 
   function closeSearchModal() {
@@ -546,14 +879,36 @@ document.body.appendChild(root);
 
   function openLegendModal() {
     legendModalTable.innerHTML = "";
+    const routeSection = document.createElement("div");
+    routeSection.className = "legend-modal-section";
+    routeSection.innerHTML = `<div class="legend-modal-section-title">${t("legend_full", "All routes")}</div>`;
+    legendModalTable.appendChild(routeSection);
+
+    const groupOrder = [
+      { id: "RAIL", title: "Rail (1 - B1)" },
+      { id: "GOKL", title: "GoKL" },
+      { id: "RAPIDBUS", title: "RapidBus" },
+      { id: "HOHO", title: "HOHO" },
+      { id: "OTHER", title: "Other routes" },
+    ];
+
+    const grouped = new Map(groupOrder.map((group) => [group.id, []]));
     for (const item of legendItemsAll) {
+      const key = String(item.group || "").toUpperCase() || (String(item.mode || "").toUpperCase() === "RAIL" ? "RAIL" : "OTHER");
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(item);
+    }
+
+    const renderLegendRow = (item) => {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "legend-modal-row";
       row.dataset.routeId = String(item.routeId || "");
       row.title = String(item.label || item.routeId || "");
+      const icon = item.icon || "";
       row.innerHTML = `
         <span class="legend-swatch" style="background:${item.color || "#64748b"}"></span>
+        ${icon ? `<img class="legend-icon" src="${icon}" alt="${String(item.mode || "route")}"/>` : `<span class="legend-icon"></span>`}
         <span class="legend-modal-label">${String(item.label || item.routeId || "")}</span>
         <span class="legend-modal-mode">${String(item.mode || "")}</span>
       `;
@@ -561,7 +916,36 @@ document.body.appendChild(root);
         onLegendRouteSelect(String(item.routeId || ""));
         closeLegendModal();
       };
-      legendModalTable.appendChild(row);
+      return row;
+    };
+
+    for (const group of groupOrder) {
+      const items = grouped.get(group.id) || [];
+      if (!items.length) continue;
+      const block = document.createElement("div");
+      block.className = "legend-modal-section";
+      block.innerHTML = `<div class="legend-modal-section-title">${group.title}</div>`;
+      routeSection.appendChild(block);
+      if (group.id === "RAPIDBUS") {
+        const rapidFilter = document.createElement("input");
+        rapidFilter.className = "sr-control";
+        rapidFilter.type = "text";
+        rapidFilter.placeholder = "Search RapidBus route";
+        block.appendChild(rapidFilter);
+        const rowsWrap = document.createElement("div");
+        block.appendChild(rowsWrap);
+        const renderRapid = (query = "") => {
+          rowsWrap.innerHTML = "";
+          const normalizedQuery = String(query || "").trim().toLowerCase();
+          items
+            .filter((item) => !normalizedQuery || String(item.label || item.routeId || "").toLowerCase().includes(normalizedQuery))
+            .forEach((item) => rowsWrap.appendChild(renderLegendRow(item)));
+        };
+        rapidFilter.addEventListener("input", () => renderRapid(rapidFilter.value));
+        renderRapid("");
+      } else {
+        items.forEach((item) => block.appendChild(renderLegendRow(item)));
+      }
     }
     legendModal.style.display = "flex";
   }
@@ -589,7 +973,7 @@ document.body.appendChild(root);
     };
     const cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
-    cancelBtn.className = "sr-btn";
+    cancelBtn.className = "sr-btn ghost";
     cancelBtn.textContent = t("cancel", "Cancel");
     cancelBtn.onclick = closeSearchModal;
     searchModalActions.appendChild(startBtn);
@@ -606,115 +990,6 @@ document.body.appendChild(root);
   const toastRoot = document.createElement("div");
   toastRoot.id = "jronda-toast-root";
   document.body.appendChild(toastRoot);
-
-  function resolveSummaryStopId(panel, row) {
-    const byRoute = row?.byRoute || {};
-    const routeIds = Array.isArray(panel?.routeIds) ? panel.routeIds : [];
-    for (const routeId of routeIds) {
-      const sid = byRoute[String(routeId)];
-      if (sid) return String(sid);
-    }
-    const first = Object.values(byRoute)[0];
-    return first ? String(first) : "";
-  }
-
-  function renderSummaryPanels(panels = []) {
-    summaryPanel.innerHTML = "";
-    const title = document.createElement("div");
-    title.textContent = t("corridor_summaries", "Corridor Summaries");
-    title.className = "summary-panel-title";
-    summaryPanel.appendChild(title);
-
-    if (!panels.length) {
-      const empty = document.createElement("div");
-      empty.className = "summary-panel-empty";
-      empty.textContent = t("no_summarized", "No summarized corridor.");
-      summaryPanel.appendChild(empty);
-      return;
-    }
-
-    for (const panelData of panels) {
-      const card = document.createElement("div");
-      card.className = "corridor-card";
-      const heading = document.createElement("button");
-      heading.type = "button";
-      heading.className = "corridor-toggle";
-      heading.setAttribute("aria-expanded", "false");
-      const corridorKey = String(panelData?.corridorKey || "");
-      heading.textContent =
-        String(panelData?.placement || "") === "above"
-          ? t("tumpat_gemas", "Tumpat - Gemas")
-          : (String(panelData?.placement || "") === "below"
-            ? t("gemas_woodlands", "Gemas - Woodlands")
-            : (corridorKey.includes("butterworth_padang")
-              ? "Padang Besar - Butterworth"
-              : (corridorKey.includes("butterworth_ipoh")
-                ? "Butterworth - Ipoh"
-                : (corridorKey.includes("ets_north")
-                  ? "ETS North (to 15200)"
-                  : (corridorKey.includes("ets_south")
-                    ? "ETS South (from 25100)"
-                    : "Corridor")))));
-      card.appendChild(heading);
-      const body = document.createElement("div");
-      body.className = "corridor-body";
-      body.hidden = true;
-
-      const routeIds = Array.isArray(panelData?.routeIds) ? panelData.routeIds : [];
-      const routeLabels = Array.isArray(panelData?.routeLabels) ? panelData.routeLabels : [];
-      const routeColors = Array.isArray(panelData?.routeColors) ? panelData.routeColors : [];
-      for (let i = 0; i < routeIds.length; i++) {
-        const chip = document.createElement("span");
-        chip.className = "corridor-route-chip";
-        chip.style.background = routeColors[i] || "#607080";
-        chip.textContent = routeLabels[i] || routeIds[i] || t("route", "Route");
-        body.appendChild(chip);
-      }
-
-      const rows = Array.isArray(panelData?.rows) ? panelData.rows : [];
-      for (const row of rows) {
-        const stopId = resolveSummaryStopId(panelData, row);
-        if (!stopId) continue;
-        const rowEl = document.createElement("div");
-        rowEl.className = "corridor-stop-row";
-
-        const stopName = document.createElement("div");
-        stopName.className = "corridor-stop-name";
-        stopName.textContent = String(row?.label || "");
-        rowEl.appendChild(stopName);
-
-        const startBtn = document.createElement("button");
-        startBtn.type = "button";
-        startBtn.className = "corridor-mini-btn primary";
-        startBtn.textContent = t("start", "Start");
-        startBtn.onclick = () => {
-          window.dispatchEvent(new CustomEvent("jronda:set-start", { detail: { stopId } }));
-        };
-        rowEl.appendChild(startBtn);
-
-        const endBtn = document.createElement("button");
-        endBtn.type = "button";
-        endBtn.className = "corridor-mini-btn";
-        endBtn.textContent = t("end", "End");
-        endBtn.onclick = () => {
-          window.dispatchEvent(new CustomEvent("jronda:set-end", { detail: { stopId } }));
-        };
-        rowEl.appendChild(endBtn);
-
-        body.appendChild(rowEl);
-      }
-
-      heading.onclick = () => {
-        const next = body.hidden;
-        body.hidden = !next;
-        heading.setAttribute("aria-expanded", next ? "true" : "false");
-      };
-      card.appendChild(body);
-      summaryPanel.appendChild(card);
-    }
-  }
-
-  renderSummaryPanels(summaryPanels);
 
   const clockDayEl = document.getElementById("kiosk-clock-day");
   const clockDateEl = document.getElementById("kiosk-clock-date");
@@ -770,11 +1045,8 @@ function updateKioskClock() {
 
   function applyI18n() {
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-    const busLabelEl = document.getElementById("jronda-bus-label");
-    const busOperatorLabelEl = document.getElementById("jronda-bus-operator-label");
-    const busOperatorInputEl = document.getElementById("jronda-bus-operator");
-    const searchLabelEl = document.getElementById("jronda-search-label");
-    const searchInputEl = document.getElementById("jronda-station-search");
+    const fromInputEl = document.getElementById("jronda-from-search");
+    const toInputEl = document.getElementById("jronda-to-search");
     const resetBtnEl = document.getElementById("jronda-reset-btn");
     const resetHintEl = document.getElementById("jronda-reset-hint");
     const stationInfoEl = document.getElementById("jronda-station-info");
@@ -787,14 +1059,8 @@ function updateKioskClock() {
     const searchModalTitleEl = document.getElementById("search-modal-title");
     const searchModalCloseEl = document.getElementById("search-modal-close");
 
-    if (busLabelEl) busLabelEl.textContent = t("include_bus", "Include bus routes");
-    if (busOperatorLabelEl) busOperatorLabelEl.textContent = t("bus_operator", "Bus operator");
-    if (busOperatorInputEl && !busOperatorInputEl.value) {
-      busOperatorInputEl.placeholder = t("bus_operator_placeholder", "All operators");
-      busOperatorInputEl.value = t("bus_operator_all", "All");
-    }
-    if (searchLabelEl) searchLabelEl.textContent = t("search_station", "Search station");
-    if (searchInputEl) searchInputEl.placeholder = t("type_station_name", "Type station name");
+    if (fromInputEl) fromInputEl.placeholder = t("from_station", "From station");
+    if (toInputEl) toInputEl.placeholder = t("to_station", "To station");
     if (resetBtnEl) resetBtnEl.textContent = t("reset", "Reset");
     if (resetHintEl) resetHintEl.textContent = t("auto_reset_active", "Auto reset active");
     const defaultInfo = t("tap_station_info", "Tap a station to view details");
@@ -813,8 +1079,8 @@ function updateKioskClock() {
     if (routeDetailModal.style.display === "flex" && routeDetailTitleEl) {
       routeDetailTitleEl.textContent = t("details", "Details");
     }
-    renderSummaryPanels(summaryPanels);
   }
+
 
   function normText(v) {
     return String(v || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
@@ -865,6 +1131,7 @@ function updateKioskClock() {
 
     return Array.from(dedupe.values())
       .map((s) => {
+        const routeColor = getRouteColor(String(s.route_id || ""), false, s.route_color || null).color;
         const label = `${s.stop_name} (${s.route_id})`;
         const name = normText(s.stop_name);
         const normalizedLabel = normText(label);
@@ -872,60 +1139,147 @@ function updateKioskClock() {
         for (const query of queries) {
           score = Math.max(score, fuzzyScore(query, name), fuzzyScore(query, normalizedLabel));
         }
-        return { ...s, label, score };
+        return { ...s, label, score, routeColor };
       })
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 8);
   }
 
-  function renderSuggestions(list) {
-    suggestions.innerHTML = "";
+  function renderSuggestions(list, target, container, inputEl) {
+    container.innerHTML = "";
     if (!list.length) {
-      suggestions.style.display = "none";
-      searchInput.setAttribute("aria-expanded", "false");
+      container.style.display = "none";
+      inputEl.setAttribute("aria-expanded", "false");
       return;
     }
-    suggestions.style.display = "block";
-    searchInput.setAttribute("aria-expanded", "true");
+    container.style.display = "block";
+    inputEl.setAttribute("aria-expanded", "true");
     list.forEach((item) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "suggestion-item";
       btn.setAttribute("role", "option");
-      btn.textContent = item.label;
+      btn.innerHTML = `
+        <span class="suggestion-color" style="background:${item.routeColor || "#64748b"}"></span>
+        <span class="suggestion-main">${item.stop_name}</span>
+        <span class="suggestion-line">${item.route_id}</span>
+      `;
       btn.onclick = () => {
-        searchInput.value = "";
-        suggestions.style.display = "none";
-        searchInput.setAttribute("aria-expanded", "false");
-        openSearchModal(String(item.stop_id), String(item.label || item.stop_name || item.stop_id));
+        inputEl.value = String(item.stop_name || "");
+        inputEl.dataset.stopId = String(item.stop_id || "");
+        fromSuggestions.style.display = "none";
+        toSuggestions.style.display = "none";
+        inputEl.setAttribute("aria-expanded", "false");
+        onSearchSelect(String(item.stop_id), target === "from" ? "start" : "end");
       };
-      suggestions.appendChild(btn);
+      container.appendChild(btn);
     });
   }
 
-  searchInput.oninput = () => {
-    renderSuggestions(buildSuggestions(searchInput.value));
-  };
-  searchInput.onfocus = () => {
-    renderSuggestions(buildSuggestions(searchInput.value));
-  };
-  searchInput.onblur = () => {
-    setTimeout(() => {
-      suggestions.style.display = "none";
-      searchInput.setAttribute("aria-expanded", "false");
-    }, 120);
-  };
-  searchInput.onkeydown = (evt) => {
-    if (evt.key === "Enter") {
-      const top = buildSuggestions(searchInput.value)[0];
-      if (top) {
-        openSearchModal(String(top.stop_id), String(top.label || top.stop_name || top.stop_id));
-        suggestions.style.display = "none";
-        searchInput.setAttribute("aria-expanded", "false");
+  const fromInput = document.getElementById("jronda-from-search");
+  const toInput = document.getElementById("jronda-to-search");
+  const swapBtn = document.getElementById("jronda-swap-btn");
+  const clearJourneyBtn = document.getElementById("jronda-clear-journey");
+  const findRouteBtn = document.getElementById("jronda-find-route");
+
+  function bindAutocomplete(inputEl, target, container) {
+    if (!inputEl || !container) return;
+    inputEl.setAttribute("aria-autocomplete", "list");
+    inputEl.setAttribute("aria-controls", container.id);
+    inputEl.setAttribute("aria-expanded", "false");
+    inputEl.oninput = () => {
+      inputEl.dataset.stopId = "";
+      renderSuggestions(buildSuggestions(inputEl.value), target, container, inputEl);
+    };
+    inputEl.onfocus = () => {
+      renderSuggestions(buildSuggestions(inputEl.value), target, container, inputEl);
+    };
+    inputEl.onblur = () => {
+      setTimeout(() => {
+        container.style.display = "none";
+        inputEl.setAttribute("aria-expanded", "false");
+      }, 120);
+    };
+    inputEl.onkeydown = (evt) => {
+      if (evt.key !== "Enter") return;
+      const top = buildSuggestions(inputEl.value)[0];
+      if (!top) return;
+      inputEl.value = String(top.stop_name || "");
+      inputEl.dataset.stopId = String(top.stop_id || "");
+      container.style.display = "none";
+      inputEl.setAttribute("aria-expanded", "false");
+      onSearchSelect(String(top.stop_id), target === "from" ? "start" : "end");
+    };
+  }
+
+  bindAutocomplete(fromInput, "from", fromSuggestions);
+  bindAutocomplete(toInput, "to", toSuggestions);
+
+  if (swapBtn) {
+    swapBtn.onclick = () => {
+      const fromName = fromInput?.value || "";
+      const toName = toInput?.value || "";
+      const fromId = fromInput?.dataset.stopId || "";
+      const toId = toInput?.dataset.stopId || "";
+      if (fromInput && toInput) {
+        fromInput.value = toName;
+        toInput.value = fromName;
+        fromInput.dataset.stopId = toId;
+        toInput.dataset.stopId = fromId;
       }
-    }
-  };
+      if (toId && fromId) {
+        window.dispatchEvent(new CustomEvent("jronda:swap-journey", { detail: { fromId: toId, toId: fromId } }));
+      } else {
+        if (toId) onSearchSelect(toId, "start");
+        if (fromId) onSearchSelect(fromId, "end");
+      }
+      refreshLinesEndpointHighlight();
+    };
+  }
+
+  if (clearJourneyBtn) {
+    clearJourneyBtn.onclick = () => {
+      if (fromInput) {
+        fromInput.value = "";
+        fromInput.dataset.stopId = "";
+      }
+      if (toInput) {
+        toInput.value = "";
+        toInput.dataset.stopId = "";
+      }
+      refreshLinesEndpointHighlight();
+      onReset("manual");
+    };
+  }
+
+  if (findRouteBtn) {
+    findRouteBtn.onclick = () => {
+      let fromId = fromInput?.dataset.stopId || "";
+      let toId = toInput?.dataset.stopId || "";
+      if (!fromId && fromInput?.value) {
+        const topFrom = buildSuggestions(fromInput.value)[0];
+        if (topFrom) {
+          fromId = String(topFrom.stop_id || "");
+          fromInput.dataset.stopId = fromId;
+          fromInput.value = String(topFrom.stop_name || fromInput.value);
+        }
+      }
+      if (!toId && toInput?.value) {
+        const topTo = buildSuggestions(toInput.value)[0];
+        if (topTo) {
+          toId = String(topTo.stop_id || "");
+          toInput.dataset.stopId = toId;
+          toInput.value = String(topTo.stop_name || toInput.value);
+        }
+      }
+      if (fromId) onSearchSelect(fromId, "start");
+      if (toId) onSearchSelect(toId, "end");
+      if (fromId && toId) {
+        window.dispatchEvent(new CustomEvent("jronda:find-route", { detail: { fromId, toId } }));
+      }
+    };
+  }
 
   if (typeof window !== "undefined") {
     window.addEventListener("jronda:hide-floating-panels", () => {
@@ -982,7 +1336,6 @@ function updateKioskClock() {
 
     const stepItems = [];
     const stationRows = route.stations;
-    const lineSummaryRegex = /(seremban line|port klang line)/i;
     let prev = null;
     const locale = (() => {
       const currentLang = window?.jrondaI18n?.getLang?.() || "en";
@@ -1021,59 +1374,12 @@ function updateKioskClock() {
         walkRow.className = "step-row";
         walkRow.innerHTML = `
           <div class="step-left">
-            <img class="mode-icon" src="/src/img/Connecting_icon.svg" alt="${t("walk", "Walk")}" style="margin-top:1px;margin-right:0;"/>
+            <img class="mode-icon mode-icon-walk" src="/src/img/Connecting_icon.svg" alt="${t("walk", "Walk")}"/>
             <div class="step-line walk"></div>
           </div>
           <div class="step-text"><b>${t("walk", "Walk")}</b> to (${transferToLineName} ${transferToStationName}) (~${transferWalkMinutes} min)</div>
         `;
         stepItems.push(walkRow);
-      }
-
-      if (
-        mode === "RAIL" &&
-        lineSummaryRegex.test(String(lineName)) &&
-        (idx === 0 || String(stationRows[idx - 1]?.route_long_name || "") !== String(current.route_long_name || ""))
-      ) {
-        const blockStations = [];
-        let cursor = idx;
-        while (cursor < stationRows.length) {
-          const cs = stationRows[cursor] || {};
-          const csLine = cs.route_public_name || cs.route_long_name || cs.route_id || "";
-          if (String(cs.route_id || "") !== String(current.route_id || "")) break;
-          if (!lineSummaryRegex.test(String(csLine))) break;
-          blockStations.push(cs);
-          cursor++;
-        }
-        if (blockStations.length >= 3) {
-          const routeColor = getRouteColor(
-            String(current.route_id || ""),
-            false,
-            current.route_color ?? null
-          ).color;
-          const summaryWrap = document.createElement("div");
-          summaryWrap.className = "step-summary";
-          summaryWrap.style.color = routeColor;
-          const uniqueStops = [];
-          const seenStop = new Set();
-          for (const st of blockStations) {
-            const name = String(st.stop_name || "");
-            if (!name || seenStop.has(name)) continue;
-            seenStop.add(name);
-            uniqueStops.push(name);
-          }
-          summaryWrap.innerHTML = `
-            <div class="summary-title">${lineName} ${t("summary", "summary")} (${uniqueStops.length} ${t("stops", "stops")})</div>
-            <div class="summary-list">
-              ${uniqueStops
-                .map((name) => `<div class="summary-stop"><span class="dot"></span><span>${name}</span></div>`)
-                .join("")}
-            </div>
-          `;
-          stepItems.push(summaryWrap);
-          prev = blockStations[blockStations.length - 1];
-          idx = cursor - 1;
-          continue;
-        }
       }
 
       const icon = getModeIcon(mode, current.category);
@@ -1084,10 +1390,12 @@ function updateKioskClock() {
       ).color;
       const row = document.createElement("div");
       row.className = "step-row";
+      const nodeColorClass = ensureColorClass(routeColor, "border-color");
+      const lineColorClass = ensureColorClass(routeColor, "background");
       row.innerHTML = `
         <div class="step-left">
-          <div class="step-node" style="border-color:${routeColor};"></div>
-          ${idx < route.stations.length - 1 ? `<div class="step-line" style="background:${routeColor};"></div>` : ""}
+          <div class="step-node ${nodeColorClass}"></div>
+          ${idx < route.stations.length - 1 ? `<div class="step-line ${lineColorClass}"></div>` : ""}
         </div>
         <div class="step-text"><img class="mode-icon" src="${icon}" alt="${mode || t("mode_label", "mode")}"/><b>${current.stop_name || current.stop_id || t("route", "Route")}</b> - ${lineName}</div>
       `;
@@ -1099,7 +1407,8 @@ function updateKioskClock() {
     const viewportW = typeof window !== "undefined" ? window.innerWidth : 1200;
     let columnCount = 1;
     if (stepItems.length > 18) columnCount = 2;
-    if (stepItems.length > 40 && viewportW >= 1100) columnCount = 3;
+    if (stepItems.length > 36 && viewportW >= 1100) columnCount = 3;
+    if (stepItems.length > 60 && viewportW >= 1400) columnCount = 4;
     stepList.className = `step-list step-list-grid cols-${columnCount}`;
     if (columnCount === 1) {
       for (const item of stepItems) stepList.appendChild(item);
@@ -1114,7 +1423,7 @@ function updateKioskClock() {
         if (col < columnCount - 1) {
           const divider = document.createElement("div");
           divider.className = "step-column-divider";
-          divider.innerHTML = `<span class="step-dots">• • •</span><span class="step-dots">• • •</span>`;
+          divider.innerHTML = `<span class="step-dots">&bull; &bull; &bull;</span><span class="step-dots">&bull; &bull; &bull;</span>`;
           stepList.appendChild(divider);
         }
       }
@@ -1123,105 +1432,68 @@ function updateKioskClock() {
     return wrapper;
   }
 
-  function updatePanel(routes, selectedIndex = 0, onSelect) {
-    showRoutePanel();
-    const c = content;
-    const presetLine = document.createElement("div");
-    presetLine.className = "route-option-meta";
-    presetLine.textContent = `${t("preset_label", "Preset")} : ${activePreset}`;
-    c.appendChild(presetLine);
-    c.innerHTML = "";
 
-    if (!routes || !routes.length) {
-      c.textContent = t("no_route_found", "No route found.");
+  function buildRouteCard(route, routeIndex, selected) {
+    const stations = Array.isArray(route?.stations) ? route.stations : [];
+    const fromName = stations[0]?.stop_name || "Start";
+    const toName = stations[stations.length - 1]?.stop_name || "End";
+    const eta = Number(route?.ETA ?? route?.eta ?? 0);
+    const routeIds = [];
+    stations.forEach((stop) => {
+      const rid = String(stop?.route_id || "").trim();
+      if (rid && !routeIds.includes(rid)) routeIds.push(rid);
+    });
+    const transfers = Math.max(0, routeIds.length - 1);
+    const card = document.createElement("div");
+    card.className = `rcard${selected ? " sel" : ""}`;
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <div class="rc-r1">
+        <div class="rc-name">${fromName} → ${toName}</div>
+      </div>
+      <div class="rc-meta">${eta > 0 ? `${eta} min` : "ETA N/A"} · ${Math.max(0, stations.length - 1)} stops · ${transfers} transfer${transfers === 1 ? "" : "s"}</div>
+      <div class="rc-segs"></div>
+    `;
+    const segWrap = card.querySelector(".rc-segs");
+    routeIds.forEach((rid, idx) => {
+      const seg = document.createElement("div");
+      const color = getRouteColor(rid, false, null).color;
+      const segClass = ensureColorClass(color, "background");
+      seg.className = `rseg ${segClass}`;
+      seg.textContent = rid;
+      segWrap?.appendChild(seg);
+      if (idx < routeIds.length - 1) {
+        const arr = document.createElement("span");
+        arr.className = "rarr";
+        arr.textContent = "›";
+        segWrap?.appendChild(arr);
+      }
+    });
+    const openDetail = () => {
+      onRouteSelect(routeIndex);
+      openRouteDetail(`${fromName} → ${toName}`, buildRouteStepList(route));
+    };
+    card.onclick = openDetail;
+    card.onkeydown = (evt) => {
+      if (evt.key === "Enter" || evt.key === " ") {
+        evt.preventDefault();
+        openDetail();
+      }
+    };
+    return card;
+  }
+
+  function updatePanel(routes = [], selectedIndex = 0) {
+    content.innerHTML = "";
+    const list = Array.isArray(routes) ? routes : [];
+    if (!list.length) {
+      content.textContent = t("no_route_selected", "No route selected.");
       return;
     }
-
-    routes.forEach((route, i) => {
-      const routeDiv = document.createElement("div");
-      routeDiv.setAttribute("role", "button");
-      routeDiv.tabIndex = 0;
-      routeDiv.className = `route-option-card${i === selectedIndex ? " is-selected" : ""}`;
-      routeDiv.onclick = () => onSelect?.(i);
-      routeDiv.onkeydown = (evt) => {
-        if (evt.key === "Enter" || evt.key === " ") {
-          evt.preventDefault();
-          onSelect?.(i);
-        }
-      };
-      const routeTitle = document.createElement("div");
-      routeTitle.className = "route-option-title";
-      const firstMode = Array.isArray(route.segments) && route.segments.length
-        ? String(route.segments[0].mode || "")
-        : "";
-      const firstCategory = Array.isArray(route.segments) && route.segments.length
-        ? String(route.segments[0].category || "")
-        : "";
-      const firstModeIcon = getModeIcon(firstMode, firstCategory);
-      routeTitle.innerHTML = `<img class="mode-icon" src="${firstModeIcon}" alt="${firstMode || t("mode_label", "mode")}"/>${t("option", "Option")} ${i + 1}`;
-      routeDiv.appendChild(routeTitle);
-
-      const distanceValue = route.totalDistance ?? route.distance ?? 0;
-      const etaValue = route.ETA ?? route.eta ?? 0;
-      const transfersValue = route.transfers ?? 0;
-      const alternativesValue = route.alternativeCount ?? 0;
-
-      const summary = document.createElement("div");
-      summary.textContent = `${t("distance", "Distance")} ${formatDistance(distanceValue)} | ${t("eta", "ETA")} ${formatEtaMinutes(etaValue)} | ${t("transfers", "Transfers")} ${transfersValue}`;
-      summary.className = "route-option-meta";
-      routeDiv.appendChild(summary);
-
-      if (alternativesValue > 0) {
-        const alternativesMeta = document.createElement("div");
-        alternativesMeta.className = "route-option-meta";
-        alternativesMeta.textContent = `${t("shared_corridor_alternatives", "Shared-corridor alternatives")}: ${alternativesValue}`;
-        routeDiv.appendChild(alternativesMeta);
-      }
-
-      const modeSummary = document.createElement("div");
-      modeSummary.textContent = `${t("modes", "Modes")}: ${route.modeSummary || "N/A"}`;
-      modeSummary.className = "route-option-meta route-option-meta-spaced";
-      routeDiv.appendChild(modeSummary);
-
-      const chipsWrap = document.createElement("div");
-      chipsWrap.className = "route-segment-chip-list";
-      const segments = Array.isArray(route.segments) ? route.segments : [];
-      for (const segment of segments) {
-        const chip = document.createElement("span");
-        chip.className = "route-segment-chip";
-        const icon = getModeIcon(segment.mode, segment.category);
-        chip.innerHTML = `<img class="mode-icon" src="${icon}" alt="${segment.mode || t("mode_label", "mode")}"/>${segment.label || segment.routeId}`;
-        const chipColor = segment.color || "#607080";
-        chip.style.background = chipColor;
-        chip.style.color = getAccessibleTextColor(chipColor);
-        if (Array.isArray(segment.alternativeRouteIds) && segment.alternativeRouteIds.length) {
-          chip.title = `${t("shared_corridor_alternatives", "Shared-corridor alternatives")}: ${segment.alternativeRouteIds.join(", ")}`;
-        }
-        chipsWrap.appendChild(chip);
-      }
-      routeDiv.appendChild(chipsWrap);
-
-      const actions = document.createElement("div");
-      actions.className = "route-actions";
-      const detailsBtn = document.createElement("button");
-      detailsBtn.type = "button";
-      detailsBtn.className = "sr-btn";
-      detailsBtn.textContent = t("view_steps", "View Steps");
-      detailsBtn.onclick = (evt) => {
-        evt.stopPropagation();
-        const detailNode = buildRouteStepList(route);
-        openRouteDetail(`${t("option", "Option")} ${i + 1} ${t("details", "Details")}`, detailNode);
-      };
-      actions.appendChild(detailsBtn);
-      if (i === selectedIndex) {
-        const selectedTag = document.createElement("span");
-        selectedTag.className = "route-option-meta route-option-selected";
-        selectedTag.textContent = t("selected", "Selected");
-        actions.appendChild(selectedTag);
-      }
-      routeDiv.appendChild(actions);
-
-      c.appendChild(routeDiv);
+    const safeSelected = Math.max(0, Math.min(list.length - 1, Number(selectedIndex) || 0));
+    list.forEach((route, routeIndex) => {
+      content.appendChild(buildRouteCard(route, routeIndex, routeIndex === safeSelected));
     });
   }
 
@@ -1242,43 +1514,37 @@ function updateKioskClock() {
     return;
   }
 
-  function setLegendItems(items = []) {
+  function setLegendItems(items = [], modalItems = items) {
     legendList.innerHTML = "";
     legendButtons.clear();
-    legendItemsAll = Array.isArray(items) ? items.slice() : [];
+    legendItemsAll = Array.isArray(modalItems) ? modalItems.slice() : [];
+    renderLinesView(legendItemsAll);
+    const previewItems = Array.isArray(items) ? items.slice() : [];
     let rendered = 0;
-    for (const item of items) {
+    for (const item of previewItems) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "legend-item";
       btn.dataset.routeId = String(item.routeId || "");
+      const icon = item.icon || "";
+      const swatchClass = ensureColorClass(item.color || "#64748b", "background");
       btn.innerHTML = `
-        <span class="legend-swatch" style="background:${item.color || "#64748b"}"></span>
+        <span class="legend-swatch ${swatchClass}"></span>
+        ${icon ? `<img class="legend-icon" src="${icon}" alt="${String(item.mode || "route")}"/>` : ""}
         <span>${String(item.label || item.routeId || "")}</span>
       `;
       btn.onclick = () => onLegendRouteSelect(String(item.routeId || ""));
       legendButtons.set(String(item.routeId || ""), btn);
-      const labelText = String(item.label || item.routeId || "");
-      if (/^\s*(\d+|B1)\s*-/.test(labelText)) {
-        legendList.appendChild(btn);
-        rendered += 1;
-      }
+      legendList.appendChild(btn);
+      rendered += 1;
     }
-    if (rendered === 0) {
-      for (const item of items) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "legend-item";
-        btn.dataset.routeId = String(item.routeId || "");
-        btn.innerHTML = `
-          <span class="legend-swatch" style="background:${item.color || "#64748b"}"></span>
-          <span>${String(item.label || item.routeId || "")}</span>
-        `;
-        btn.onclick = () => onLegendRouteSelect(String(item.routeId || ""));
-        legendButtons.set(String(item.routeId || ""), btn);
-        legendList.appendChild(btn);
-        rendered += 1;
-      }
+    if (legendItemsAll.length > previewItems.length) {
+      const moreBtn = document.createElement("button");
+      moreBtn.type = "button";
+      moreBtn.className = "legend-item legend-more";
+      moreBtn.textContent = `More (${legendItemsAll.length - previewItems.length})`;
+      moreBtn.onclick = openLegendModal;
+      legendList.appendChild(moreBtn);
     }
     if (rendered === 0) {
       const empty = document.createElement("div");
@@ -1293,6 +1559,19 @@ function updateKioskClock() {
     const active = routeId ? String(routeId) : "";
     for (const [id, btn] of legendButtons.entries()) {
       btn.classList.toggle("active", id === active);
+    }
+    document.querySelectorAll(".lines-row").forEach((row) => {
+      row.classList.toggle("active", String(row.dataset.routeId || "") === active);
+    });
+    document.querySelectorAll(".lines-line-chip").forEach((chip) => {
+      chip.classList.toggle("active", String(chip.dataset.routeId || "") === active);
+    });
+    if (mapSurface.dataset.view === "lines" && active) {
+      const linesGrid = document.getElementById("kiosk-lines-grid");
+      const activeRow = linesGrid?.querySelector(`.lines-row[data-route-id="${active}"]`);
+      if (linesGrid && activeRow) {
+        activeRow.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+      }
     }
   }
 
@@ -1316,22 +1595,24 @@ function updateKioskClock() {
   }
 
   function resetUI() {
-    searchInput.value = "";
-    suggestions.style.display = "none";
+    const fromInputEl = document.getElementById("jronda-from-search");
+    const toInputEl = document.getElementById("jronda-to-search");
+    const fromSugEl = document.getElementById("jronda-from-suggestions");
+    const toSugEl = document.getElementById("jronda-to-suggestions");
+    if (fromInputEl) {
+      fromInputEl.value = "";
+      fromInputEl.dataset.stopId = "";
+    }
+    if (toInputEl) {
+      toInputEl.value = "";
+      toInputEl.dataset.stopId = "";
+    }
+    if (fromSugEl) fromSugEl.style.display = "none";
+    if (toSugEl) toSugEl.style.display = "none";
     if (routeSelect) {
       routeSelect.value = "";
       routeSelect.disabled = true;
     }
-    includeBus = true;
-    busFilterState.hoho = true;
-    busFilterState.rapid = true;
-    busFilterState.gokl = true;
-    busFilterState.other = true;
-    const busOperatorInputEl = document.getElementById("jronda-bus-operator");
-    if (busOperatorInputEl) {
-      busOperatorInputEl.value = t("bus_operator_all", "All");
-    }
-    onBusToggle({ ...busFilterState });
     setActivePreset("SMART");
     setStationInfo("");
     content.innerHTML = "";
@@ -1356,6 +1637,20 @@ function updateKioskClock() {
     updatePanel,
     setStationInfo,
     setStationDetailHtml,
+    setJourneyEndpoints: (fromStation, toStation) => {
+      const fromInputEl = document.getElementById("jronda-from-search");
+      const toInputEl = document.getElementById("jronda-to-search");
+      if (fromInputEl) {
+        fromInputEl.value = fromStation?.stop_name || "";
+        fromInputEl.dataset.stopId = fromStation?.stop_id ? String(fromStation.stop_id) : "";
+      }
+      if (toInputEl) {
+        toInputEl.value = toStation?.stop_name || "";
+        toInputEl.dataset.stopId = toStation?.stop_id ? String(toStation.stop_id) : "";
+      }
+      refillNearbyOptions(fromStation?.stop_id || "");
+      refreshLinesEndpointHighlight();
+    },
     setRailRouteOptions,
     resetUI,
     showToast,

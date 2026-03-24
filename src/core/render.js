@@ -12,12 +12,20 @@ import { hohoKL, hohoSel } from "../../data/hoho/hoho.js";
 import { rebuildSpatialIndexes, schemaStopIndex, geoStopIndex, poiSchemaIndex } from "./spatial-index.js";
 import { buildSchematicLayout as layoutBuildSchematic, projectGeo as layoutProjectGeo, fitVisibleNetworkToViewport as layoutFitVisibleNetwork, snapAngle45, normalizeStopName } from "./layout-engine.js";
 import { createSvgLayers, computeMapRenderProfile, drawRoutes, drawInterchanges, drawStopsAndPois } from "./map-renderer.js";
-import { polylinePathFromPoints, capsulePathFromStops, getOffsetPolyline } from "./render-utils.js";
-import { SVG_WIDTH, SVG_HEIGHT, MARGIN, NODE_SPACING, ROUTE_OFFSET, TRANSFER_RADIUS, MIN_MARGIN, TRANSFER_DISTANCE, SNAP_RADIUS, TOUCH_SELECT_RADIUS, GPS_SNAP_METERS, PRIMARY_RAIL_STROKE, SECONDARY_RAIL_STROKE, BUS_STROKE, CONNECTION_STROKE, INACTIVE_ROUTE_STROKE, ACTIVE_ROUTE_STROKE, INACTIVE_ROUTE_COLOR, CC_SEGMENT_LENGTH, CC_LANE_GAP, FLOATING_PANEL_IDLE_MS, FIXED_KIOSK_STOP_KEY } from "./render-config.js";
+import { polylinePathFromPoints, getOffsetPolyline } from "./render-utils.js";
+import { SVG_WIDTH, SVG_HEIGHT, MARGIN, NODE_SPACING, 
+  ROUTE_OFFSET, TRANSFER_RADIUS, MIN_MARGIN, TRANSFER_DISTANCE, 
+  SNAP_RADIUS, TOUCH_SELECT_RADIUS, GPS_SNAP_METERS, 
+  PRIMARY_RAIL_STROKE, SECONDARY_RAIL_STROKE, BUS_STROKE, CONNECTION_STROKE, 
+  INACTIVE_ROUTE_STROKE, ACTIVE_ROUTE_STROKE, INACTIVE_ROUTE_COLOR, 
+  CC_SEGMENT_LENGTH, CC_LANE_GAP, FLOATING_PANEL_IDLE_MS, FIXED_KIOSK_STOP_KEY } from "./render-config.js";
 import { mergeRailStops, normalizePoiList, assignPoiIds } from "./data-merger.js";
 import { emitToast, getPendingInitToasts, clearPendingInitToasts, translate, translatef } from "./toast-manager.js";
+import { subscribe } from "./ui-state.js";
 
 let svg = null;
+let runtimeSvgWidth = SVG_WIDTH;
+let runtimeSvgHeight = SVG_HEIGHT;
 let sharedTrackLayer = null;
 let routeLayer = null;
 let transferLayer = null;
@@ -25,6 +33,7 @@ let stopLayer = null;
 let poiLayer = null;
 let labelLayer = null;
 let interactionLayer = null;
+let gpsLayer = null;
 let startBadge = null;
 let endBadge = null;
 
@@ -40,19 +49,22 @@ function reportInitProgress(progress = 0, message = "") {
   }
 }
 
-export function init(svgElement) {
+
+
+export async function init(svgElement) {
   try {
     svg = svgElement;
     __coreDebug("render.init called", { allStations: allStations.length, routes: routes.size, poi: poiList.length });
     if (!svg) throw new Error('No SVG element provided to render.init()');
+    const parentRect = svg.parentElement?.getBoundingClientRect?.();
+    const measuredW = Math.max(640, Math.round(Number(parentRect?.width) || SVG_WIDTH));
+    const measuredH = Math.max(520, Math.round(Number(parentRect?.height) || SVG_HEIGHT));
+    runtimeSvgWidth = measuredW;
+    runtimeSvgHeight = measuredH;
+    svg.setAttribute("viewBox", `0 0 ${runtimeSvgWidth} ${runtimeSvgHeight}`);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
     reportInitProgress(0.05, "Initializing map render");
-
-
-  // Populate routes from allStations
-  // Already done at top level
-
-  // Create and attach SVG layers via module helper
-  ({
+({
     sharedTrackLayer,
     routeLayer,
     transferLayer,
@@ -60,10 +72,17 @@ export function init(svgElement) {
     poiLayer,
     labelLayer,
     interactionLayer,
+    gpsLayer
   } = createSvgLayers(svg));
 
+  // Ensure GPS layer renders above rail/bus
+  gpsLayer.style.zIndex = '10';
+  routeLayer.style.zIndex = '1';
+  stopLayer.style.zIndex = '5';
+  interactionLayer.style.zIndex = '20';
+
+
   reportInitProgress(0.25, "SVG layers attached");
-  __coreDebug('render.init stage', 'layers attached');
 
   // Populate station name index
   for (const stop of allStations) {
@@ -84,13 +103,13 @@ export function init(svgElement) {
 
   // Geo projection
   for (const s of allStations) {
-    const [x, y] = layoutProjectGeo(s.stop_lat, s.stop_lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+    const [x, y] = layoutProjectGeo(s.stop_lat, s.stop_lon, runtimeSvgWidth, runtimeSvgHeight, MARGIN, allStations);
     s.xgeo = x;
     s.ygeo = y;
   }
 
   for (const p of poiList) {
-    const [x, y] = layoutProjectGeo(p.lat, p.lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+    const [x, y] = layoutProjectGeo(p.lat, p.lon, runtimeSvgWidth, runtimeSvgHeight, MARGIN, allStations);
     p.xgeo = x;
     p.ygeo = y;
   }
@@ -99,17 +118,20 @@ export function init(svgElement) {
   __coreDebug('render.init stage', 'geo projection computed');
 
   // Now safe to run all render init code
-  const layoutInfo = layoutBuildSchematic(allStations, routes, getRouteMode, { svgWidth: SVG_WIDTH, svgHeight: SVG_HEIGHT, margin: MARGIN });
-  if (layoutInfo?.centroidLat != null && layoutInfo?.centroidLon != null) {
-    emitToast(
-      translatef(
-        "layout_centroid_info",
-        "Map layout: centroid ({lat}, {lon}) with trunk-first directional schematic",
-        { lat: layoutInfo.centroidLat.toFixed(4), lon: layoutInfo.centroidLon.toFixed(4) }
-      ),
-      "info"
-    );
+  const layoutInfo = await layoutBuildSchematic(allStations, routes, getRouteMode, { svgWidth: runtimeSvgWidth, svgHeight: runtimeSvgHeight, margin: MARGIN });
+  console.log('layoutInfo', layoutInfo);
+  
+  // DEBUG: Export layout for inspection
+  if (layoutInfo.success) {
+    console.log('Layout debug stats:', {
+      totalNodes: layoutInfo.nodes.length,
+      hubs: layoutInfo.nodes.filter(n => n.type?.includes('hub')).length,
+      stations: layoutInfo.nodes.filter(n => n.type === 'station').length
+    });
+  } else {
+    console.error('Layout failed:', layoutInfo);
   }
+  
   buildPoiLayout();
 
   __coreDebug('render.init stage', 'layout built and POI layout done');
@@ -167,6 +189,140 @@ export function init(svgElement) {
     transferLineRegistry,
   });
 
+  // Layout debug removed
+  
+  // Guard against NaN layout
+  if (!layoutInfo?.success || !mapVisibleStops.length) {
+    console.warn('Skipping drawStopsAndPois: Invalid layoutInfo or empty stops');
+  } else {
+  drawStopsAndPois({
+
+    mapVisibleStops,
+    stopLayer,
+    interactionLayer,
+    labelLayer,
+    poiLayer,
+    poiList,
+    stopElementRegistry,
+    poiElementRegistry,
+    getRouteMode,
+    TOUCH_SELECT_RADIUS,
+    TRANSFER_RADIUS,
+    getPoiCategoryStyle,
+    terminalStopIds,
+  });
+
+  // End guard
+  } 
+
+  // Create endpoint badges
+  startBadge = createEndpointBadge("S", "#0D6EFD");
+  endBadge = createEndpointBadge("E", "#D63384");
+  svg.appendChild(startBadge.g);
+  svg.appendChild(endBadge.g);
+
+  const profile = computeMapRenderProfile(mapVisibleStops);
+  
+  __coreDebug("render.init completed", {
+    routeLayerCount: routeLayer?.children?.length ?? 0,
+    stopLayerCount: stopLayer?.children?.length ?? 0,
+    poiLayerCount: poiLayer?.children?.length ?? 0,
+    interactionLayerCount: interactionLayer?.children?.length ?? 0,
+  });
+  
+  // DIAGNOSTIC: Log layer contents post-draw
+  console.log('MAP LAYERS DEBUG:', {
+    routeLayerCount: routeLayer.children.length,
+    stopLayerCount: stopLayer.children.length,
+    poiLayerCount: poiLayer.children.length,
+    firstRoutePath: routeLayer.children[0]?.tagName + (routeLayer.children[0]?.getAttribute('d')?.slice(0, 50) || ''),
+    firstPoi: poiLayer.children[0]?.tagName || 'EMPTY',
+    profile
+  });
+  window.jrondaRenderDebug = window.jrondaRenderDebug || {};
+  window.jrondaRenderDebug.layers = {
+    route: routeLayer.children.length,
+    stop: stopLayer.children.length,
+    poi: poiLayer.children.length
+  };
+  window.svg = svg;
+  window.routeLineRegistry = routeLineRegistry;
+  window.stopElementRegistry = stopElementRegistry;
+  window.stationById = stationById;
+
+  __coreDebug('render mapVisibleStops bounds', profile);
+
+  if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('jronda:render-ready'));
+    reportInitProgress(1, "Map render complete");
+  }
+
+  window.renderFromState = renderFromState;
+  if (typeof subscribe === 'function') {
+    const unsubscribeRender = subscribe(renderFromState);
+    window.renderUnsubscribe = unsubscribeRender;
+  }
+  window.jrondaRenderDebug = {
+    ...window.jrondaRenderDebug,
+    routeLayerCount: routeLayer.children.length,
+    stopLayerCount: stopLayer.children.length,
+    profile
+  };
+
+  // ... rest of init calls ...
+  }
+  catch (err) { 
+    console.error('Error during render.init:', err);
+  }
+}
+
+function redrawBaseLayers() {
+  if (!routeLayer || !transferLayer || !stopLayer || !poiLayer || !labelLayer || !interactionLayer) return;
+  routeLayer.replaceChildren();
+  transferLayer.replaceChildren();
+  stopLayer.replaceChildren();
+  poiLayer.replaceChildren();
+  labelLayer.replaceChildren();
+  interactionLayer.replaceChildren();
+
+  routeLineRegistry.clear();
+  stopElementRegistry.clear();
+  transferLineRegistry.length = 0;
+  poiElementRegistry.length = 0;
+
+  drawRoutes({
+    routes,
+    routeDisplayStops,
+    routeLayer,
+    routeLineRegistry,
+    getRouteColor,
+    getRouteMode,
+    getOffsetPolyline,
+    getRouteStopPoint,
+    getSegmentOffset,
+    makeSegmentKey,
+    isCcRailRouteId,
+    isCcRailStop,
+    polylinePathFromPoints,
+    PRIMARY_RAIL_STROKE,
+    SECONDARY_RAIL_STROKE,
+    BUS_STROKE,
+    routeLayerWeight,
+    busLoopRenderCache,
+  });
+
+  drawInterchanges({
+    interchangeCandidates,
+    schemaStopIndex,
+    transferLayer,
+    SCHEMA_BUCKET_SIZE,
+    getNearbyFromIndex,
+    getRouteMode,
+    TRANSFER_DISTANCE,
+    CONNECTION_STROKE,
+    transferLineRegistry,
+  });
+
   drawStopsAndPois({
     mapVisibleStops,
     stopLayer,
@@ -183,41 +339,172 @@ export function init(svgElement) {
     terminalStopIds,
   });
 
-  // Create endpoint badges
-  startBadge = createEndpointBadge("S", "#0D6EFD");
-  endBadge = createEndpointBadge("E", "#D63384");
-  svg.appendChild(startBadge.g);
-  svg.appendChild(endBadge.g);
+  window.svg = svg;
+  window.routeLineRegistry = routeLineRegistry;
+  window.stopElementRegistry = stopElementRegistry;
+  window.stationById = stationById;
+}
 
-  __coreDebug("render.init completed", {
-    routeLayerCount: routeLayer?.children?.length ?? 0,
-    stopLayerCount: stopLayer?.children?.length ?? 0,
-    poiLayerCount: poiLayer?.children?.length ?? 0,
-    interactionLayerCount: interactionLayer?.children?.length ?? 0,
-  });
+export function renderFromState(state) {
+  if (!svg) return;
+  console.log("RENDER", state);
 
-  if (typeof window !== 'undefined' && typeof window.CustomEvent === 'function') {
-    window.dispatchEvent(new CustomEvent('jronda:render-ready'));
-    reportInitProgress(1, "Map render complete");
-  }
+  redrawBaseLayers();
 
-  const profile = computeMapRenderProfile(mapVisibleStops);
-  __coreDebug('render mapVisibleStops bounds', profile);
-  window.jrondaRenderDebug = { routeLayerCount: routeLayer.children.length, stopLayerCount: stopLayer.children.length, profile };
+  const ui = state?.ui && typeof state.ui === "object" ? state.ui : {};
+  const selectedLine = ui.selectedLine ?? state?.selectedLine ?? null;
+  const displayMode = ui.displayMode ?? state?.displayMode ?? "ALL";
+  const busVisibility = ui.busVisibility ?? state?.busVisibility ?? true;
+  const startStopId = ui.from ?? state?.from ?? null;
+  const endStopId = ui.to ?? state?.to ?? null;
+  const selectedRoute = ui.selectedRoute ?? state?.selectedRoute ?? null;
 
-  // ... rest of init calls ...
-  }
-  catch (err) {
-    console.error('render.init error', err);
-    throw err;
+  setDisplayModeFilter(displayMode);
+  setBusVisibility(busVisibility);
+  setRailCategoryFilter(null);
+  setRailRouteFilter(selectedLine);
+  setRouteEndpoints(startStopId, endStopId);
+
+  if (selectedRoute && Array.isArray(selectedRoute.path) && selectedRoute.path.length >= 2) {
+    drawRoute(selectedRoute);
+  } else {
+    if (activeRouteOverlay) {
+      activeRouteOverlay.remove();
+      activeRouteOverlay = null;
+    }
+    applyLayerVisibility();
+    refreshEndpointBadges();
   }
 }
 
-const mergedRail = mergeRailStops(rail, stations);
-const allStations = [...hohoKL, ...hohoSel, ...goKL, ...rapidbus, ...mergedRail];
-const poiList = assignPoiIds(normalizePoiList(poiRaw));
-const stationById = new Map(allStations.map((s) => [String(s.stop_id), s]));
+const ETS_ROUTE_ID = "ETS";
+const EXCLUDED_NON_CANONICAL_RAIL_IDS = new Set(["100_47300", "100_9000", "SH", "ST", "ERT"]);
+const KLANG_VALLEY_BOUNDS = {
+  minLat: 2.6,
+  maxLat: 3.5,
+  minLon: 101.2,
+  maxLon: 102.1,
+};
+
+function inKlangValley(lat, lon) {
+  const la = Number(lat);
+  const lo = Number(lon);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return false;
+  return (
+    la >= KLANG_VALLEY_BOUNDS.minLat &&
+    la <= KLANG_VALLEY_BOUNDS.maxLat &&
+    lo >= KLANG_VALLEY_BOUNDS.minLon &&
+    lo <= KLANG_VALLEY_BOUNDS.maxLon
+  );
+}
+
+const etsStopIds = new Set(
+  (rail || [])
+    .filter((s) => String(s.route_id) === ETS_ROUTE_ID)
+    .map((s) => String(s.source_stop_id || s.stop_id || ""))
+    .filter(Boolean)
+);
+
+const railNoETS = (rail || []).filter((s) => {
+  const routeId = String(s.route_id || "");
+  return routeId !== ETS_ROUTE_ID && !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(routeId);
+});
+const stationsNoETS = (stations || []).filter((s) => {
+  const routeId = String(s.route_id || "");
+  return routeId !== ETS_ROUTE_ID && !EXCLUDED_NON_CANONICAL_RAIL_IDS.has(routeId);
+});
+const mergedRail = mergeRailStops(railNoETS, stationsNoETS);
+const allStationsRaw = [...hohoKL, ...hohoSel, ...goKL, ...rapidbus, ...mergedRail];
+const allStations = allStationsRaw.filter((s) => inKlangValley(s.stop_lat, s.stop_lon));
 const railRouteIds = new Set(mergedRail.map((s) => String(s.route_id)));
+
+function offsetLatLon(lat, lon, eastMeters, northMeters) {
+  const la = Number(lat);
+  const lo = Number(lon);
+  if (!Number.isFinite(la) || !Number.isFinite(lo)) return { lat: la, lon: lo };
+  const latRad = (la * Math.PI) / 180;
+  const dLat = northMeters / 111320;
+  const dLon = eastMeters / (111320 * Math.cos(latRad));
+  return { lat: la + dLat, lon: lo + dLon };
+}
+
+function buildSyntheticPois(stations, basePois) {
+  const out = [];
+  const atmCandidates = (basePois || []).filter((p) => String(p.category || "").toLowerCase() === "atm");
+  const railStops = (stations || []).filter((s) => getRouteMode(s.route_id) === "RAIL");
+
+  const ensureWithinBounds = (p) => inKlangValley(p.lat, p.lon);
+
+  for (const stop of railStops) {
+    const lat = Number(stop.stop_lat);
+    const lon = Number(stop.stop_lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+
+    const hasNearbyAtm = atmCandidates.some((p) => {
+      const d = haversineMeters(lat, lon, p.lat, p.lon);
+      return Number.isFinite(d) && d <= 800;
+    });
+    if (!hasNearbyAtm) {
+      const atmPos = offsetLatLon(lat, lon, 120, 0);
+      if (ensureWithinBounds(atmPos)) {
+        out.push({
+          id: `atm-${stop.stop_id}`,
+          section: "SERVICES",
+          name: `ATM near ${stop.stop_name || stop.stop_id}`,
+          category: "ATM",
+          longitude: atmPos.lon,
+          latitude: atmPos.lat,
+        });
+      }
+    }
+
+    const prayerPos = offsetLatLon(lat, lon, -90, 70);
+    const toiletPos = offsetLatLon(lat, lon, 90, 70);
+    const disabledPos = offsetLatLon(lat, lon, 0, -90);
+    const amenityPois = [
+      {
+        id: `amenity-prayer-${stop.stop_id}`,
+        section: "AMENITIES",
+        name: `Prayer Room (${stop.stop_name || stop.stop_id})`,
+        category: "Prayer Room",
+        longitude: prayerPos.lon,
+        latitude: prayerPos.lat,
+      },
+      {
+        id: `amenity-toilet-${stop.stop_id}`,
+        section: "AMENITIES",
+        name: `Toilet (${stop.stop_name || stop.stop_id})`,
+        category: "Toilet",
+        longitude: toiletPos.lon,
+        latitude: toiletPos.lat,
+      },
+      {
+        id: `amenity-disabled-toilet-${stop.stop_id}`,
+        section: "AMENITIES",
+        name: `Disabled Toilet (${stop.stop_name || stop.stop_id})`,
+        category: "Disabled Toilet",
+        longitude: disabledPos.lon,
+        latitude: disabledPos.lat,
+      },
+    ];
+    for (const p of amenityPois) {
+      if (ensureWithinBounds({ lat: p.latitude, lon: p.longitude })) out.push(p);
+    }
+  }
+
+  return out;
+}
+
+const basePoiList = normalizePoiList(poiRaw).filter((p) => inKlangValley(p.lat, p.lon));
+const syntheticPois = buildSyntheticPois(allStations, basePoiList);
+const poiList = assignPoiIds([...basePoiList, ...syntheticPois]);
+
+for (const s of allStations) {
+  const key = String(s.source_stop_id || s.stop_id || "");
+  if (etsStopIds.has(key)) s.accessETS = true;
+}
+
+const stationById = new Map(allStations.map((s) => [String(s.stop_id), s]));
 
 let routes = new Map();
 for (const s of allStations) {
@@ -883,7 +1170,7 @@ for (const [routeId, stops] of routes.entries()) {
 }
 
 function fitVisibleNetworkToViewport() {
-  const { scale, tx, ty } = layoutFitVisibleNetwork(mapVisibleStops, SVG_WIDTH, SVG_HEIGHT, MIN_MARGIN);
+  const { scale, tx, ty } = layoutFitVisibleNetwork(mapVisibleStops, runtimeSvgWidth, runtimeSvgHeight, MIN_MARGIN);
   for (const p of poiList) {
     if (!Number.isFinite(p.xschema) || !Number.isFinite(p.yschema)) continue;
     p.xschema = p.xschema * scale + tx;
@@ -1679,11 +1966,14 @@ function smoothPathFromStops(stops) {
 let activeTraceLine = null;
 let traceLastPoint = null;
 
-const stationTooltip = document.createElement("div");
+const stationTooltip = document.getElementById("station-tooltip") || document.createElement("div");
 stationTooltip.id = "station-tooltip";
+stationTooltip.classList.add("station-tooltip-base");
 let tooltipStopId = null;
 let floatingPanelTimer = null;
-document.body.appendChild(stationTooltip);
+if (!stationTooltip.parentNode) {
+  document.body.appendChild(stationTooltip);
+}
 
 function positionAndShowStationTooltip(clientX, clientY, maxTooltipHeight = 140) {
   stationTooltip.style.left = `${Math.min(window.innerWidth - 320, clientX + 16)}px`;
@@ -1800,12 +2090,10 @@ function buildStationDetailMarkup(stop, includeActions = true) {
   };
   const key = String(stop.stop_name || "").trim().toLowerCase();
   const siblings = stationNameIndex.get(key) || [stop];
-  const railRoutes = [];
-  const busRoutes = [];
+  const modeBadges = [];
   const railTimetableRows = [];
   const busTimetableRows = [];
-  const seenRail = new Set();
-  const seenBus = new Set();
+  const seenBadges = new Set();
   const seenRailTimetable = new Set();
   const nearbyPoi = findNearbyPoiForStop(stop, 1400, 4);
   const todayBucket = getTodayTimetableBucket();
@@ -1817,11 +2105,22 @@ function buildStationDetailMarkup(stop, includeActions = true) {
     const routeId = String(s.route_id);
     const routeLabel = getServiceLabel(s, getRouteMode(routeId));
     const mode = getRouteMode(routeId);
+    const category = String(s.category || mode || "").toUpperCase();
+    const badgeKey = `${mode}|${category}`;
+    if (!seenBadges.has(badgeKey)) {
+      seenBadges.add(badgeKey);
+      const badgeColor = getRouteColor(routeId, false, s.route_color ?? null).color;
+      const badgeIcon = mode === "RAIL"
+        ? (category === "KTM" ? "/src/img/train-panthograph.svg" : "/src/img/train-noPanthograph.svg")
+        : "/src/img/bus.svg";
+      modeBadges.push({
+        mode,
+        category: category || mode,
+        color: badgeColor || "#64748b",
+        icon: badgeIcon,
+      });
+    }
     if (mode === "RAIL") {
-      if (!seenRail.has(routeLabel)) {
-        seenRail.add(routeLabel);
-        railRoutes.push(routeLabel);
-      }
       const sourceStopId = resolveSourceStopId(s);
       const tKey = `${routeId}|${sourceStopId}`;
       if (!seenRailTimetable.has(tKey)) {
@@ -1846,9 +2145,7 @@ function buildStationDetailMarkup(stop, includeActions = true) {
           );
         }
       }
-    } else if (!seenBus.has(routeLabel)) {
-      seenBus.add(routeLabel);
-      busRoutes.push(routeLabel);
+    } else {
       const sourceStopId = resolveSourceStopId(s);
       const bTable = busTimetables?.[routeId]?.[sourceStopId];
       const bt = Array.isArray(bTable?.[todayBucket]) ? bTable[todayBucket] : [];
@@ -1903,11 +2200,19 @@ function buildStationDetailMarkup(stop, includeActions = true) {
       ${startOnly ? "" : `<button id="jronda-end-here" class="${endButtonClassName}" type="button" aria-label="${t("set_end_here", "Set end here")}" ${disabledStateAttributes}>${t("end_here", "End here")}</button>`}
     </div>
   ` : "";
+  const modeBadgesHtml = modeBadges.length
+    ? modeBadges.map((badge) => `
+      <span class="tooltip-mode-chip" title="${badge.mode}">
+        <img class="tooltip-mode-icon" src="${badge.icon}" alt="${badge.category}"/>
+        <span class="tooltip-mode-swatch" style="background:${badge.color}"></span>
+        <span class="tooltip-mode-text">${badge.category}</span>
+      </span>
+    `).join("")
+    : `<span class="tooltip-muted">${t("none", "None")}</span>`;
   const html = `
     <div class="tooltip-title">${stop.stop_name || stop.stop_id}</div>
+    <div class="tooltip-mode-row">${modeBadgesHtml}</div>
     <div class="tooltip-line">${t("primary_line", "Primary line")}: <b>${primaryLabel}</b> (${getRouteMode(stop.route_id)})</div>
-    <div class="tooltip-line">${t("rail_lines", "Rail lines")}: ${railRoutes.join(", ") || t("none", "None")}</div>
-    <div>${t("bus_lines", "Bus lines")}: ${busRoutes.join(", ") || t("none", "None")}</div>
     <div class="tooltip-section"><b>Rail timetable (${dayLabel})</b>:<br/>${railTimetableRows.length ? railTimetableRows.join("<div class='tooltip-divider'></div>") : "<span class='tooltip-muted'>No timetable data</span>"}</div>
     <div class="tooltip-section"><b>Bus timetable (${dayLabel})</b>:<br/>${busTimetableRows.length ? busTimetableRows.join("<div class='tooltip-divider'></div>") : "<span class='tooltip-muted'>No timetable data</span>"}</div>
     ${weekendOnly && !weekendActive ? `<div class="tooltip-warn">${t("hoho_weekend_only", "This HOHO route runs only on")} ${String(stop.route_id).toUpperCase().includes("SAT") ? t("saturday", "Saturday") : t("sunday", "Sunday")}.</div>` : ""}
@@ -2036,7 +2341,7 @@ function showGpsTooltip(clientX, clientY, advanced = false) {
         <button id="jronda-gps-set-station" class="tooltip-btn tooltip-btn-primary" type="button">${translate("set_kiosk_station", "Set kiosk station")}</button>
         <button id="jronda-gps-clear-station" class="tooltip-btn tooltip-btn-secondary" type="button">${translate("clear_fixed_station", "Clear fixed station")}</button>
       </div>
-    ` : `<div class="tooltip-hint">${translate("tap_here_again", "Tap \"You are here\" again for station lock controls.")}</div>`}
+    ` : `<div class="tooltip-hint">${translate("tap_here_again", "Double tap and hold \"You are here\" for kiosk setup.")}</div>`}
   `;
   positionAndShowStationTooltip(clientX, clientY, 180);
   armFloatingPanelTimeout();
@@ -2115,13 +2420,15 @@ async function showGpsSetupPanel(clientX, clientY) {
     </div>
     <div class="tooltip-actions">
       <button id="jronda-gps-apply-station" class="tooltip-btn tooltip-btn-primary" type="button">${translate("set_to_this_station", "Set to this station")}</button>
+      <button id="jronda-gps-change-passkey" class="tooltip-btn tooltip-btn-secondary" type="button">${translate("change_passkey", "Change passkey")}</button>
     </div>
   `;
-  positionAndShowStationTooltip(clientX, clientY, 220);
+  positionAndShowStationTooltip(clientX, clientY, 240);
   armFloatingPanelTimeout();
 
   const stationSelectElement = document.getElementById("jronda-gps-station-select");
   const applyStationButton = document.getElementById("jronda-gps-apply-station");
+  const changePasskeyButton = document.getElementById("jronda-gps-change-passkey");
   if (!stationSelectElement || !applyStationButton) return;
 
   applyStationButton.onclick = () => {
@@ -2143,6 +2450,16 @@ async function showGpsSetupPanel(clientX, clientY) {
     }
     hideStationTooltip();
   };
+
+  if (changePasskeyButton) {
+    changePasskeyButton.onclick = async () => {
+      if (typeof window.jrondaChangeKioskPin === "function") {
+        await window.jrondaChangeKioskPin();
+      } else {
+        emitToast(translate("passkey_change_unavailable", "Passkey change is unavailable."), "warn");
+      }
+    };
+  }
 }
 
 function hideStationTooltip() {
@@ -2310,10 +2627,13 @@ function getBusOperator(routeId, category = "") {
 }
 
 let includeBusConfig = { hoho: true, gokl: true, rapid: true, other: true };
+let displayModeFilter = "ALL";
 
 function applyLayerVisibility() {
   for (const [routeId, meta] of routeLineRegistry.entries()) {
     let visible = true;
+    if (displayModeFilter === "RAIL" && meta.mode !== "RAIL") visible = false;
+    if (displayModeFilter === "BUS" && meta.mode === "RAIL") visible = false;
     if (meta.mode === "BUS") {
       const op = getBusOperator(routeId, meta.category);
       if (op === "HOHO") visible = includeBusConfig.hoho;
@@ -2369,6 +2689,8 @@ function applyLayerVisibility() {
   for (const entries of stopElementRegistry.values()) {
     for (const entry of entries) {
       let visible = true;
+      if (displayModeFilter === "RAIL" && entry.mode !== "RAIL") visible = false;
+      if (displayModeFilter === "BUS" && entry.mode === "RAIL") visible = false;
       if (entry.mode === "BUS") {
         const op = getBusOperator(entry.routeId, entry.category);
         if (op === "HOHO") visible = includeBusConfig.hoho;
@@ -2432,6 +2754,13 @@ export function setBusVisibility(config) {
   refreshEndpointBadges();
 }
 
+export function setDisplayModeFilter(mode = "ALL") {
+  const normalized = String(mode || "ALL").toUpperCase();
+  displayModeFilter = ["ALL", "RAIL", "BUS"].includes(normalized) ? normalized : "ALL";
+  applyLayerVisibility();
+  refreshEndpointBadges();
+}
+
 export function setRailRouteFilter(routeId) {
   selectedRailRouteId = routeId ? String(routeId) : null;
   applyLayerVisibility();
@@ -2448,6 +2777,7 @@ export function setRailCategoryFilter(category) {
 export function resetRenderState() {
   selectedRailRouteId = null;
   selectedRailCategory = null;
+  displayModeFilter = "ALL";
   startStopBadgeId = null;
   endStopBadgeId = null;
   if (activeRouteOverlay) {
@@ -2507,7 +2837,7 @@ function findNearestStopByGeo(lat, lon) {
   let nearest = null;
   let minMeters = Infinity;
 
-  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, runtimeSvgWidth, runtimeSvgHeight, MARGIN, allStations);
   const nearby = getNearbyFromIndex(geoStopIndex, xgeo, ygeo, GEO_BUCKET_SIZE);
   const candidates = nearby.length ? nearby : mapVisibleStops;
 
@@ -2530,7 +2860,7 @@ function findNearestStopByGeo(lat, lon) {
 
 // ---- Project GPS directly into schematic space ----
 function projectGpsToSchema(lat, lon) {
-  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, SVG_WIDTH, SVG_HEIGHT, MARGIN, allStations);
+  const [xgeo, ygeo] = layoutProjectGeo(lat, lon, runtimeSvgWidth, runtimeSvgHeight, MARGIN, allStations);
 
   // Find closest station in geo space
   let nearest = null;
@@ -2568,27 +2898,31 @@ function drawUserMarker() {
   const lat = userLocation.lat ?? userLocation.stop_lat;
   const lon = userLocation.lon ?? userLocation.stop_lon;
 
-  const { nearest: geoStop, minMeters } =
-    findNearestStopByGeo(lat, lon);
+  const { nearest: geoStop } = findNearestStopByGeo(lat, lon);
 
   const [px, py] = projectGpsToSchema(lat, lon);
 
   const snapped =
-    geoStop && minMeters <= GPS_SNAP_METERS
+    geoStop && Number.isFinite(geoStop.xschema) && Number.isFinite(geoStop.yschema)
       ? geoStop
       : findNearestStopBySchema(px, py);
 
   const x = snapped ? snapped.xschema : px;
   const y = snapped ? snapped.yschema : py;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return;
+  }
 
+  const gpsParent = gpsLayer || svg;
   if (!userHalo) {
     userHalo = document.createElementNS(svg.namespaceURI, "circle");
-    svg.appendChild(userHalo);
+    userHalo.classList.add("jronda-gps-ripple");
+    gpsParent.appendChild(userHalo);
   }
 
   if (!userDot) {
     userDot = document.createElementNS(svg.namespaceURI, "circle");
-    svg.appendChild(userDot);
+    gpsParent.appendChild(userDot);
   }
 
   userHalo.setAttribute("cx", x);
@@ -2698,15 +3032,23 @@ export function drawRoute(route) {
       }
     } else {
       polyline.setAttribute("stroke", INACTIVE_ROUTE_COLOR);
-      polyline.setAttribute("opacity", "1");
+      polyline.setAttribute("opacity", "0.3");
       polyline.setAttribute("stroke-width", String(INACTIVE_ROUTE_STROKE));
       if (casing) {
         casing.setAttribute("stroke", "#F3F4F6");
-        casing.setAttribute("opacity", "1");
+        casing.setAttribute("opacity", "0.3");
         casing.setAttribute("stroke-width", String(INACTIVE_ROUTE_STROKE + 1));
       }
     }
   }
+
+  // Rail always above bus: adjust z-index on SVG groups
+  routeLayer.children.forEach((el, idx) => {
+    const routeId = el.dataset.routeId;
+    if (!routeId) return;
+    const mode = getRouteMode(routeId);
+    el.style.zIndex = mode === 'RAIL' ? '2' : '1';
+  });
 
   for (const [stopId, elements] of stopElementRegistry.entries()) {
     const isSelected = selectedStopIds.has(String(stopId));
@@ -2719,6 +3061,7 @@ export function drawRoute(route) {
 
   const overlay = document.createElementNS(svg.namespaceURI, "g");
   overlay.setAttribute("id", "active-route-overlay");
+  overlay.style.zIndex = '15'; // Above rail/bus
 
   let chunk = [routeStops[0]];
   for (let i = 1; i < routeStops.length; i++) {

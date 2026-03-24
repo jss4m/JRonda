@@ -18,6 +18,10 @@ if (!fs.existsSync(railStopsFile)) {
 }
 
 const stopsArray = JSON.parse(fs.readFileSync(railStopsFile, "utf-8"));
+const ROUTE_ALIAS = {
+  KTM1: "KA15_KD19",
+  KTM2: "KC05_KB18",
+};
 
 let js = "export const rail = [\n";
 for (const stop of stopsArray) {
@@ -64,12 +68,6 @@ function loadExportedArray(filePath, exportName) {
   return Array.isArray(data) ? data : [];
 }
 
-function coordKey(lat, lon) {
-  const la = Number(lat);
-  const lo = Number(lon);
-  return `${la.toFixed(6)}|${lo.toFixed(6)}`;
-}
-
 function buildDuplicants(stops) {
   const byCoord = new Map();
   for (const s of stops) {
@@ -104,34 +102,80 @@ function buildDuplicants(stops) {
   return out;
 }
 
-const railCoordSet = new Set(
-  stopsArray.map((s) => coordKey(s.stop_lat, s.stop_lon))
+const primaryRouteSourceSet = new Set(
+  stopsArray.map((s) => {
+    const routeId = String(s.route_id || "").trim();
+    const sourceId = String(s.source_stop_id || s.stop_id || "").trim();
+    return `${routeId}|${sourceId}`;
+  })
 );
 
 const legacyStations = loadExportedArray(legacyStationsFile, "stations");
+
+function inferSourceStopId(record) {
+  const explicit = String(record?.source_stop_id || "").trim();
+  if (explicit) return explicit;
+  const stopId = String(record?.stop_id || "").trim();
+  const routeId = String(record?.route_id || "").trim();
+  if (!stopId) return null;
+  const routePrefix = routeId ? `${routeId}_` : "";
+  if (routePrefix && stopId.startsWith(routePrefix)) {
+    const rest = stopId.slice(routePrefix.length).trim();
+    return rest || stopId;
+  }
+  const sep = stopId.indexOf("_");
+  if (sep > 0 && sep < stopId.length - 1) return stopId.slice(sep + 1);
+  return stopId;
+}
+
+function inferSeq(record, index = 0) {
+  const raw = Number(record?.seq);
+  if (Number.isFinite(raw) && raw > 0) return raw;
+  const stopId = String(record?.stop_id || "");
+  const suffix = stopId.split("_").pop() || "";
+  if (/^\d+$/.test(suffix)) return Number(suffix);
+  return index + 1;
+}
+
 const fallbackStations = legacyStations
   .filter((s) => Number.isFinite(Number(s.stop_lat)) && Number.isFinite(Number(s.stop_lon)))
-  .filter((s) => !railCoordSet.has(coordKey(s.stop_lat, s.stop_lon)))
-  .map((s) => ({
+  .map((s, idx) => {
+    const rawRoute = String(s.route_id || "").trim();
+    const route_id = ROUTE_ALIAS[rawRoute] || rawRoute;
+    const source_stop_id = inferSourceStopId(s);
+    return {
     stop_id: String(s.stop_id || ""),
-    source_stop_id: s.source_stop_id ? String(s.source_stop_id) : null,
+    source_stop_id,
     stop_name: String(s.stop_name || s.stop_id || ""),
     stop_lat: Number(s.stop_lat),
     stop_lon: Number(s.stop_lon),
     category: String(s.category || "RAIL"),
-    route_id: String(s.route_id || ""),
+    route_id,
     route_color: s.route_color ? String(s.route_color) : null,
     route_short_name: s.route_short_name ? String(s.route_short_name) : null,
     route_long_name: s.route_long_name ? String(s.route_long_name) : null,
     route_public_name: s.route_public_name ? String(s.route_public_name) : null,
-    seq: Number(s.seq || 0),
+    seq: inferSeq(s, idx),
     isLoop: Boolean(s.isLoop),
     isOKU: s.isOKU !== false,
     status: String(s.status || "valid"),
     search: s.search ? String(s.search) : null,
     isInterchange: Boolean(s.isInterchange),
     isConnecting: Boolean(s.isConnecting),
-  }));
+  };
+  })
+  .filter((s) => {
+    const sourceId = String(s.source_stop_id || s.stop_id || "").trim();
+    const key = `${String(s.route_id || "").trim()}|${sourceId}`;
+    return !primaryRouteSourceSet.has(key);
+  })
+  .sort((left, right) => {
+    const routeCmp = String(left.route_id || "").localeCompare(String(right.route_id || ""));
+    if (routeCmp !== 0) return routeCmp;
+    const seqCmp = Number(left.seq || 0) - Number(right.seq || 0);
+    if (seqCmp !== 0) return seqCmp;
+    return String(left.stop_id || "").localeCompare(String(right.stop_id || ""));
+  });
 
 let fallbackJs = "export const stations = [\n";
 for (const stop of fallbackStations) {

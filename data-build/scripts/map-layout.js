@@ -1,27 +1,38 @@
 /**
- * Map Layout Engine - Implements exact task spec
+ * Map Layout Engine - Full Transit Schematic per Spec
  * Generates layout_nodes.json + layout_edges.json
- * Run: node data-build/scripts/map-layout.js
+ * Run: node data-build/scripts/run-layout.js
+ * v1: Full rail + basic bus attachment. Corridors/rules v2.
  */
 
 import { readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 
 const normalizedDir = path.join('data-build', 'normalized');
+
+// Load data
 const railStopsData = JSON.parse(readFileSync(path.join(normalizedDir, 'rail_stops.json'), 'utf8'));
 const railRoutesData = JSON.parse(readFileSync(path.join(normalizedDir, 'rail_routes.json'), 'utf8'));
-// Bus data separate (rapidbus, hoho, gokl)
-const busStopsData = [];
+const busStopsData = JSON.parse(readFileSync(path.join(normalizedDir, 'bus_stops.json'), 'utf8'));
+const busRoutesData = JSON.parse(readFileSync(path.join(normalizedDir, 'bus_routes.json'), 'utf8'));
 
-const MAX_HUB_DISTANCE_METERS = 100;
-const HUB_DISTANCE_PX = 120;
+// Constants (tune as needed)
+const MAX_HUB_DISTANCE_METERS_RAIL = 100;
+const MAX_HUB_DISTANCE_METERS_BUS = 60;
+const HUB_DISTANCE_PX_RAIL = 120;
+const HUB_DISTANCE_PX_BUS = 70;
 const MIN_HUB_DISTANCE_PX = 80;
-const MIN_STATION_DISTANCE_PX = 40;
+const MIN_SEGMENT_PX = 40;
 const LANE_SPACING_PX = 8;
 const VIEWPORT_PADDING_PX = 40;
-const CARDINAL_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315].map(deg => deg * Math.PI / 180);
+const INTERCHANGE_MAX_METERS = 300;
+const CORRIDOR_OVERLAP_THRESHOLD = 0.6;
+const TERMINUS_EXTENSION_PX = 100;
+const MIN_BUS_RAIL_DISTANCE_PX = 50;
+const LABEL_OFFSET_PX = 20;
+const MAX_LINES_PER_DIRECTION = 3;
+const CARDINAL_ANGLES = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
 
-// Haversine distance (already in layout-engine.js)
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const toRad = v => v * Math.PI / 180;
   const R = 6371000;
@@ -31,238 +42,19 @@ function haversineMeters(lat1, lon1, lat2, lon2) {
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// 1. Build Physical Hubs (merge nearby stations <100m)
-function buildHubs(stationGroups) {
-  const n = stationGroups.length;
-  const parent = Array.from({ length: n }, (_, i) => i);
-
-  function find(x) {
-    let p = x;
-    while (parent[p] !== p) p = parent[p];
-    while (parent[x] !== x) {
-      const next = parent[x];
-      parent[x] = p;
-      x = next;
-    }
-    return p;
-  }
-
-  function union(a, b) {
-    const ra = find(a);
-    const rb = find(b);
-    if (ra !== rb) parent[rb] = ra;
-  }
-
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      const a = stationGroups[i];
-      const b = stationGroups[j];
-      const d = haversineMeters(a.lat, a.lon, b.lat, b.lon);
-      if (d < MAX_HUB_DISTANCE_METERS) {
-        union(i, j);
-      }
-    }
-  }
-
-  const hubMap = new Map();
-  for (let i = 0; i < n; i++) {
-    const root = find(i);
-    if (!hubMap.has(root)) hubMap.set(root, []);
-    hubMap.get(root).push(stationGroups[i]);
-  }
-
-  const hubs = [];
-  const stationToHub = new Map();
-  for (const groups of hubMap.values()) {
-    const avgLat = groups.reduce((sum, s) => sum + s.lat, 0) / groups.length;
-    const avgLon = groups.reduce((sum, s) => sum + s.lon, 0) / groups.length;
-    const hub = {
-      hub_id: `H${hubs.length}`,
-      stations: [],
-      lat: avgLat,
-      lon: avgLon,
-      routes: new Set(),
-      x: null,
-      y: null,
-    };
-    for (const g of groups) {
-      stationToHub.set(g.station_id, hub.hub_id);
-      for (const fullId of g.fullStopIds) hub.stations.push(fullId);
-      for (const routeId of g.routes) hub.routes.add(routeId);
-    }
-    hubs.push(hub);
-  }
-
-  return { hubs, stationToHub };
-}
-
-// 2. Convert station sequences to hub sequences
-function convertToHubSequences(routesData, stationToHub) {
-  const hubRoutes = [];
-  
-  routesData.forEach(route => {
-    const stops = route.stops
-      .map(s => s.stop_id)
-      .map(id => stationToHub.get(id))
-      .filter(hubId => hubId !== undefined);
-    const uniqueHubSeq = [];
-    for (const hubId of stops) {
-      if (uniqueHubSeq[uniqueHubSeq.length - 1] !== hubId) {
-        uniqueHubSeq.push(hubId);
-      }
-    }
-    
-    if (uniqueHubSeq.length > 1) {
-      hubRoutes.push({
-        route_id: route.route_id,
-        hub_sequence: uniqueHubSeq,
-        stop_sequence: route.stops.map(s => s.stop_id),
-      });
-    }
-  });
-  
-  return hubRoutes;
-}
-
-// 3. Detect route termini
-function detectTermini(hubRoutes, hubs) {
-  hubRoutes.forEach(route => {
-    if (route.hub_sequence?.length) {
-      route.start_terminus = route.hub_sequence[0];
-      route.end_terminus = route.hub_sequence[route.hub_sequence.length - 1];
-    }
-  });
-  
-  // Hub importance by unique routes
-  hubs.forEach(hub => {
-    const servingRoutes = new Set();
-    hubRoutes.forEach(route => {
-      if (route.hub_sequence?.includes(hub.hub_id)) {
-        servingRoutes.add(route.route_id);
-      }
-    });
-    hub.hubScore = servingRoutes.size;
-  });
-  
-  return hubs.sort((a, b) => b.hubScore - a.hubScore);
-}
-
-// 4. Snap vector to cardinal angle
 function snapDirection(dx, dy) {
   const angle = Math.atan2(dy, dx);
-  const snapped = CARDINAL_ANGLES.reduce((best, cand) => {
-    return Math.abs(cand - angle) < Math.abs(best - angle) ? cand : best;
-  });
-  return snapped;
+  return CARDINAL_ANGLES.reduce((best, cand) => Math.abs(cand - angle) < Math.abs(best - angle) ? cand : best);
 }
 
-// 5. Main layout placement
-function placeHubs(hubRoutes, hubs) {
-  // Choose anchors: top 3-5 hubs
-  const anchors = hubs.slice(0, 5).map(h => h.hub_id);
-  const centerHub = hubs[0];
-  const centerIdx = hubs.findIndex(h => h.hub_id === centerHub.hub_id);
-  if (centerIdx >= 0) {
-    hubs[centerIdx].x = 0;
-    hubs[centerIdx].y = 0;
-  }
-  
-  // Place routes directionally
-  const hubById = new Map(hubs.map(h => [h.hub_id, h]));
-
-  for (const route of hubRoutes) {
-    const startHub = hubById.get(route.start_terminus);
-    const endHub = hubById.get(route.end_terminus);
-    if (!startHub || !endHub) continue;
-    const dx = endHub.lon - startHub.lon;
-    const dy = endHub.lat - startHub.lat;
-    route.direction = snapDirection(dx, dy);
-  }
-
-  let placed = true;
-  let passes = 0;
-  while (placed && passes < 8) {
-    placed = false;
-    passes++;
-    for (const route of hubRoutes) {
-      for (let i = 1; i < route.hub_sequence.length; i++) {
-        const prevHubId = route.hub_sequence[i - 1];
-        const currHubId = route.hub_sequence[i];
-        const prevHub = hubById.get(prevHubId);
-        const currHub = hubById.get(currHubId);
-        if (!prevHub || !currHub) continue;
-        if (!Number.isFinite(prevHub.x) || !Number.isFinite(prevHub.y)) continue;
-        if (Number.isFinite(currHub.x) && Number.isFinite(currHub.y)) continue;
-
-        const geoDx = currHub.lon - prevHub.lon;
-        const geoDy = currHub.lat - prevHub.lat;
-        const theta = Number.isFinite(geoDx) && Number.isFinite(geoDy) && (geoDx !== 0 || geoDy !== 0)
-          ? snapDirection(geoDx, geoDy)
-          : route.direction;
-        currHub.x = prevHub.x + Math.cos(theta) * HUB_DISTANCE_PX;
-        currHub.y = prevHub.y + Math.sin(theta) * HUB_DISTANCE_PX;
-        placed = true;
-      }
-    }
-  }
-
-  // Enforce min hub distance by shifting downstream along route direction
-  for (const route of hubRoutes) {
-    for (let i = 1; i < route.hub_sequence.length; i++) {
-      const a = hubById.get(route.hub_sequence[i - 1]);
-      const b = hubById.get(route.hub_sequence[i]);
-      if (!a || !b) continue;
-      if (!Number.isFinite(a.x) || !Number.isFinite(b.x)) continue;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < MIN_HUB_DISTANCE_PX) {
-        const theta = route.direction || 0;
-        const shift = MIN_HUB_DISTANCE_PX - dist;
-        b.x = a.x + Math.cos(theta) * (dist + shift);
-        b.y = a.y + Math.sin(theta) * (dist + shift);
-      }
-    }
-  }
-  
-  return { hubs, hubRoutes };
+function snapAngle45(angle) {
+  return CARDINAL_ANGLES.reduce((best, cand) => Math.abs(cand - angle) < Math.abs(best - angle) ? cand : best);
 }
 
-// 6. Normalize + Output
-function normalizeLayout(hubs, svgWidth = 1000, svgHeight = 1000) {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  
-  hubs.forEach(hub => {
-    minX = Math.min(minX, hub.x || 0);
-    maxX = Math.max(maxX, hub.x || 0);
-    minY = Math.min(minY, hub.y || 0);
-    maxY = Math.max(maxY, hub.y || 0);
-  });
-  
-  const width = maxX - minX;
-  const height = maxY - minY;
-  const scaleX = (svgWidth - 2 * VIEWPORT_PADDING_PX) / Math.max(1, width);
-  const scaleY = (svgHeight - 2 * VIEWPORT_PADDING_PX) / Math.max(1, height);
-  const scale = Math.min(scaleX, scaleY);
-  
-  const cx = (svgWidth - width * scale) / 2 - minX * scale;
-  const cy = (svgHeight - height * scale) / 2 - minY * scale;
-  
-  hubs.forEach(hub => {
-    hub.x = (hub.x || 0) * scale + cx;
-    hub.y = (hub.y || 0) * scale + cy;
-  });
-  
-  return hubs;
-}
-
-// MAIN EXECUTION
-async function main() {
-  console.log('🚇 Building map layout...');
-  
+// Generic hub builder
+function buildHubs(stopsData, maxDistMeters, mode) {
   const stationGroupsMap = new Map();
-  const routeStopIdBySource = new Map();
-  for (const stop of railStopsData) {
+  for (const stop of stopsData) {
     const sourceId = String(stop.source_stop_id || stop.stop_id);
     if (!stationGroupsMap.has(sourceId)) {
       stationGroupsMap.set(sourceId, {
@@ -276,112 +68,521 @@ async function main() {
     const entry = stationGroupsMap.get(sourceId);
     entry.fullStopIds.push(String(stop.stop_id));
     if (stop.route_id) entry.routes.add(String(stop.route_id));
-    routeStopIdBySource.set(`${String(stop.route_id)}|${sourceId}`, String(stop.stop_id));
   }
   const stationGroups = Array.from(stationGroupsMap.values());
 
-  const { hubs, stationToHub } = buildHubs(stationGroups);
-  const railHubRoutes = convertToHubSequences(railRoutesData, stationToHub);
-  detectTermini(railHubRoutes, hubs);
-  const { hubs: placedHubs } = placeHubs(railHubRoutes, hubs);
-  const normalizedHubs = normalizeLayout(placedHubs);
-  
-  // Output: hubs → nodes (hub/station), routes → edges
-  const layoutNodes = [];
-  const layoutEdges = [];
+  // Union-find for merging
+  const n = stationGroups.length;
+  const parent = Array.from({length: n}, (_,i)=>i);
+  function find(x) {
+    if (parent[x] !== x) parent[x] = find(parent[x]);
+    return parent[x];
+  }
+  function union(a,b) {
+    parent[find(b)] = find(a);
+  }
+  for (let i = 0; i < n; i++) {
+    for (let j = i+1; j < n; j++) {
+      const d = haversineMeters(stationGroups[i].lat, stationGroups[i].lon, stationGroups[j].lat, stationGroups[j].lon);
+      if (d < maxDistMeters) union(i,j);
+    }
+  }
 
-  const hubById = new Map(normalizedHubs.map(h => [h.hub_id, h]));
-  
-  normalizedHubs.forEach(hub => {
-    layoutNodes.push({
-      id: hub.hub_id,
-      x: hub.x,
-      y: hub.y,
-      type: 'hub',
+  const hubMap = new Map();
+  for (let i=0; i<n; i++) {
+    const root = find(i);
+    if (!hubMap.has(root)) hubMap.set(root, []);
+    hubMap.get(root).push(stationGroups[i]);
+  }
+
+  const hubs = [];
+  const stationToHub = new Map();
+  for (const groups of hubMap.values()) {
+    const avgLat = groups.reduce((sum,s)=>sum + s.lat,0) / groups.length;
+    const avgLon = groups.reduce((sum,s)=>sum + s.lon,0) / groups.length;
+    const hub = {
+      hub_id: `H${hubs.length}_${mode}`,
       stations: [],
-      hubScore: hub.hubScore
-    });
-  });
+      lat: avgLat,
+      lon: avgLon,
+      routes: new Set(),
+      hubScore: 0,
+      x: null,
+      y: null,
+      mode,
+      nearestRailHubId: null, // for bus
+    };
+    for (const g of groups) {
+      for (const fullId of g.fullStopIds) {
+        stationToHub.set(fullId, hub.hub_id);
+        hub.stations.push(fullId);
+      }
+      for (const r of g.routes) hub.routes.add(r);
+    }
+    hubs.push(hub);
+  }
+  return {hubs, stationToHub};
+}
 
-  // Place stations along hub segments
-  const stationNodeById = new Map();
-  for (const route of railHubRoutes) {
-    const stopSeq = Array.isArray(route.stop_sequence) ? route.stop_sequence : [];
-    if (stopSeq.length < 2) continue;
-    let segStartIdx = 0;
-    for (let i = 1; i < stopSeq.length; i++) {
-      const prevStationId = stopSeq[i - 1];
-      const currStationId = stopSeq[i];
-      const prevHubId = stationToHub.get(prevStationId);
-      const currHubId = stationToHub.get(currStationId);
-      if (prevHubId !== currHubId) {
-        const hubA = hubById.get(prevHubId);
-        const hubB = hubById.get(currHubId);
-        const segmentStops = stopSeq.slice(segStartIdx, i + 1);
-        if (hubA && hubB && Number.isFinite(hubA.x) && Number.isFinite(hubB.x)) {
-          const count = segmentStops.length;
-          for (let s = 0; s < count; s++) {
-            const t = count > 1 ? s / (count - 1) : 0;
-            const x = hubA.x + (hubB.x - hubA.x) * t;
-            const y = hubA.y + (hubB.y - hubA.y) * t;
-            const sourceId = segmentStops[s];
-            const fullStopId = routeStopIdBySource.get(`${route.route_id}|${sourceId}`);
-            if (!fullStopId) continue;
-            stationNodeById.set(fullStopId, {
-              id: fullStopId,
-              x,
-              y,
-              type: 'station',
-            });
-          }
+// Hub scoring and sorting
+function computeHubScores(hubs, routesData) {
+  hubs.forEach(hub => {
+    const uniqueRoutes = new Set();
+    routesData.forEach(route => {
+      if (route.hub_sequence?.includes(hub.hub_id)) uniqueRoutes.add(route.route_id);
+    });
+    hub.hubScore = uniqueRoutes.size;
+  });
+  hubs.sort((a,b) => b.hubScore - a.hubScore);
+}
+
+// Initial radial placement
+function initialRadialPlacement(hubs) {
+  if (hubs.length === 0) return;
+  const origin = hubs[0];
+  origin.x = 0;
+  origin.y = 0;
+  const hubById = new Map(hubs.map(h => [h.hub_id, h]));
+  for (let i=1; i<hubs.length; i++) {
+    const hub = hubs[i];
+    const geoDx = hub.lon - origin.lon;
+    const geoDy = hub.lat - origin.lat;
+    const geoDist = haversineMeters(origin.lat, origin.lon, hub.lat, hub.lon);
+    const tier = Math.round(geoDist / 5000);
+    const layoutDist = tier * HUB_DISTANCE_PX_RAIL;
+    const angle = snapDirection(geoDx, geoDy);
+    hub.x = Math.cos(angle) * layoutDist;
+    hub.y = Math.sin(angle) * layoutDist;
+    hubById.set(hub.hub_id, hub);
+  }
+  return hubById;
+}
+
+// Iterative hub anti-collision push
+function hubPush(hubs, maxPasses = 20) {
+  let passes = 0;
+  let pushed = true;
+  while (pushed && passes < maxPasses) {
+    pushed = false;
+    for (let i = 0; i < hubs.length; i++) {
+      for (let j = i + 1; j < hubs.length; j++) {
+        const ha = hubs[i], hb = hubs[j];
+        const dx = hb.x - ha.x;
+        const dy = hb.y - ha.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist < MIN_HUB_DISTANCE_PX && dist > 0) {
+          const norm = dist;
+          const pushDist = (MIN_HUB_DISTANCE_PX - dist) / 2;
+          ha.x -= (dx / norm) * pushDist;
+          ha.y -= (dy / norm) * pushDist;
+          hb.x += (dx / norm) * pushDist;
+          hb.y += (dy / norm) * pushDist;
+          pushed = true;
         }
-        segStartIdx = i;
+      }
+    }
+    passes++;
+  }
+  console.log(`Hub push complete after ${passes} passes`);
+}
+
+// Route to hub sequences (current)
+function convertToHubSequences(routesData, stationToHub) {
+  // same as current
+  const hubRoutes = [];
+  routesData.forEach(route => {
+    const stops = route.stops.map(s => stationToHub.get(s.stop_id)).filter(Boolean);
+    const uniqueHubSeq = [];
+    stops.forEach(hubId => {
+      if (uniqueHubSeq[uniqueHubSeq.length - 1] !== hubId) uniqueHubSeq.push(hubId);
+    });
+    if (uniqueHubSeq.length > 1) {
+      hubRoutes.push({
+        route_id: route.route_id,
+        hub_sequence: uniqueHubSeq,
+        stop_sequence: route.stops.map(s => s.stop_id),
+        direction: null, // set later
+      });
+    }
+  });
+  return hubRoutes;
+}
+
+// Bus-rail connections
+function connectBusHubsToRail(busHubs, railHubs) {
+  const railHubById = new Map(railHubs.map(h => [h.hub_id, h]));
+  busHubs.forEach(bHub => {
+    let minDist = Infinity;
+    let nearest = null;
+    railHubs.forEach(rHub => {
+      const d = haversineMeters(bHub.lat, bHub.lon, rHub.lat, rHub.lon);
+      if (d < INTERCHANGE_MAX_METERS && d < minDist) {
+        minDist = d;
+        nearest = rHub;
+      }
+    });
+    if (nearest) {
+      bHub.nearestRailHubId = nearest.hub_id;
+      bHub.interchangeDist = minDist;
+    }
+  });
+}
+
+// Place bus hubs attached to rail
+function placeBusHubs(busHubs, railHubById) {
+  busHubs.forEach(bHub => {
+    if (!bHub.nearestRailHubId) return;
+    const rHub = railHubById.get(bHub.nearestRailHubId);
+    if (!rHub || !Number.isFinite(rHub.x)) return;
+    const geoDx = bHub.lon - rHub.lon;
+    const geoDy = bHub.lat - rHub.lat;
+    const angle = snapDirection(geoDx, geoDy);
+    bHub.x = rHub.x + Math.cos(angle) * HUB_DISTANCE_PX_BUS;
+    bHub.y = rHub.y + Math.sin(angle) * HUB_DISTANCE_PX_BUS;
+  });
+}
+
+function terminusCorrection(hubRoutes, hubById) {
+  const terminalUse = new Map();
+  for (const route of hubRoutes) {
+    if (!route.hub_sequence?.length) continue;
+    const firstId = route.hub_sequence[0];
+    const lastId = route.hub_sequence[route.hub_sequence.length - 1];
+    if (firstId && firstId !== lastId) {
+      terminalUse.set(lastId, (terminalUse.get(lastId) || 0) + 1);
+    }
+  }
+
+  for (const route of hubRoutes) {
+    const seq = route.hub_sequence || [];
+    if (seq.length < 2) continue;
+    const firstHub = hubById.get(seq[0]);
+    const lastHub = hubById.get(seq[seq.length - 1]);
+    if (!firstHub || !lastHub) continue;
+    if ((terminalUse.get(lastHub.hub_id) || 0) > 1) continue;
+    if (!Number.isFinite(firstHub.x) || !Number.isFinite(lastHub.x)) continue;
+
+    const geoDx = lastHub.lon - firstHub.lon;
+    const geoDy = lastHub.lat - firstHub.lat;
+    const angle = snapDirection(geoDx, geoDy);
+    lastHub.x += Math.cos(angle) * TERMINUS_EXTENSION_PX;
+    lastHub.y += Math.sin(angle) * TERMINUS_EXTENSION_PX;
+  }
+}
+
+function detectBusCorridors(busHubRoutes, overlapThreshold = CORRIDOR_OVERLAP_THRESHOLD) {
+  const corridors = [];
+  const used = new Set();
+  let counter = 1;
+
+  function stopSet(route) {
+    const ids = (route.stop_sequence || []).map(String);
+    return new Set(ids);
+  }
+
+  for (let i = 0; i < busHubRoutes.length; i++) {
+    const a = busHubRoutes[i];
+    if (used.has(a.route_id)) continue;
+    const aSet = stopSet(a);
+    for (let j = i + 1; j < busHubRoutes.length; j++) {
+      const b = busHubRoutes[j];
+      if (used.has(b.route_id)) continue;
+      const bSet = stopSet(b);
+      let shared = 0;
+      for (const id of aSet) if (bSet.has(id)) shared++;
+      const denom = Math.min(aSet.size || 1, bSet.size || 1);
+      const overlap = shared / denom;
+      if (overlap >= overlapThreshold) {
+        const mergedHubSeq = (a.hub_sequence.length >= b.hub_sequence.length ? a.hub_sequence : b.hub_sequence);
+        corridors.push({
+          corridor_id: `C${counter++}`,
+          routes: [a.route_id, b.route_id],
+          hub_sequence: mergedHubSeq.slice(),
+        });
+        used.add(a.route_id);
+        used.add(b.route_id);
+        break;
       }
     }
   }
 
-  // Ensure every stop gets a node (fallback to hub center)
-  for (const stop of railStopsData) {
-    const fullId = String(stop.stop_id);
-    if (stationNodeById.has(fullId)) continue;
-    const hubId = stationToHub.get(String(stop.source_stop_id || stop.stop_id));
+  const remaining = busHubRoutes.filter(r => !used.has(r.route_id));
+  return { corridors, remainingRoutes: remaining };
+}
+
+function applyBusCollisionRule(busHubs, railHubs) {
+  for (const bHub of busHubs) {
+    let nearest = null;
+    let minDist = Infinity;
+    for (const rHub of railHubs) {
+      if (!Number.isFinite(rHub.x) || !Number.isFinite(rHub.y)) continue;
+      const dx = bHub.x - rHub.x;
+      const dy = bHub.y - rHub.y;
+      const d = Math.hypot(dx, dy);
+      if (d < minDist) {
+        minDist = d;
+        nearest = rHub;
+      }
+    }
+    if (!nearest || !Number.isFinite(minDist)) continue;
+    if (minDist >= MIN_BUS_RAIL_DISTANCE_PX) continue;
+    const dx = bHub.x - nearest.x;
+    const dy = bHub.y - nearest.y;
+    const angle = snapDirection(dx, dy);
+    const shift = MIN_BUS_RAIL_DISTANCE_PX - minDist;
+    bHub.x += Math.cos(angle) * shift;
+    bHub.y += Math.sin(angle) * shift;
+  }
+}
+
+// Edge groups for lanes
+function buildEdgeGroups(hubRoutes, hubById) {
+  const edgeGroups = new Map(); // `${from}|${to}` -> {routes:[], count}
+  hubRoutes.forEach(route => {
+    const routeIds = Array.isArray(route.route_ids) ? route.route_ids : [route.route_id];
+    for (let i = 0; i < route.hub_sequence.length - 1; i++) {
+      const from = route.hub_sequence[i];
+      const to = route.hub_sequence[i + 1];
+      const key = `${from}|${to}`;
+      if (!edgeGroups.has(key)) edgeGroups.set(key, {routes: new Set(), count: 0});
+      routeIds.forEach(rid => edgeGroups.get(key).routes.add(rid));
+    }
+  });
+  // Convert to arrays
+  const groups = [];
+  for (const [key, g] of edgeGroups) {
+    g.route_ids = Array.from(g.routes);
+    g.count = g.route_ids.length;
+    g.from = key.split('|')[0];
+    g.to = key.split('|')[1];
+    [g.fromHub, g.toHub] = [hubById.get(g.from), hubById.get(g.to)];
+    groups.push(g);
+  }
+  return groups;
+}
+
+function collapseShortSegments(hubRoutes, hubById, minLenPx = MIN_SEGMENT_PX) {
+  for (const route of hubRoutes) {
+    const seq = route.hub_sequence || [];
+    if (seq.length < 3) continue;
+    const collapsed = [seq[0]];
+    for (let i = 1; i < seq.length; i++) {
+      const prevId = collapsed[collapsed.length - 1];
+      const currId = seq[i];
+      const a = hubById.get(prevId);
+      const b = hubById.get(currId);
+      if (!a || !b || !Number.isFinite(a.x) || !Number.isFinite(b.x)) {
+        collapsed.push(currId);
+        continue;
+      }
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      if (dist < minLenPx && i < seq.length - 1) {
+        continue;
+      }
+      collapsed.push(currId);
+    }
+    route.hub_sequence = collapsed;
+  }
+}
+
+// Station interpolation
+function placeStationsAlongEdges(routesData, stationToHub, hubById) {
+  const stationNodeById = new Map();
+  routesData.forEach(route => {
+    const stopSeq = route.stop_sequence || [];
+    let segStart = 0;
+    for (let i = 1; i <= stopSeq.length; i++) {
+      const prevStopId = stopSeq[i - 1];
+      const currStopId = stopSeq[i];
+      const prevHub = stationToHub.get(prevStopId);
+      const currHub = stationToHub.get(currStopId);
+      if (i === stopSeq.length || prevHub !== currHub) {
+        const segmentStops = stopSeq.slice(segStart, i);
+        if (prevHub && currHub && prevHub !== currHub && segmentStops.length > 0) {
+          const ha = hubById.get(prevHub);
+          const hb = hubById.get(currHub);
+          if (ha && hb) {
+            const count = segmentStops.length;
+            for (let s = 0; s < count; s++) {
+              const t = count > 1 ? s / (count - 1) : 0.5;
+              let x = ha.x + (hb.x - ha.x) * t;
+              let y = ha.y + (hb.y - ha.y) * t;
+              if (Math.abs(x - ha.x) < LABEL_OFFSET_PX && Math.abs(y - ha.y) < LABEL_OFFSET_PX) {
+                const nt = Math.min(1, t + 0.15);
+                x = ha.x + (hb.x - ha.x) * nt;
+                y = ha.y + (hb.y - ha.y) * nt;
+              }
+              if (Math.abs(x - hb.x) < LABEL_OFFSET_PX && Math.abs(y - hb.y) < LABEL_OFFSET_PX) {
+                const nt = Math.max(0, t - 0.15);
+                x = ha.x + (hb.x - ha.x) * nt;
+                y = ha.y + (hb.y - ha.y) * nt;
+              }
+              const fullStopId = segmentStops[s];
+              stationNodeById.set(fullStopId, {id: fullStopId, x, y, type: 'station'});
+            }
+          }
+        }
+        segStart = i;
+      }
+    }
+  });
+  // Fallback: place unplaced at hub centers (simplified)
+  return stationNodeById;
+}
+
+function applyReadabilityRules(layoutEdges, hubById) {
+  // Rule A: fan edges per hub by angle
+  const edgesByHub = new Map();
+  for (const e of layoutEdges) {
+    if (!edgesByHub.has(e.from)) edgesByHub.set(e.from, []);
+    edgesByHub.get(e.from).push(e);
+    if (!edgesByHub.has(e.to)) edgesByHub.set(e.to, []);
+    edgesByHub.get(e.to).push(e);
+  }
+
+  for (const [hubId, edges] of edgesByHub) {
     const hub = hubById.get(hubId);
-    if (hub) {
-      stationNodeById.set(fullId, {
-        id: fullId,
-        x: hub.x,
-        y: hub.y,
-        type: 'station',
+    if (!hub) continue;
+    const grouped = new Map();
+    for (const e of edges) {
+      const otherId = e.from === hubId ? e.to : e.from;
+      const other = hubById.get(otherId);
+      if (!other) continue;
+      const angle = snapAngle45(Math.atan2(other.y - hub.y, other.x - hub.x));
+      if (!grouped.has(angle)) grouped.set(angle, []);
+      grouped.get(angle).push(e);
+    }
+    for (const [angle, group] of grouped) {
+      if (group.length <= MAX_LINES_PER_DIRECTION) continue;
+      const centerIndex = (group.length - 1) / 2;
+      group.forEach((edge, idx) => {
+        edge.angle_offset = (idx - centerIndex) * (5 * Math.PI / 180);
+        edge.base_angle = angle;
       });
     }
   }
 
-  for (const node of stationNodeById.values()) {
-    layoutNodes.push(node);
+  // Rule C: crossing penalty - tag intersections
+  function segmentsIntersect(a, b, c, d) {
+    const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    const d1 = cross(a, b, c);
+    const d2 = cross(a, b, d);
+    const d3 = cross(c, d, a);
+    const d4 = cross(c, d, b);
+    return (d1 * d2 < 0 && d3 * d4 < 0);
   }
-  
-  railHubRoutes.forEach(route => {
-    for (let i = 0; i < route.hub_sequence.length - 1; i++) {
-      layoutEdges.push({
-        from: route.hub_sequence[i],
-        to: route.hub_sequence[i+1],
-        route_id: route.route_id,
-        type: 'rail'
-      });
+
+  for (let i = 0; i < layoutEdges.length; i++) {
+    const e1 = layoutEdges[i];
+    const a1 = hubById.get(e1.from);
+    const b1 = hubById.get(e1.to);
+    if (!a1 || !b1) continue;
+    for (let j = i + 1; j < layoutEdges.length; j++) {
+      const e2 = layoutEdges[j];
+      if (e1.from === e2.from || e1.from === e2.to || e1.to === e2.from || e1.to === e2.to) continue;
+      const a2 = hubById.get(e2.from);
+      const b2 = hubById.get(e2.to);
+      if (!a2 || !b2) continue;
+      if (segmentsIntersect(a1, b1, a2, b2)) {
+        e1.force_crossing_angle = 90;
+        e2.force_crossing_angle = 90;
+      }
+    }
+  }
+}
+
+
+// Normalize to viewport
+function normalizeLayout(nodes, svgWidth = 1000, svgHeight = 1000) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  nodes.forEach(n => {
+    if (Number.isFinite(n.x)) {
+      minX = Math.min(minX, n.x);
+      maxX = Math.max(maxX, n.x);
+      minY = Math.min(minY, n.y);
+      maxY = Math.max(maxY, n.y);
     }
   });
-  
-  // Bus corridors (simplified)
-  // TODO: integrate bus_stops.json when populated
-  // layoutNodes.push(...busNodes);
-  // layoutEdges.push(...busEdges);
-  
-  writeFileSync(path.join('data-build', 'normalized', 'layout_nodes.json'), JSON.stringify(layoutNodes, null, 2));
-  writeFileSync(path.join('data-build', 'normalized', 'layout_edges.json'), JSON.stringify(layoutEdges, null, 2));
-  
-  console.log(`✅ Layout complete: ${layoutNodes.length} nodes, ${layoutEdges.length} edges`);
-  console.log('Files: data-build/normalized/layout_*.json');
+  const width = Math.max(1, maxX - minX);
+  const height = Math.max(1, maxY - minY);
+  const scaleX = (svgWidth - 2 * VIEWPORT_PADDING_PX) / width;
+  const scaleY = (svgHeight - 2 * VIEWPORT_PADDING_PX) / height;
+  const scale = Math.min(scaleX, scaleY);
+  const cx = (svgWidth - width * scale) / 2 - minX * scale;
+  const cy = (svgHeight - height * scale) / 2 - minY * scale;
+  nodes.forEach(n => {
+    if (Number.isFinite(n.x) && Number.isFinite(n.y)) {
+      n.x = n.x * scale + cx;
+      n.y = n.y * scale + cy;
+    }
+  });
+}
+
+// MAIN
+async function main() {
+
+  // Rail
+  const {hubs: railHubs, stationToHub: railStationToHub} = buildHubs(railStopsData, MAX_HUB_DISTANCE_METERS_RAIL, 'rail');
+  const railHubRoutes = convertToHubSequences(railRoutesData, railStationToHub);
+  computeHubScores(railHubs, railHubRoutes);
+  const railHubById = initialRadialPlacement(railHubs);
+  hubPush(railHubs);
+  terminusCorrection(railHubRoutes, railHubById);
+  // Route directions
+  railHubRoutes.forEach(route => {
+    if (route.hub_sequence.length > 1) {
+      const start = railHubById.get(route.hub_sequence[0]);
+      const end = railHubById.get(route.hub_sequence[route.hub_sequence.length-1]);
+      if (start && end) route.direction = snapDirection(end.lon - start.lon, end.lat - start.lat);
+    }
+  });
+
+  // Bus
+  const {hubs: busHubs, stationToHub: busStationToHub} = buildHubs(busStopsData, MAX_HUB_DISTANCE_METERS_BUS, 'bus');
+  const busHubRoutes = convertToHubSequences(busRoutesData, busStationToHub);
+  computeHubScores(busHubs, busHubRoutes);
+  connectBusHubsToRail(busHubs, railHubs);
+  placeBusHubs(busHubs, railHubById);
+  applyBusCollisionRule(busHubs, railHubs);
+  hubPush([...railHubs, ...busHubs]); // joint push
+
+  // Edges (rail + bus)
+  const railEdgeGroups = buildEdgeGroups(railHubRoutes, railHubById);
+  const busHubById = new Map([...railHubById, ...busHubs.map(h => [h.hub_id, h])]);
+
+  collapseShortSegments(railHubRoutes, railHubById, MIN_SEGMENT_PX);
+  collapseShortSegments(busHubRoutes, busHubById, MIN_SEGMENT_PX);
+
+  const { corridors, remainingRoutes } = detectBusCorridors(busHubRoutes, CORRIDOR_OVERLAP_THRESHOLD);
+  const corridorRoutes = corridors.map(c => ({
+    route_id: c.corridor_id,
+    route_ids: c.routes,
+    hub_sequence: c.hub_sequence,
+    stop_sequence: [],
+  }));
+  const busEdgeGroups = buildEdgeGroups([...remainingRoutes, ...corridorRoutes], busHubById);
+
+  // Nodes
+  const layoutNodes = [...railHubs.map(h => ({...h, type: 'hub', radius: 12 + h.hubScore * 2})), // label space
+    ...busHubs.map(h => ({...h, type: 'bus-hub', radius: 8 + h.hubScore}))];
+
+  // Stations rail + bus
+const railStations = placeStationsAlongEdges(railHubRoutes, railStationToHub, railHubById);
+const busStations = placeStationsAlongEdges(busHubRoutes, busStationToHub, busHubById);
+  layoutNodes.push(...railStations.values(), ...busStations.values());
+
+  // Edges
+  const layoutEdges = [
+    ...railEdgeGroups.map(g => ({from: g.from, to: g.to, route_ids: g.route_ids, type: 'rail', lanes: g.count})),
+    ...busEdgeGroups.map(g => ({from: g.from, to: g.to, route_ids: g.route_ids, type: 'bus', lanes: g.count}))
+  ];
+
+  applyReadabilityRules(layoutEdges, busHubById);
+
+  normalizeLayout(layoutNodes);
+
+  writeFileSync(path.join(normalizedDir, 'layout_nodes.json'), JSON.stringify(layoutNodes, null, 2));
+  writeFileSync(path.join(normalizedDir, 'layout_edges.json'), JSON.stringify(layoutEdges, null, 2));
 }
 
 main().catch(console.error);
-

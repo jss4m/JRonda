@@ -47,10 +47,12 @@ function parseArgs(argv) {
     watch: false,
     intervalMin: 60,
     forceBuild: false,
+    silent: false,
   };
   for (const token of argv) {
     if (token === "--watch") args.watch = true;
     else if (token === "--force-build") args.forceBuild = true;
+    else if (token === "--silent") args.silent = true;
     else if (token.startsWith("--interval-min=")) {
       const n = Number(token.split("=")[1]);
       if (Number.isFinite(n) && n > 0) args.intervalMin = n;
@@ -136,6 +138,8 @@ function rebuildAll() {
 }
 
 async function runCycle(args) {
+  const log = args.silent ? () => {} : console.log.bind(console);
+  const warn = args.silent ? () => {} : console.warn.bind(console);
   ensureDir(RAW_GTFS_DIR);
   let changedAny = false;
 
@@ -144,21 +148,21 @@ async function runCycle(args) {
       const result = await updateOne(source);
       if (result.changed) {
         changedAny = true;
-        console.log(`[update-gtfs] updated: ${source.name}`);
+        log(`[update-gtfs] updated: ${source.name}`);
       } else {
-        console.log(`[update-gtfs] unchanged: ${source.name}`);
+        log(`[update-gtfs] unchanged: ${source.name}`);
       }
     } catch (err) {
-      console.warn(`[update-gtfs] failed: ${source.name} (${err.message})`);
+      warn(`[update-gtfs] failed: ${source.name} (${err.message})`);
     }
   }
 
   if (changedAny || args.forceBuild) {
-    console.log("[update-gtfs] rebuilding normalized outputs...");
+    log("[update-gtfs] rebuilding normalized outputs...");
     rebuildAll();
-    console.log("[update-gtfs] rebuild complete.");
+    log("[update-gtfs] rebuild complete.");
   } else {
-    console.log("[update-gtfs] no GTFS changes detected.");
+    log("[update-gtfs] no GTFS changes detected.");
   }
 }
 
