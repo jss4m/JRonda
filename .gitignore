@@ -16,3 +16,5 @@ debug-out.txt
 data-build/normalized/
 tests/*.tests.js
 projectStructure.txt
+profile-kiosk/
+usb-profile/

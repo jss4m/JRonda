@@ -101,6 +101,7 @@ export function createUI(config) {
   linesView.innerHTML = `<div id="kiosk-lines-grid"></div>`;
   const clockWidget = document.createElement("div");
   clockWidget.id = "kiosk-clock";
+  clockWidget.className = "w-72 max-w-72";
   clockWidget.setAttribute("aria-live", "off");
   clockWidget.innerHTML = `
     <div class="kiosk-clock-grid">
@@ -294,7 +295,7 @@ export function createUI(config) {
 
   const langSelect = document.createElement("select");
   langSelect.id = "jronda-language";
-  langSelect.className = "sr-control sr-language";
+  langSelect.className = "sr-control sr-language w-10";
   const langOptions = [
     ["en", "EN"],
     ["ms", "MS"],

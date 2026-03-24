@@ -5,7 +5,7 @@ REM Copy entire JRonda folder to USB root, double-click this bat
 setlocal enabledelayedexpansion
 set USB_ROOT=%~d0
 set PROJECT_DIR=%~dp0
-set URL=http://%COMPUTERNAME%:8080/
+set URL=http://localhost:8080/
 
 echo.
 echo ========================================
