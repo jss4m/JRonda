@@ -438,7 +438,15 @@ function calculateMetrics(path, stationMap, graph) {
   }
 
   const eta = Math.max(1, Math.min(1440, Math.round(etaMinutes)));
-  return { path, distance: Math.round(totalDistance), eta, transfers };
+  const rawDistance = Math.round(totalDistance);
+  const formattedDistance = formatDistance(rawDistance);
+  return { path, distance: rawDistance, formattedDistance, eta, transfers };
+}
+
+function formatDistance(meters) {
+  if (meters < 1000) return `${meters}m`;
+  return `${(meters / 1000).toFixed(1)}km`;
+
 }
 
 // ======= computeRoute =======

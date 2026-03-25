@@ -636,11 +636,12 @@ export function updateRoutes() {
   const state = window.UIState;
   if (!state.from || !state.to) return;
   
-  const routes = RoutingService.getRoutes(state.from, state.to, {
-    k: 3,
-    preset: currentPreset,
-    includeBus,
-  });
+    console.log('[DEBUG] updateRoutes:', {from: state.from, to: state.to, preset: currentPreset, includeBus});
+    const routes = RoutingService.getRoutes(state.from, state.to, {
+      k: 3,
+      preset: currentPreset,
+      includeBus: true,  // Always include bus for first/last km
+    });
 
   if (!routes || !routes.length) {
     __coreDebug("No routes found.");

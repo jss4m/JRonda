@@ -16,12 +16,18 @@ pkg update
 pkg install nodejs python
 ```
 
-### Run Server + Updater
+### Autonomous GTFS Updates (Fixed - Internet Aware)\nUse android-autoupdate-fixed.sh (cleaned HTML entities)\n1. `chmod +x android-autoupdate-fixed.sh`\n2. `cd /storage/emulated/0/Download/JRonda && ./android-autoupdate-fixed.sh &`\n   - Auto-pings internet, 60min updates, gtfs-auto.log\n3. Termux:Boot: copy to ~/.termux/boot/
+
+### Run Local Server
 ```
 cd /storage/emulated/0/Download/JRonda
-termux-setup-storage  # USB access
-node data-build/scripts/update-gtfs.js --silent --watch &
+termux-setup-storage
 python -m http.server 8080
+```
+
+New terminal:
+```
+am start -a android.intent.action.VIEW -d http://localhost:8080 --ez android.intent.extra.FULL_SCREEN true --es android.intent.extra.TITLE \"JRonda Kiosk\"
 ```
 
 New terminal:
