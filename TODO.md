@@ -1,18 +1,13 @@
-# JRonda Route Finder Fix - TODO
+# JRonda Error Fixes - Task Progress
 
-## Status: Active
-- [x] Step 1: Force includeBus=true always (remove RAIL filter)
-- [x] Step 2: Fix distance units (m → km where appropriate)
-- [x] Step 3: Add logging to updateRoutes() for debugging
-- [x] Step 4: Analyze bootstrap.js (RoutingService impl)
-- [ ] Step 5: Test sample station pairs (KL Sentral → KLCC etc.)
-- [ ] Step 6: Validate routerLogic graph paths exist
-- [ ] Step 7: Adjust costs/penalties if connectivity issues persist
-- [ ] Step 8: Full end-to-end test "Find route" button
-- [ ] Step 9: Remove debug logs
-- [ ] Complete: attempt_completion
+## Plan (Approved ✅)
+1. Hoist `keyOf` function to module top in `src/core/layout-engine.js`  
+2. Replace `window.setState` calls in `src/core/interaction.js` with `UIState.setState`
 
-**Next:** Step 5 - Test app + sample routes
+**Status: 0/2 complete**
 
-
-
+## Next Steps
+- [ ] Step 1: Fix layout-engine.js (keyOf TDZ error)
+- [ ] Step 2: Fix interaction.js (window.setState race condition)  
+- [ ] Test: Reload app, verify no console errors
+- [ ] Complete task

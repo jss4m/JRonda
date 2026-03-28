@@ -41,6 +41,22 @@ const LAYOUT_CONFIG = {
   GRID_SNAP_PX: 8,
 };
 
+function keyOf(s) {
+  const source = String(s?.source_stop_id || "").trim();
+  if (source) return source;
+  const stopId = String(s?.stop_id || "").trim();
+  if (!stopId) return "";
+  const routeId = String(s?.route_id || "").trim();
+  const routePrefix = routeId ? `${routeId}_` : "";
+  if (routePrefix && stopId.startsWith(routePrefix)) {
+    const rest = stopId.slice(routePrefix.length).trim();
+    if (rest) return rest;
+  }
+  const sep = stopId.indexOf("_");
+  if (sep > 0 && sep < stopId.length - 1) return stopId.slice(sep + 1);
+  return stopId;
+}
+
 function haversineMeters(lat1, lon1, lat2, lon2) {
   const toRad = v => v * Math.PI / 180;
   const R = 6371000;
@@ -62,309 +78,21 @@ function snapDirection(dx, dy) {
   }, 0);
 }
 
-function buildHubs(stopsData, maxDistMeters, mode) {
-  const stationGroupsMap = new Map();
-  for (const stop of stopsData) {
-    const sourceId = String(stop.source_stop_id || stop.stop_id);
-    if (!stationGroupsMap.has(sourceId)) {
-      stationGroupsMap.set(sourceId, {
-        station_id: sourceId,
-        lat: Number(stop.stop_lat),
-        lon: Number(stop.stop_lon),
-        fullStopIds: [],
-        routes: new Set(),
-      });
-    }
-    const entry = stationGroupsMap.get(sourceId);
-    entry.fullStopIds.push(String(stop.stop_id));
-    if (stop.route_id) entry.routes.add(String(stop.route_id));
-    if (String(stop.route_id || '').toUpperCase().includes('ETS')) entry.is_ets = true;
-  }
-  const stationGroups = Array.from(stationGroupsMap.values());
-  const n = stationGroups.length;
-  const parent = Array.from({length: n}, (_,i)=>i);
-  function find(x) {
-    if (parent[x] !== x) parent[x] = find(parent[x]);
-    return parent[x];
-  }
-  function union(a,b) {
-    parent[find(b)] = find(a);
-  }
-  for (let i = 0; i < n; i++) {
-    for (let j = i+1; j < n; j++) {
-      const d = haversineMeters(stationGroups[i].lat, stationGroups[i].lon, stationGroups[j].lat, stationGroups[j].lon);
-      if (d <= maxDistMeters) union(i,j);
-    }
-  }
-  const hubMap = new Map();
-  for (let i = 0; i < n; i++) {
-    const root = find(i);
-    if (!hubMap.has(root)) hubMap.set(root, []);
-    hubMap.get(root).push(stationGroups[i]);
-  }
-  const hubs = [];
-  const stationToHub = new Map();
-  let hubIdCounter = 0;
-  for (const groups of hubMap.values()) {
-    const avgLat = groups.reduce((sum,s)=>sum + s.lat,0) / groups.length;
-    const avgLon = groups.reduce((sum,s)=>sum + s.lon,0) / groups.length;
-    const hub = {
-      hub_id: `${mode.toUpperCase()}_H${++hubIdCounter}`,
-      stations: [],
-      lat: avgLat,
-      lon: avgLon,
-      routes: new Set(),
-      hubScore: 0,
-      x: null,
-      y: null,
-      mode,
-      route_type: mode.toUpperCase(),
-      is_ets: false,
-      is_major_hub: false,
-      nearestRailHubId: null,
-      radius: mode === 'rail' ? LAYOUT_CONFIG.RAIL_RADIUS_BASE : LAYOUT_CONFIG.BUS_RADIUS_BASE,
-      weight: 1
-    };
-    for (const g of groups) {
-      for (const fullId of g.fullStopIds) {
-        stationToHub.set(fullId, hub.hub_id);
-        hub.stations.push(fullId);
-      }
-      for (const r of g.routes) hub.routes.add(r);
-      if (g.is_ets) hub.is_ets = true;
-    }
-    hubs.push(hub);
-  }
-  return {hubs, stationToHub};
-}
 
-function computeHubScores(hubs, routesData) {
-  hubs.forEach(hub => {
-    const uniqueRoutes = new Set();
-    routesData.forEach(route => {
-      if (route.hub_sequence?.includes(hub.hub_id)) uniqueRoutes.add(route.route_id);
-    });
-    hub.hubScore = uniqueRoutes.size;
-  });
-  // Mark major hubs (top 10%)
-  const scores = hubs.map(h => h.hubScore).sort((a,b) => b - a);
-  const threshold = scores[Math.floor(scores.length * 0.1)] || 0;
-  hubs.forEach(h => h.is_major_hub = h.hubScore >= threshold);
-  hubs.sort((a,b) => b.hubScore - a.hubScore);
-}
 
-function convertToHubSequences(routesData, stationToHub) {
-  const hubRoutes = [];
-  routesData.forEach(route => {
-    const stops = route.stops.map(s => stationToHub.get(String(s.stop_id))).filter(Boolean);
-    const uniqueHubSeq = [];
-    stops.forEach(hubId => {
-      if (uniqueHubSeq[uniqueHubSeq.length - 1] !== hubId) uniqueHubSeq.push(hubId);
-    });
-    if (uniqueHubSeq.length >= 2) {
-      hubRoutes.push({
-        route_id: route.route_id,
-        hub_sequence: uniqueHubSeq,
-        stop_sequence: route.stops.map(s => String(s.stop_id)),
-      });
-    }
-  });
-  return hubRoutes;
-}
 
-function placeRailHubsSequenceDriven(hubs, hubRoutes) {
-  const hubById = new Map(hubs.map(h => [h.hub_id, h]));
-  if (hubs.length === 0) return { success: false };
-  const origin = hubs[0];
-  origin.x = 0;
-  origin.y = 0;
-  const visited = new Set([origin.hub_id]);
-  const queue = [origin];
-  const routesByLength = [...hubRoutes].sort((a, b) => {
-    const lenDiff = (b.hub_sequence?.length || 0) - (a.hub_sequence?.length || 0);
-    if (lenDiff !== 0) return lenDiff;
-    return String(a.route_id || "").localeCompare(String(b.route_id || ""));
-  });
 
-  while (queue.length > 0) {
-    const current = queue.shift();
-    routesByLength.filter(r => r.hub_sequence.includes(current.hub_id)).forEach(route => {
-      const seq = route.hub_sequence;
-      const currIdx = seq.indexOf(current.hub_id);
-      if (currIdx > 0) {
-        const prevId = seq[currIdx - 1];
-        if (!visited.has(prevId)) {
-          const prevHub = hubById.get(prevId);
-          const geoDx = prevHub.lon - current.lon;
-          const geoDy = prevHub.lat - current.lat;
-          const angle = snapDirection(geoDx, geoDy);
-          const scoreW = Math.min(1.2, 1 + ((prevHub.hubScore || 0) * 0.02));
-          const dist = LAYOUT_CONFIG.RAIL_SEG_DIST_PX * scoreW;
-          prevHub.x = current.x + Math.cos(angle + Math.PI) * dist; // opposite
-          prevHub.y = current.y + Math.sin(angle + Math.PI) * dist;
-          visited.add(prevId);
-          queue.push(prevHub);
-        }
-      }
-      if (currIdx < seq.length - 1) {
-        const nextId = seq[currIdx + 1];
-        if (!visited.has(nextId)) {
-          const nextHub = hubById.get(nextId);
-          const geoDx = nextHub.lon - current.lon;
-          const geoDy = nextHub.lat - current.lat;
-          const angle = snapDirection(geoDx, geoDy);
-          const scoreW = Math.min(1.2, 1 + ((nextHub.hubScore || 0) * 0.02));
-          const dist = LAYOUT_CONFIG.RAIL_SEG_DIST_PX * scoreW;
-          nextHub.x = current.x + Math.cos(angle) * dist;
-          nextHub.y = current.y + Math.sin(angle) * dist;
-          visited.add(nextId);
-          queue.push(nextHub);
-        }
-      }
-    });
-  }
 
-  // Deterministically place any disconnected hubs by projected geography around origin.
-  for (const hub of hubs) {
-    if (visited.has(hub.hub_id)) continue;
-    const dx = (hub.lon - origin.lon) * 10000;
-    const dy = (hub.lat - origin.lat) * 10000;
-    const angle = snapDirection(dx, dy);
-    const radius = LAYOUT_CONFIG.RAIL_SEG_DIST_PX * Math.max(1, Math.hypot(dx, dy) / 18);
-    hub.x = origin.x + Math.cos(angle) * radius;
-    hub.y = origin.y + Math.sin(angle) * radius;
-    visited.add(hub.hub_id);
-  }
 
-  return hubById;
-}
 
-function hubPushStabilize(hubs, passes = LAYOUT_CONFIG.PUSH_PASSES) {
-  const origin = hubs.sort((a,b) => b.hubScore - a.hubScore)[0];
-  for (let pass = 0; pass < passes; pass++) {
-    let pushed = false;
-    for (let i = 0; i < hubs.length; i++) {
-      for (let j = i + 1; j < hubs.length; j++) {
-        const ha = hubs[i];
-        const hb = hubs[j];
-        const dx = hb.x - ha.x;
-        const dy = hb.y - ha.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist < LAYOUT_CONFIG.MIN_HUB_DIST_PX && dist > 0) {
-          const pushDist = (LAYOUT_CONFIG.MIN_HUB_DIST_PX - dist) / 2;
-          const scaleA = 1 / (Math.hypot(ha.x - origin.x, ha.y - origin.y) + 1);
-          const scaleB = 1 / (Math.hypot(hb.x - origin.x, hb.y - origin.y) + 1);
-          const norm = dist;
-          ha.x -= (dx / norm) * pushDist * scaleA;
-          ha.y -= (dy / norm) * pushDist * scaleA;
-          hb.x += (dx / norm) * pushDist * scaleB;
-          hb.y += (dy / norm) * pushDist * scaleB;
-          pushed = true;
-        }
-      }
-    }
-    // Keep all hubs on a loose grid so polyline directions stay visually clean.
-    for (const h of hubs) {
-      if (!Number.isFinite(h.x) || !Number.isFinite(h.y)) continue;
-      h.x = Math.round(h.x / LAYOUT_CONFIG.GRID_SNAP_PX) * LAYOUT_CONFIG.GRID_SNAP_PX;
-      h.y = Math.round(h.y / LAYOUT_CONFIG.GRID_SNAP_PX) * LAYOUT_CONFIG.GRID_SNAP_PX;
-    }
-    if (!pushed) break;
-  }
-}
 
-function straightenRailRoutes(hubRoutes, hubById) {
-  for (const route of hubRoutes) {
-    const seq = route.hub_sequence || [];
-    if (seq.length < 3) continue;
-    for (let i = 1; i < seq.length - 1; i++) {
-      const prev = hubById.get(seq[i - 1]);
-      const cur = hubById.get(seq[i]);
-      const next = hubById.get(seq[i + 1]);
-      if (!prev || !cur || !next) continue;
-      if (cur.is_major_hub) continue;
-      const theta = snapDirection(next.x - prev.x, next.y - prev.y);
-      const ux = Math.cos(theta);
-      const uy = Math.sin(theta);
-      const proj = ((cur.x - prev.x) * ux) + ((cur.y - prev.y) * uy);
-      cur.x = prev.x + ux * proj;
-      cur.y = prev.y + uy * proj;
-    }
-  }
-}
 
-function placeStationsAlongEdges(routesData, stationToHub, hubById) {
-  const stationNodeById = new Map();
-  routesData.forEach(route => {
-    const stopSeq = route.stop_sequence || route.stops.map(s => String(s.stop_id));
-    let segStart = 0;
-    for (let i = 1; i <= stopSeq.length; i++) {
-      const prevStopId = stopSeq[i - 1];
-      const currStopId = i < stopSeq.length ? stopSeq[i] : null;
-      const prevHub = stationToHub.get(prevStopId);
-      const currHub = currStopId ? stationToHub.get(currStopId) : null;
-      if (i === stopSeq.length || prevHub !== currHub) {
-        const segmentStops = stopSeq.slice(segStart, i);
-        if (prevHub && currHub && prevHub !== currHub && segmentStops.length > 0) {
-          const ha = hubById.get(prevHub);
-          const hb = hubById.get(currHub);
-          if (ha && hb && Number.isFinite(ha.x)) {
-            const dx = hb.x - ha.x;
-            const dy = hb.y - ha.y;
-            const edgeDist = Math.hypot(dx, dy);
-            const unitX = edgeDist > 0 ? dx / edgeDist : 0;
-            const unitY = edgeDist > 0 ? dy / edgeDist : 0;
-            const count = segmentStops.length;
-            for (let s = 0; s < count; s++) {
-              const t = count > 1 ? s / (count - 1) : 0.5;
-              let x = ha.x + dx * t;
-              let y = ha.y + dy * t;
-              // Offset LABEL_OFFSET ~32px
-              let distToA = Math.hypot(x - ha.x, y - ha.y);
-              if (distToA < 32) {
-                const shift = 32 - distToA;
-                x += unitX * shift;
-                y += unitY * shift;
-              }
-              let distToB = Math.hypot(x - hb.x, y - hb.y);
-              if (distToB < 32) {
-                const shift = 32 - distToB;
-                x -= unitX * shift;
-                y -= unitY * shift;
-              }
-              const fullStopId = segmentStops[s];
-              const radius = ha.mode === 'RAIL' ? Math.max(20, Math.min(24, LAYOUT_CONFIG.RAIL_RADIUS_BASE + ha.hubScore * 0.8)) : Math.max(16, Math.min(20, LAYOUT_CONFIG.BUS_RADIUS_BASE + ha.hubScore * 0.5));
-              stationNodeById.set(fullStopId, {id: fullStopId, x, y, type: 'station', radius, touch_radius: Math.max(LAYOUT_CONFIG.TOUCH_TARGET_PX, radius * 1.8)});
-            }
-          }
-        }
-        segStart = i;
-      }
-    }
-  });
-  return stationNodeById;
-}
 
-function collapseShortSegments(hubRoutes, hubById, minLenPx = LAYOUT_CONFIG.MIN_SEG_COLLAPSE_PX) {
-  hubRoutes.forEach(route => {
-    const seq = route.hub_sequence;
-    if (seq.length < 3) return;
-    const collapsed = [seq[0]];
-    for (let i = 1; i < seq.length; i++) {
-      const prevId = collapsed[collapsed.length - 1];
-      const currId = seq[i];
-      const a = hubById.get(prevId);
-      const b = hubById.get(currId);
-      if (!a || !b || !Number.isFinite(a.x)) {
-        collapsed.push(currId);
-        continue;
-      }
-      const dist = Math.hypot(b.x - a.x, b.y - a.y);
-      if (dist >= minLenPx) collapsed.push(currId);
-    }
-    route.hub_sequence = collapsed;
-  });
-}
+
+
+
+
+
 
 function fitToViewport(nodes, width = LAYOUT_CONFIG.VIEWPORT_WIDTH, height = LAYOUT_CONFIG.VIEWPORT_HEIGHT) {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -396,7 +124,7 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
   const svgHeight = Number(opts?.svgHeight) || LAYOUT_CONFIG.VIEWPORT_HEIGHT;
   const centerX = svgWidth * 0.5;
   const centerY = svgHeight * 0.5;
-  const railSpacing = 40;
+  const railSpacing = 140;
   const busSpacing = 30;
   const minNodeDist = 18;
   const ccRadius = 120;
@@ -408,155 +136,185 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
   });
   if (!allStations.length) return { success: false, nodes: [], edges: [] };
 
-  const routeEntries = Array.from(routes?.entries?.() || []).map(([routeId, stops]) => {
-    const ordered = (Array.isArray(stops) ? stops.slice() : []).sort((a, b) => {
-      const as = Number(a?.stop_sequence ?? a?.seq ?? 0);
-      const bs = Number(b?.stop_sequence ?? b?.seq ?? 0);
-      if (as !== bs) return as - bs;
-      return String(a?.stop_id || "").localeCompare(String(b?.stop_id || ""));
-    });
-    return {
-      routeId: String(routeId || ""),
-      mode: String(getRouteModeFn(routeId) || "RAIL").toUpperCase(),
-      stops: ordered,
-    };
-  }).filter((r) => r.stops.length >= 2);
+// 🧱 PHASE 0 — PREP 
+// Step 0.1 Normalize stops complete
 
-  const railRoutes = routeEntries.filter((r) => r.mode === "RAIL");
-  const busRoutes = routeEntries.filter((r) => r.mode !== "RAIL");
-  if (!railRoutes.length) return { success: false, nodes: [], edges: [] };
+const normalizedStations = Array.from(new Map(allStations.map(s => [keyOf(s), s])).values());
 
-  const keyOf = (s) => {
-    const source = String(s?.source_stop_id || "").trim();
-    if (source) return source;
-    const stopId = String(s?.stop_id || "").trim();
-    if (!stopId) return "";
-    const routeId = String(s?.route_id || "").trim();
-    const routePrefix = routeId ? `${routeId}_` : "";
-    if (routePrefix && stopId.startsWith(routePrefix)) {
-      const rest = stopId.slice(routePrefix.length).trim();
-      if (rest) return rest;
-    }
-    const sep = stopId.indexOf("_");
-    if (sep > 0 && sep < stopId.length - 1) return stopId.slice(sep + 1);
-    return stopId;
-  };
-  const roundGrid = (n) => Math.round(n / LAYOUT_CONFIG.GRID_SNAP_PX) * LAYOUT_CONFIG.GRID_SNAP_PX;
-  // Screen Y grows downward, so latitude delta is inverted to keep north-up orientation.
-  const geoTheta = (a, b) => snapAngle45(
-    Number(b?.stop_lon || 0) - Number(a?.stop_lon || 0),
-    Number(a?.stop_lat || 0) - Number(b?.stop_lat || 0)
-  );
-  const posByKey = new Map();
-  const dirByKey = new Map();
-  const nodeByKey = new Map();
-  const edges = [];
-
-  // STEP 1 anchors
-  const normalizedName = (s) => normalizeStopName(s?.stop_name || "");
-  const primaryHub = allStations.find((s) => normalizedName(s).includes("kl sentral")) || railRoutes[0].stops[0];
-  const primaryKey = keyOf(primaryHub);
-  const ccClusterKeywords = new Set([
-    "masjid jamek",
-    "pasar seni",
-    "klcc",
-    "bukit bintang",
-    "hang tuah",
-    "merdeka",
-    "imbi",
-    "titiwangsa",
-  ]);
-  const ccStops = [];
-  const ccRouteStops = railRoutes
-    .filter((r) => /(^CC$|CCL|CIRCLE|MRT.*CIRCLE)/i.test(String(r.routeId || "")))
-    .flatMap((r) => r.stops);
-  for (const stop of allStations) {
-    const name = normalizedName(stop);
-    if (!name) continue;
-    for (const kw of ccClusterKeywords) {
-      if (name.includes(kw)) {
-        ccStops.push(stop);
-        break;
-      }
-    }
-  }
-  for (const stop of ccRouteStops) ccStops.push(stop);
-  const uniqueCcStops = Array.from(new Map(ccStops.map((s) => [keyOf(s), s])).values());
-  const primaryLat = Number(primaryHub?.stop_lat || 0);
-  const primaryLon = Number(primaryHub?.stop_lon || 0);
-  uniqueCcStops.sort((a, b) => {
-    const aAngle = Math.atan2(
-      Number(a?.stop_lat || 0) - primaryLat,
-      Number(a?.stop_lon || 0) - primaryLon
-    );
-    const bAngle = Math.atan2(
-      Number(b?.stop_lat || 0) - primaryLat,
-      Number(b?.stop_lon || 0) - primaryLon
-    );
-    return aAngle - bAngle;
+// Step 0.2 Split modes
+const routeEntries = Array.from(routes?.entries?.() || []).map(([routeId, stops]) => {
+  const ordered = (Array.isArray(stops) ? stops.slice() : []).sort((a, b) => {
+    const as = Number(a?.stop_sequence ?? a?.seq ?? 0);
+    const bs = Number(b?.stop_sequence ?? b?.seq ?? 0);
+    if (as !== bs) return as - bs;
+    return String(a?.stop_id || "").localeCompare(String(b?.stop_id || ""));
   });
+  return {
+    routeId: String(routeId || ""),
+    mode: String(getRouteModeFn(routeId) || "RAIL").toUpperCase(),
+    stops: ordered.filter(s => normalizedStations.some(ns => keyOf(ns) === keyOf(s))),
+  };
+}).filter((r) => r.stops.length >= 2);
 
-  // STEP 3+4 primary + CC ring
-  posByKey.set(primaryKey, { x: centerX, y: centerY });
-  dirByKey.set(primaryKey, 0);
-  if (uniqueCcStops.length) {
-    for (let i = 0; i < uniqueCcStops.length; i++) {
-      const stop = uniqueCcStops[i];
-      const key = keyOf(stop);
-      if (key === primaryKey) continue;
-      const theta = (Math.PI * 2 * i) / uniqueCcStops.length;
-      posByKey.set(key, {
-        x: roundGrid(centerX + Math.cos(theta) * ccRadius),
-        y: roundGrid(centerY + Math.sin(theta) * ccRadius),
-      });
-      dirByKey.set(key, snapAngle45(Math.cos(theta), Math.sin(theta)));
-    }
+const railRoutes = routeEntries.filter((r) => r.mode === "RAIL");
+const busRoutes = routeEntries.filter((r) => r.mode !== "RAIL");
+if (!railRoutes.length) return { success: false, nodes: [], edges: [] };
+
+// 🧭 PHASE 1 — GLOBAL FRAME
+const roundGrid = (n) => Math.round(n / LAYOUT_CONFIG.GRID_SNAP_PX) * LAYOUT_CONFIG.GRID_SNAP_PX;
+
+// Step 1.1 Define center = KL Sentral, hard lock pos[center] = (0,0)
+const centerStation = normalizedStations.find(s => normalizeStopName(s?.stop_name || "").includes("kl sentral"));
+if (!centerStation) {
+  console.warn("No KL Sentral found");
+  return { success: false, nodes: [], edges: [] };
+}
+const centerKey = keyOf(centerStation);
+const posByKey = new Map();
+const dirByKey = new Map();
+const nodeByKey = new Map();
+const edges = [];
+const immovableKeys = new Set([centerKey]);
+posByKey.set(centerKey, { x: 0, y: 0 });
+
+// Step 1.2 Define CC ring
+const ccKeywords = ["masjid jamek", "pasar seni", "klcc", "bukit bintang", "hang tuah", "merdeka", "imbi", "titiwangsa"];
+const ccStops = normalizedStations.filter(s => 
+  ccKeywords.some(kw => normalizeStopName(s.stop_name).includes(kw)) ||
+  railRoutes.some(r => /(^CC$|CCL|CIRCLE)/i.test(r.routeId) && r.stops.some(rs => keyOf(rs) === keyOf(s)))
+);
+const uniqueCcKeys = [...new Set(ccStops.map(keyOf).filter(Boolean))];
+
+const centerLat = centerStation.stop_lat;
+const centerLon = centerStation.stop_lon;
+
+// Sort by angle from geo center
+uniqueCcKeys.sort((ka, kb) => {
+  const sa = normalizedStations.find(s => keyOf(s) === ka);
+  const sb = normalizedStations.find(s => keyOf(s) === kb);
+  const aAngle = Math.atan2(Number(sa?.stop_lat || 0) - centerLat, Number(sa?.stop_lon || 0) - centerLon);
+  const bAngle = Math.atan2(Number(sb?.stop_lat || 0) - centerLat, Number(sb?.stop_lon || 0) - centerLon);
+  return aAngle - bAngle;
+});
+
+// Place in perfect circle x = cos(theta)*R, y = sin(theta)*R
+const CC_RADIUS = 120;
+for (let i = 0; i < uniqueCcKeys.length; i++) {
+  const theta = (Math.PI * 2 * i) / uniqueCcKeys.length;
+  const x = CC_RADIUS * Math.cos(theta);
+  const y = CC_RADIUS * Math.sin(theta);
+  posByKey.set(uniqueCcKeys[i], { x: roundGrid(x), y: roundGrid(y) });
+  dirByKey.set(uniqueCcKeys[i], snapAngle45(Math.cos(theta), Math.sin(theta)));
+  immovableKeys.add(uniqueCcKeys[i]);
+}
+
+const ccKeySet = new Set(uniqueCcKeys);
+
+// 🚧 PHASE 3 — INTERCHANGE PRIORITY
+// Mark KL Sentral, CC, Interchanges IMMOVABLE
+const interchangeKeys = new Set();
+const stopToRoutes = new Map();
+for (const route of [...railRoutes, ...busRoutes]) {
+  for (const stop of route.stops) {
+    const key = keyOf(stop);
+    if (!key) continue;
+    if (!stopToRoutes.has(key)) stopToRoutes.set(key, new Set());
+    stopToRoutes.get(key).add(route.routeId);
   }
-  const ccKeySet = new Set(uniqueCcStops.map((s) => keyOf(s)));
-  const anchorKeys = new Set(
-    allStations
-      .filter((s) => String(getRouteModeFn(s.route_id) || "RAIL").toUpperCase() === "RAIL")
-      .filter((s) => Boolean(s.isInterchange || s.isConnecting))
-      .map((s) => keyOf(s))
-      .filter(Boolean)
-  );
-  anchorKeys.add(primaryKey);
-  for (const key of ccKeySet) anchorKeys.add(key);
+}
+for (const [key, routes] of stopToRoutes) {
+  if (routes.size > 1) {
+    interchangeKeys.add(key);
+    immovableKeys.add(key);
+  }
+}
+const anchorKeys = new Set([...immovableKeys]);
 
   // STEP 2 rail backbone direction assignment + STEP 5 line layout
-  function resolveRailDirection(route) {
-    const stops = route.stops;
-    const hasPrimary = stops.some((s) => keyOf(s) === primaryKey);
-    const touchesCc = stops.some((s) => ccKeySet.has(keyOf(s)));
-    if (hasPrimary && touchesCc) {
-      const ccStop = stops.find((s) => ccKeySet.has(keyOf(s)) && keyOf(s) !== primaryKey);
-      if (ccStop && posByKey.has(keyOf(ccStop))) {
-        const p = posByKey.get(keyOf(ccStop));
-        return snapAngle45(p.x - centerX, p.y - centerY);
-      }
-    }
-    if (hasPrimary) {
-      const primaryIdx = stops.findIndex((s) => keyOf(s) === primaryKey);
-      if (primaryIdx >= 0) {
-        const next = stops[primaryIdx + 1] || null;
-        const prev = primaryIdx > 0 ? stops[primaryIdx - 1] : null;
-        if (next) return geoTheta(stops[primaryIdx], next);
-        if (prev) return geoTheta(stops[primaryIdx], prev);
-      }
-      return geoTheta(stops[0], stops[stops.length - 1]);
-    }
-    if (touchesCc) {
-      const anchor = stops.find((s) => ccKeySet.has(keyOf(s)));
-      const ap = anchor ? posByKey.get(keyOf(anchor)) : null;
-      if (ap) return snapAngle45(ap.x - centerX, ap.y - centerY);
-    }
-    // inherit from connected line
-    for (const stop of stops) {
-      const k = keyOf(stop);
-      if (dirByKey.has(k)) return dirByKey.get(k);
-    }
-    return geoTheta(stops[0], stops[stops.length - 1]);
+// 🚆 PHASE 2 — RAIL BACKBONE (CRITICAL)
+
+function assignRailDirection(route) {
+  // touches CC → radial from center
+  const ccStop = route.stops.find(s => ccKeySet.has(keyOf(s)));
+  const ccStopKey = ccStop ? keyOf(ccStop) : null;
+  if (ccStopKey && posByKey.has(ccStopKey)) {
+    const p = posByKey.get(ccStopKey);
+    return snapAngle45(p.x - 0, p.y - 0); // radial from center (0,0)
   }
+  
+  // geo direction snapped OR center → CC
+  const first = route.stops[0];
+  const last = route.stops[route.stops.length - 1];
+  const geoDir = snapAngle45(
+    Number(last.stop_lon) - Number(first.stop_lon),
+    Number(first.stop_lat) - Number(last.stop_lat)
+  );
+  return geoDir;
+}
+
+const RAIL_SPACING = 176; // from LAYOUT_CONFIG.RAIL_SEG_DIST_PX
+
+for (const route of railRoutes) {
+  const theta = assignRailDirection(route);
+  let prevPos = { x: 0, y: 0 }; // start from center
+  let prevKey = centerKey;
+  
+  for (let i = 0; i < route.stops.length; i++) {
+    const stop = route.stops[i];
+    const key = keyOf(stop);
+    if (!key) continue;
+    
+    if (posByKey.has(key)) {
+      // Use existing immovable pos
+      prevPos = posByKey.get(key);
+      prevKey = key;
+      dirByKey.set(key, theta);
+      continue;
+    }
+    
+    // pos[i] = pos[i-1] + unit(theta) * RAIL_SPACING
+    const ux = Math.cos(theta);
+    const uy = Math.sin(theta);
+    const newPos = {
+      x: roundGrid(prevPos.x + ux * RAIL_SPACING),
+      y: roundGrid(prevPos.y + uy * RAIL_SPACING)
+    };
+    posByKey.set(key, newPos);
+    dirByKey.set(key, theta);
+    prevPos = newPos;
+    prevKey = key;
+  }
+  
+  // Step 2.3 FORCE OUTWARD
+  for (let i = 0; i < route.stops.length; i++) {
+    const key = keyOf(route.stops[i]);
+    if (!key || !posByKey.has(key)) continue;
+    const p = posByKey.get(key);
+    const dot = (p.x - 0) * ux + (p.y - 0) * uy; // (pos - center) · dir
+    if (dot < 0) {
+      // flip direction
+      const flipTheta = theta + Math.PI;
+      const flipUx = Math.cos(flipTheta);
+      const flipUy = Math.sin(flipTheta);
+      // Re-place from start with flip
+      let flipPrevPos = { x: 0, y: 0 };
+      for (let j = 0; j <= i; j++) {
+        const stop = route.stops[j];
+        const fkey = keyOf(stop);
+        const flipNewPos = {
+          x: roundGrid(flipPrevPos.x + flipUx * RAIL_SPACING),
+          y: roundGrid(flipPrevPos.y + flipUy * RAIL_SPACING)
+        };
+        posByKey.set(fkey, flipNewPos);
+        dirByKey.set(fkey, flipTheta);
+        flipPrevPos = flipNewPos;
+      }
+      break;
+    }
+  }
+}
+
+// 👉 Rail is DONE. No push/snapping/projection later
 
   function ensurePosFrom(prevKey, theta, spacing) {
     const prev = posByKey.get(prevKey);
@@ -588,8 +346,18 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
         continue;
       }
       const prevKey = keyOf(route.stops[i - 1]);
-      const geoDir = geoTheta(route.stops[i - 1], stop);
-      const dir = snapAngle45(Math.cos(geoDir) + Math.cos(baseDir), Math.sin(geoDir) + Math.sin(baseDir));
+      const dir = dirByKey.get(prevKey) ?? baseDir;
+      // STEP 6: Force outward growth
+      const prev = posByKey.get(prevKey);
+      if (prev) {
+        const vx = prev.x - center.x;
+        const vy = prev.y - center.y;
+        const dot = Math.cos(dir) * vx + Math.sin(dir) * vy;
+        if (dot < 0) {
+          dir += Math.PI; // force outward
+        }
+      }
+
       const nextPos = ensurePosFrom(prevKey, dir, railSpacing);
       if (nextPos) {
         posByKey.set(key, nextPos);
@@ -598,35 +366,7 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
     }
   }
 
-  // STEP 7 controlled collision resolution (no random movement)
-  const railKeys = Array.from(new Set(railRoutes.flatMap((r) => r.stops.map((s) => keyOf(s)).filter(Boolean))));
-  for (let pass = 0; pass < 8; pass++) {
-    let moved = false;
-    for (let i = 0; i < railKeys.length; i++) {
-      for (let j = i + 1; j < railKeys.length; j++) {
-        const aKey = railKeys[i];
-        const bKey = railKeys[j];
-        const a = posByKey.get(aKey);
-        const b = posByKey.get(bKey);
-        if (!a || !b) continue;
-        if (anchorKeys.has(aKey) || anchorKeys.has(bKey)) continue;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const d = Math.hypot(dx, dy);
-        if (d >= minNodeDist || d <= 0.001) continue;
-        const theta = dirByKey.get(aKey) ?? dirByKey.get(bKey) ?? 0;
-        const px = -Math.sin(theta);
-        const py = Math.cos(theta);
-        const push = (minNodeDist - d) * 0.5;
-        a.x = roundGrid(a.x - px * push);
-        a.y = roundGrid(a.y - py * push);
-        b.x = roundGrid(b.x + px * push);
-        b.y = roundGrid(b.y + py * push);
-        moved = true;
-      }
-    }
-    if (!moved) break;
-  }
+
 
   // STEP 8/9 bus placement with strict single-direction rules.
   const railStopsFlat = railRoutes.flatMap((r) => r.stops);
@@ -695,38 +435,23 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
     const laneOffset = 12 + (Math.abs(lane) * 6);
     const side = lane >= 0 ? 1 : -1;
 
-    if (routeType === "LOOP") {
-      let anchor = null;
-      if (railHits.length) {
-        const firstHit = railHits[0];
-        anchor = posByKey.get(firstHit.railKey) || null;
-      }
-      if (!anchor) {
-        let sx = 0;
-        let sy = 0;
-        let c = 0;
-        for (const stop of stops) {
-          const key = keyOf(stop);
-          const p = key ? posByKey.get(key) : null;
-          if (!p) continue;
-          sx += p.x;
-          sy += p.y;
-          c += 1;
-        }
-        anchor = c > 0 ? { x: sx / c, y: sy / c } : { x: centerX, y: centerY };
-      }
-      const radius = Math.max(40, Math.min(80, 34 + (stops.length * 2)));
-      const step = (Math.PI * 2) / Math.max(1, stops.length);
-      for (let i = 0; i < stops.length; i++) {
-        const a = (i * step) - (Math.PI / 2);
-        setBusPoint(stops[i], {
-          x: anchor.x + Math.cos(a) * radius,
-          y: anchor.y + Math.sin(a) * radius,
-        });
-        dirByKey.set(keyOf(stops[i]), a);
-      }
-      return;
-    }
+if (routeType === "LOOP") {
+  const theta = snapAngle45(anchor.x - center.x, anchor.y - center.y);
+  const nx = -Math.sin(theta);
+  const ny = Math.cos(theta);
+
+  for (let i = 0; i < stops.length; i++) {
+    const offset = (i - stops.length / 2) * 20;
+
+    setBusPoint(stops[i], {
+      x: anchor.x + nx * 60,
+      y: anchor.y + ny * offset,
+    });
+
+    dirByKey.set(keyOf(stops[i]), theta);
+  }
+  return;
+}
 
     if (routeType === "CONNECTOR") {
       const firstHit = railHits[0];
@@ -735,8 +460,11 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
       const anchorB = posByKey.get(lastHit.railKey);
       if (!anchorA || !anchorB || firstHit.idx === lastHit.idx) return;
       const theta = snapAngle45(anchorB.x - anchorA.x, anchorB.y - anchorA.y);
-      const nx = -Math.sin(theta) * side;
-      const ny = Math.cos(theta) * side;
+      const laneIndex = (routeIndex % 5) - 2; // -2 to +2
+      const laneOffset = laneIndex * LAYOUT_CONFIG.LANE_SPACING_PX * 2;
+
+      const nx = -Math.sin(theta);
+      const ny = Math.cos(theta);
       const offset = laneOffset;
       const span = Math.max(1, lastHit.idx - firstHit.idx);
       for (let i = 0; i < stops.length; i++) {
@@ -754,7 +482,9 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
             y: anchorA.y + (anchorB.y - anchorA.y) * t,
           };
         }
-        setBusPoint(stops[i], { x: base.x + nx * offset, y: base.y + ny * offset });
+        const x = base.x + nx * laneOffset;
+          const y = base.y + ny * laneOffset;
+          setBusPoint(stops[i], { x, y });
         dirByKey.set(keyOf(stops[i]), theta);
       }
       return;
@@ -765,15 +495,17 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
       const anchor = posByKey.get(hit.railKey);
       if (!anchor) return;
       const theta = snapAngle45(anchor.x - railCenter.x, anchor.y - railCenter.y);
-      const nx = -Math.sin(theta) * side;
-      const ny = Math.cos(theta) * side;
+      const laneIndex = (routeIndex % 5) - 2;
+      const laneOffset = laneIndex * LAYOUT_CONFIG.LANE_SPACING_PX * 2;
+
+      const nx = -Math.sin(theta);
+      const ny = Math.cos(theta);
       const offset = laneOffset;
       for (let i = hit.idx + 1; i < stops.length; i++) {
         const d = (i - hit.idx) * busSpacing;
-        setBusPoint(stops[i], {
-          x: anchor.x + Math.cos(theta) * d + nx * offset,
-          y: anchor.y + Math.sin(theta) * d + ny * offset,
-        });
+        const x = anchor.x + Math.cos(theta) * d + nx * laneOffset;
+          const y = anchor.y + Math.sin(theta) * d + ny * laneOffset;
+          setBusPoint(stops[i], { x, y });
         dirByKey.set(keyOf(stops[i]), theta);
       }
       for (let i = hit.idx - 1; i >= 0; i--) {
@@ -814,10 +546,6 @@ export function buildSchematicLayout(allStationsInput, routes, getRouteModeFn = 
       const b = posByKey.get(bKey);
       if (!a || !b) continue;
       const theta = snapAngle45(b.x - a.x, b.y - a.y);
-      if (!anchorKeys.has(bKey)) {
-        b.x = roundGrid(a.x + Math.cos(theta) * railSpacing);
-        b.y = roundGrid(a.y + Math.sin(theta) * railSpacing);
-      }
       dirByKey.set(bKey, theta);
       edges.push({ from: aKey, to: bKey, type: "rail", routeId: route.routeId });
     }

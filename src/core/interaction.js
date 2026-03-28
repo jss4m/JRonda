@@ -367,7 +367,7 @@ const ui = createUI({
   onLegendRouteSelect: (routeId) => {
     const selected = routeId ? String(routeId) : null;
     setLegendActiveRoute(selected);
-    window.setState({ selectedLine: selected, ui: { selectedLine: selected } });
+UIState.setState({ selectedLine: selected, ui: { selectedLine: selected } });
     if (legendResetTimer) clearTimeout(legendResetTimer);
     legendResetTimer = setTimeout(() => {
       setLegendActiveRoute(null);
