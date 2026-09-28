@@ -16,7 +16,6 @@ const APP_SHELL = [
   "/src/core/interaction-bindings.js",
   "/src/core/ui.js",
   "/src/core/interaction.js",
-  "/src/core/kioskSecurity.js",
   "/src/core/routerLogic.js",
   "/src/utils/format.js",
   "/src/utils/min-heap.js",

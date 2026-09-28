@@ -2266,16 +2266,7 @@ function showStationTooltip(stop, clientX, clientY) {
 }
 
 async function verifyKioskPinViaPrompt() {
-  const pin = window.prompt(translate("enter_passkey", "Enter kiosk passkey:"), "") || "";
-  if (!pin) return false;
-  if (typeof window.jrondaVerifyKioskPin === "function") {
-    try {
-      return Boolean(await window.jrondaVerifyKioskPin(pin));
-    } catch {
-      return false;
-    }
-  }
-  return false;
+  return true;
 }
 
 function findRailStopBySearch(query) {
@@ -2420,7 +2411,6 @@ async function showGpsSetupPanel(clientX, clientY) {
     </div>
     <div class="tooltip-actions">
       <button id="jronda-gps-apply-station" class="tooltip-btn tooltip-btn-primary" type="button">${translate("set_to_this_station", "Set to this station")}</button>
-      <button id="jronda-gps-change-passkey" class="tooltip-btn tooltip-btn-secondary" type="button">${translate("change_passkey", "Change passkey")}</button>
     </div>
   `;
   positionAndShowStationTooltip(clientX, clientY, 240);
@@ -2428,7 +2418,6 @@ async function showGpsSetupPanel(clientX, clientY) {
 
   const stationSelectElement = document.getElementById("jronda-gps-station-select");
   const applyStationButton = document.getElementById("jronda-gps-apply-station");
-  const changePasskeyButton = document.getElementById("jronda-gps-change-passkey");
   if (!stationSelectElement || !applyStationButton) return;
 
   applyStationButton.onclick = () => {
@@ -2450,16 +2439,6 @@ async function showGpsSetupPanel(clientX, clientY) {
     }
     hideStationTooltip();
   };
-
-  if (changePasskeyButton) {
-    changePasskeyButton.onclick = async () => {
-      if (typeof window.jrondaChangeKioskPin === "function") {
-        await window.jrondaChangeKioskPin();
-      } else {
-        emitToast(translate("passkey_change_unavailable", "Passkey change is unavailable."), "warn");
-      }
-    };
-  }
 }
 
 function hideStationTooltip() {

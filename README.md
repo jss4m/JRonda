@@ -23,24 +23,18 @@ Example:
 This project is prepared to run fully offline from a USB drive.
 
 1. Copy the whole project folder to USB.
-2. On the target machine, open the folder and run `start-usb.bat`.
+2. On the target machine, open the folder and run `start.bat`.
 3. Browser opens `http://localhost:8080` and serves local files only.
 
 Notes:
 - First launch caches app/data via Service Worker (`sw.js`).
 - After caching, the app continues working without internet.
 - Keep the server window open while the kiosk is running.
-- Optional fullscreen kiosk launcher: `start-kiosk.bat`.
+- Optional fullscreen kiosk launcher: `start.bat`.
 
-## Kiosk Security
+## Offline Desktop / USB Notes
 
-For kiosk deployments (USB + touchscreen devices), use:
-- in-app lock (`src/core/kioskSecurity.js`) with PIN re-identification,
-- fullscreen enforcement,
-- shortcut/context-menu hardening,
-- OS kiosk controls (required for true app-lock).
-
-Read: `KIOSK_HARDENING.md`
+For local offline setup, use the bundled launcher scripts and keep the server window open while the app is running.
 
 ## GTFS Build Commands
 
@@ -72,12 +66,12 @@ Commands:
 - Background update loop (every 60 min): `npm run update:gtfs:watch`
 
 Launcher behavior:
-- `start-usb.bat` and `start-kiosk.bat` now auto-start updater watch in background if `node` exists.
+- `start.bat` and `start.sh` auto-start the GTFS updater watch in the background when `node` is available.
 
 Route display name handling for bus:
 - Public name is resolved as: `route_short_name` -> `route_long_name` -> `route_id`.
 - Stored as `route_public_name` and used in route panel labels.
-- Linux/macOS launcher: `./start-kiosk.sh` (requires `python3`, optional `node` for updater).
+- Linux/macOS launcher: `./start.sh` (requires `python3`, optional `node` for updater).
 
 ## POI Data Pipeline
 

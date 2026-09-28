@@ -283,16 +283,10 @@ function compressModes(segments) {
   return modes;
 }
 
-(async () => {
-  try {
-    const { UIState, setState } = await import('./ui-state.js');
-    
-    // Global access for other modules
-    window.UIState = UIState;
-    window.setState = setState;
-    
-    console.log('[UIState] Initialized - ready for subscribers');
-  } catch (err) {
-    console.error('[UIState] Bootstrap failed:', err);
-  }
-})();
+import { UIState, setState } from './ui-state.js';
+
+// Global access for other modules
+window.UIState = UIState;
+window.setState = setState;
+
+console.log('[UIState] Initialized - ready for subscribers');

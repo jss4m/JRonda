@@ -134,7 +134,7 @@ function normalizeBusStops() {
   console.log(`Output saved to ${OUTPUT_FILE}`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   normalizeBusStops();
 }
 

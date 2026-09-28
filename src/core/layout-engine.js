@@ -256,6 +256,8 @@ const RAIL_SPACING = 176; // from LAYOUT_CONFIG.RAIL_SEG_DIST_PX
 
 for (const route of railRoutes) {
   const theta = assignRailDirection(route);
+  const ux = Math.cos(theta);
+  const uy = Math.sin(theta);
   let prevPos = { x: 0, y: 0 }; // start from center
   let prevKey = centerKey;
   
@@ -273,8 +275,6 @@ for (const route of railRoutes) {
     }
     
     // pos[i] = pos[i-1] + unit(theta) * RAIL_SPACING
-    const ux = Math.cos(theta);
-    const uy = Math.sin(theta);
     const newPos = {
       x: roundGrid(prevPos.x + ux * RAIL_SPACING),
       y: roundGrid(prevPos.y + uy * RAIL_SPACING)
@@ -326,7 +326,7 @@ for (const route of railRoutes) {
   }
 
   for (const route of railRoutes) {
-    const baseDir = resolveRailDirection(route);
+    const baseDir = assignRailDirection(route);
     for (let i = 0; i < route.stops.length; i++) {
       const stop = route.stops[i];
       const key = keyOf(stop);
@@ -346,7 +346,7 @@ for (const route of railRoutes) {
         continue;
       }
       const prevKey = keyOf(route.stops[i - 1]);
-      const dir = dirByKey.get(prevKey) ?? baseDir;
+      let dir = dirByKey.get(prevKey) ?? baseDir;
       // STEP 6: Force outward growth
       const prev = posByKey.get(prevKey);
       if (prev) {
@@ -370,7 +370,7 @@ for (const route of railRoutes) {
 
   // STEP 8/9 bus placement with strict single-direction rules.
   const railStopsFlat = railRoutes.flatMap((r) => r.stops);
-  const railCenter = posByKey.get(primaryKey) || { x: centerX, y: centerY };
+  const railCenter = posByKey.get(centerKey) || { x: centerX, y: centerY };
   const nearestRailByBusKey = new Map();
   for (const route of busRoutes) {
     for (const stop of route.stops) {
@@ -434,24 +434,25 @@ for (const route of railRoutes) {
     const lane = (routeIndex % 4) - 1.5;
     const laneOffset = 12 + (Math.abs(lane) * 6);
     const side = lane >= 0 ? 1 : -1;
+    const routeAnchor = posByKey.get(firstKey) || posByKey.get(lastKey) || railCenter;
 
-if (routeType === "LOOP") {
-  const theta = snapAngle45(anchor.x - center.x, anchor.y - center.y);
-  const nx = -Math.sin(theta);
-  const ny = Math.cos(theta);
+    if (routeType === "LOOP") {
+      const theta = snapAngle45(routeAnchor.x - centerX, routeAnchor.y - centerY);
+      const nx = -Math.sin(theta);
+      const ny = Math.cos(theta);
 
-  for (let i = 0; i < stops.length; i++) {
-    const offset = (i - stops.length / 2) * 20;
+      for (let i = 0; i < stops.length; i++) {
+        const offset = (i - stops.length / 2) * 20;
 
-    setBusPoint(stops[i], {
-      x: anchor.x + nx * 60,
-      y: anchor.y + ny * offset,
-    });
+        setBusPoint(stops[i], {
+          x: routeAnchor.x + nx * 60 + side * laneOffset,
+          y: routeAnchor.y + ny * offset,
+        });
 
-    dirByKey.set(keyOf(stops[i]), theta);
-  }
-  return;
-}
+        dirByKey.set(keyOf(stops[i]), theta);
+      }
+      return;
+    }
 
     if (routeType === "CONNECTOR") {
       const firstHit = railHits[0];

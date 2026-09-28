@@ -129,12 +129,12 @@ function runBuilder(scriptName) {
 }
 
 function rebuildAll() {
-  runBuilder("normalize-bus.js");
-  runBuilder("normalize-bus-routes.js");
-  runBuilder("bus_json-to-js.js");
-  runBuilder("normalize-rail.js");
-  runBuilder("rail_json-to-js.js");
-  runBuilder("poi_txt-to-js.js");
+  runBuilder("normalize-bus.cjs");
+  runBuilder("normalize-bus-routes.cjs");
+  runBuilder("bus_json-to-js.cjs");
+  runBuilder("normalize-rail.cjs");
+  runBuilder("rail_json-to-js.cjs");
+  runBuilder("poi_txt-to-js.cjs");
 }
 
 async function runCycle(args) {

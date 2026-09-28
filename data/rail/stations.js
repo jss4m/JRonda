@@ -2700,26 +2700,6 @@ export const stations = [
     isConnecting: false
   },
   {
-    stop_id: "SA10",
-    source_stop_id: "SA10",
-    stop_name: "STADIUM SHAH ALAM",
-    stop_lat: 3.07996,
-    stop_lon: 101.54915,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 178,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT STADIUM SHAH ALAM",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
     stop_id: "SA11",
     source_stop_id: "SA11",
     stop_name: "DATO MENTERI",
@@ -2736,26 +2716,6 @@ export const stations = [
     isOKU: true,
     status: "valid",
     search: "LRT DATO MENTERI",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
-    stop_id: "SA12",
-    source_stop_id: "SA12",
-    stop_name: "UITM SHAH ALAM",
-    stop_lat: 3.06278,
-    stop_lon: 101.5012,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 180,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT UITM SHAH ALAM",
     isInterchange: false,
     isConnecting: false
   },
@@ -2780,26 +2740,6 @@ export const stations = [
     isConnecting: false
   },
   {
-    stop_id: "SA15",
-    source_stop_id: "SA15",
-    stop_name: "BANDAR BARU KLANG",
-    stop_lat: 3.06268,
-    stop_lon: 101.46593,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 182,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT BANDAR BARU KLANG",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
     stop_id: "SA16",
     source_stop_id: "SA16",
     stop_name: "PASAR BESAR KLANG",
@@ -2819,157 +2759,21 @@ export const stations = [
     isInterchange: false,
     isConnecting: false
   },
-  {
-    stop_id: "SA17",
-    source_stop_id: "SA17",
-    stop_name: "JALAN MERU",
-    stop_lat: 3.05906,
-    stop_lon: 101.45206,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 184,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT JALAN MERU",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
-    stop_id: "SA18",
-    source_stop_id: "SA18",
-    stop_name: "TAMAN SELATAN",
-    stop_lat: 3.02694,
-    stop_lon: 101.44239,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 185,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT TAMAN SELATAN",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
-    stop_id: "SA19",
-    source_stop_id: "SA19",
-    stop_name: "KLANG JAYA",
-    stop_lat: 3.00543,
-    stop_lon: 101.44191,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 186,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT KLANG JAYA",
-    isInterchange: false,
-    isConnecting: false
-  },
-  {
-    stop_id: "SA20",
-    source_stop_id: "SA20",
-    stop_name: "JOHAN SETIA",
-    stop_lat: 2.97641,
-    stop_lon: 101.45934,
-    category: "LRT",
-    route_id: "SA",
-    route_color: null,
-    route_short_name: null,
-    route_long_name: null,
-    route_public_name: null,
-    seq: 187,
-    isLoop: false,
-    isOKU: true,
-    status: "valid",
-    search: "LRT JOHAN SETIA",
-    isInterchange: false,
-    isConnecting: false
-  },
 ];
 
 export const duplicants = [
   {
-    "stop_lat": 1.663129,
-    "stop_lon": 103.600489,
-    "stop_names": [
-      "SENAI",
-      "Kulai"
-    ],
-    "records": [
-      {
-        "stop_id": "ERT_36600",
-        "source_stop_id": "36600",
-        "stop_name": "SENAI",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_36000",
-        "source_stop_id": "36000",
-        "stop_name": "Kulai",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 2.810356,
-    "stop_lon": 102.404968,
-    "stop_names": [
-      "LONDAH",
-      "ROMPIN",
-      "SERTING"
-    ],
-    "records": [
-      {
-        "stop_id": "ERT_60800",
-        "source_stop_id": "60800",
-        "stop_name": "LONDAH",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_61000",
-        "source_stop_id": "61000",
-        "stop_name": "ROMPIN",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_62500",
-        "source_stop_id": "62500",
-        "stop_name": "SERTING",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
     "stop_lat": 3.083373,
     "stop_lon": 101.61143,
     "stop_names": [
-      "Seri Setia",
+      "SERI SETIA",
       "SETIA JAYA"
     ],
     "records": [
       {
         "stop_id": "KA15_KD19_53500",
         "source_stop_id": "53500",
-        "stop_name": "Seri Setia",
+        "stop_name": "SERI SETIA",
         "route_id": "KA15_KD19",
         "category": "KTM"
       },
@@ -2978,192 +2782,6 @@ export const duplicants = [
         "source_stop_id": "53600",
         "stop_name": "SETIA JAYA",
         "route_id": "KA15_KD19",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 3.246451,
-    "stop_lon": 102.411322,
-    "stop_names": [
-      "Triang",
-      "MENTRI"
-    ],
-    "records": [
-      {
-        "stop_id": "ERT_64400",
-        "source_stop_id": "64400",
-        "stop_name": "Triang",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_64700",
-        "source_stop_id": "64700",
-        "stop_name": "MENTRI",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 3.710453,
-    "stop_lon": 102.366258,
-    "stop_names": [
-      "SUNGAI DALAM",
-      "Kuala Krau"
-    ],
-    "records": [
-      {
-        "stop_id": "ERT_67100",
-        "source_stop_id": "67100",
-        "stop_name": "SUNGAI DALAM",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_67400",
-        "source_stop_id": "67400",
-        "stop_name": "Kuala Krau",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 3.937265,
-    "stop_lon": 102.357945,
-    "stop_names": [
-      "JERANSONG",
-      "Jerantut"
-    ],
-    "records": [
-      {
-        "stop_id": "ERT_68200",
-        "source_stop_id": "68200",
-        "stop_name": "JERANSONG",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_68700",
-        "source_stop_id": "68700",
-        "stop_name": "Jerantut",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 4.186634,
-    "stop_lon": 102.053791,
-    "stop_names": [
-      "KG TELANG",
-      "KUALA LIPIS"
-    ],
-    "records": [
-      {
-        "stop_id": "SH_72000",
-        "source_stop_id": "72000",
-        "stop_name": "KG TELANG",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_71300",
-        "source_stop_id": "71300",
-        "stop_name": "KUALA LIPIS",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_71300",
-        "source_stop_id": "71300",
-        "stop_name": "KUALA LIPIS",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_72000",
-        "source_stop_id": "72000",
-        "stop_name": "KG TELANG",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 4.69314,
-    "stop_lon": 102.00328,
-    "stop_names": [
-      "Merapoh",
-      "KUBANG RUSA"
-    ],
-    "records": [
-      {
-        "stop_id": "SH_74800",
-        "source_stop_id": "74800",
-        "stop_name": "Merapoh",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_74000",
-        "source_stop_id": "74000",
-        "stop_name": "KUBANG RUSA",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_74000",
-        "source_stop_id": "74000",
-        "stop_name": "KUBANG RUSA",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_74800",
-        "source_stop_id": "74800",
-        "stop_name": "Merapoh",
-        "route_id": "ERT",
-        "category": "KTM"
-      }
-    ]
-  },
-  {
-    "stop_lat": 4.878941,
-    "stop_lon": 101.966634,
-    "stop_names": [
-      "Gua Musang",
-      "LAPAN TUPAI"
-    ],
-    "records": [
-      {
-        "stop_id": "SH_76000",
-        "source_stop_id": "76000",
-        "stop_name": "Gua Musang",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "SH_75300",
-        "source_stop_id": "75300",
-        "stop_name": "LAPAN TUPAI",
-        "route_id": "SH",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_75300",
-        "source_stop_id": "75300",
-        "stop_name": "LAPAN TUPAI",
-        "route_id": "ERT",
-        "category": "KTM"
-      },
-      {
-        "stop_id": "ERT_76000",
-        "source_stop_id": "76000",
-        "stop_name": "Gua Musang",
-        "route_id": "ERT",
         "category": "KTM"
       }
     ]
